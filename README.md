@@ -12,7 +12,6 @@ The goal of this project is to design and develop a professional, fully function
 
 The website will be mobile-friendly, SEO-optimized, and designed to reflect the professionalism and reliability of Constant & Co.
 
----
 
 ## Features
 - ✅ Online booking system (with automated emails)
@@ -23,7 +22,6 @@ The website will be mobile-friendly, SEO-optimized, and designed to reflect the 
 - ✅ SEO & digital marketing setup
 - ✅ Admin dashboard for staff
 
----
 
 ## Project Members
 - Archie Chadha – *30436129*  
@@ -32,14 +30,12 @@ The website will be mobile-friendly, SEO-optimized, and designed to reflect the 
 - Mohammad Ashraful Islam – *30430589*  
 - Sajan Dhamala – *[Student ID]*  
 
----
 
 ## Client Information
 - **Client:** Constant & Co  
 - **Location:** Melbourne, Victoria  
 - **Contact:** Mai Nguyen (mai@constantandco.com.au)  
 
----
 
 ## Future Considerations
 - Advanced encryption for sensitive financial documents  
@@ -47,7 +43,6 @@ The website will be mobile-friendly, SEO-optimized, and designed to reflect the 
 - Keeping resources updated  
 - Ensuring performance across devices & browsers  
 
----
 
 ## License
 ⚠️ *This is a private academic project. Not licensed for public/commercial use unless agreed with the client.*
