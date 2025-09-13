@@ -1,0 +1,11 @@
+{
+  "name": "constantco-website-tests",
+  "version": "1.0.0",
+  "description": "Basic testing for Constant & Co website",
+  "scripts": {
+    "test": "node tests/run-tests.js"
+  },
+  "devDependencies": {
+    "jsdom": "^23.0.1"
+  }
+}
