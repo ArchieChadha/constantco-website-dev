@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Login — Constant & Co Client Portal</title>
+    <meta name="description" content="Login to your Constant & Co client portal." />
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    <a href="#main" class="skip">Skip to content</a>
+
+    <!-- Header -->
+    <header>
+        <div class="container nav" role="navigation" aria-label="Primary">
+            <!-- Logo (clickable) -->
+            <a class="brand" href="index.html" aria-label="Go to homepage">
+                <img src="https://constantandco.com.au/wp-content/uploads/2022/09/Logo-New.png"
+                    alt="Constant & Co logo" />
+                <span class="sr-only">Constant & Co</span>
+            </a>
+
+            <!-- Main nav -->
+            <nav class="menu" aria-label="Main">
+                <a href="index.html" class="top-link">Home</a>
+                <a href="index.html#services" class="top-link">Services</a>
+                <a href="login.html" class="top-link" aria-current="page">Client Portal</a>
+                <a href="index.html#resources" class="top-link">Resources</a>
+                <a href="index.html#contact" class="top-link">Contact</a>
+                <a class="btn btn-ghost cta" href="index.html#contact">Book an Appointment</a>
+            </nav>
+        </div>
+    </header>
+
+    <main id="main">
+        <section class="auth-hero">
+            <div class="container">
+                <h1 class="auth-title">Login to Your Account</h1>
+                <p class="auth-sub">
+                    Access your client portal to manage your profile and documents securely.
+                </p>
+
+                <form class="auth-card auth-form" action="#" method="post" novalidate>
+                    <div class="auth-row">
+                        <label class="sr-only" for="email">Email</label>
+                        <input class="input input-lg" id="email" name="email" type="email" placeholder="Email"
+                            autocomplete="username" required />
+
+                        <label class="sr-only" for="password">Password</label>
+                        <input class="input input-lg" id="password" name="password" type="password"
+                            placeholder="Password" autocomplete="current-password" required />
+                    </div>
+
+                    <div class="auth-row auth-row--inline">
+                        <label class="check">
+                            <input type="checkbox" name="remember" /> <span>Remember me</span>
+                        </label>
+                        <a class="small link" href="#">Forgot password?</a>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary auth-btn">Login</button>
+
+                    <p class="small auth-alt">
+                        Don’t have an account? <a href="signup.html">Sign up here</a>
+                    </p>
+
+                    <hr class="auth-divider" />
+
+                    <p class="privacy-note">
+                        <span aria-hidden="true">🔒</span> Your data is encrypted &amp; stored securely.
+                    </p>
+                    <p class="small">
+                        <a href="#">Privacy Policy</a>
+                    </p>
+                </form>
+            </div>
+        </section>
+    </main>
+
+ <!-- ===== Footer ===== -->
+    <footer role="contentinfo">
+        <div class="container foot">
+            <div>
+                <div class="brand"><span>Constant & Co</span></div>
+                <p>Level 1, Melbourne VIC<br />03 9466 3688<br /><a
+                        href="mailto:info@constantco.au">info@constantco.au</a></p>
+            </div>
+            <div>
+                <h4>Services</h4>
+                <ul>
+                    <li><a href="#">Tax Returns</a></li>
+                    <li><a href="#">Business Advisory</a></li>
+                    <li><a href="#">Payroll</a></li>
+                    <li><a href="#">Auditing</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Company</h4>
+                <ul>
+                    <li><a href="#about">About</a></li>
+                    <li><a href="#resources">Our People</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Legal</h4>
+                <ul>
+                    <li><a href="#">Privacy Policy</a></li>
+                    <li><a href="#">Terms of Service</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="container copy">© 2025 Constant &amp; Co. All rights reserved.</div>
+    </footer>
+</body>
+
+</html>
