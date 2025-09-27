@@ -414,6 +414,20 @@ footer a {
     padding: 36px 0;
 }
 
+.contact-info p {
+    margin: 4px 0;
+    font-size: 0.95rem;
+}
+
+.contact-info a {
+    color: #e8f3f6;
+    text-decoration: none;
+}
+
+.contact-info a:hover {
+    text-decoration: underline;
+}
+
 .copy {
     padding: 14px 0;
     border-top: 1px solid rgba(255, 255, 255, .15);
