@@ -4,8 +4,8 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Login — Constant & Co Client Portal</title>
-    <meta name="description" content="Login to your Constant & Co client portal." />
+    <title>Admin Login — Constant & Co</title>
+    <meta name="description" content="Admin login page for Constant & Co staff." />
     <link rel="stylesheet" href="style.css" />
 </head>
 
@@ -15,12 +15,12 @@
     <!-- Header -->
     <header>
         <div class="container nav" role="navigation" aria-label="Primary">
-            <!-- Logo (clickable) -->
-            <a class="brand" href="https://constantandco.com.au/">
+            <a class="brand" href="index.html" aria-label="Go to homepage">
                 <img src="https://constantandco.com.au/wp-content/uploads/2022/09/Logo-New.png"
                     alt="Constant & Co logo" />
+                <span class="sr-only">Constant & Co</span>
             </a>
-            <!-- Main nav -->
+
             <nav class="menu" aria-label="Main">
                 <a href="index.html" class="top-link" aria-haspopup="true" aria-expanded="false">Home</a>
 
@@ -104,49 +104,38 @@
                 <!-- Primary CTA -->
                 <a class="btn btn-ghost cta" href="#contact">Book an Appointment</a>
             </nav>
-
         </div>
     </header>
 
     <main id="main">
         <section class="auth-hero">
             <div class="container">
-                <h1 class="auth-title">Login to Your Account</h1>
-                <p class="auth-sub">
-                    Access your client portal to manage your profile and documents securely.
-                </p>
+                <h1 class="auth-title">Admin Login</h1>
+                <p class="auth-sub">Staff members only. Please enter your admin credentials to continue.</p>
 
                 <form class="auth-card auth-form" action="#" method="post" novalidate>
                     <div class="auth-row">
-                        <label class="sr-only" for="email">Email</label>
-                        <input class="input input-lg" id="email" name="email" type="email" placeholder="Email"
-                            autocomplete="username" required />
+                        <label class="sr-only" for="admin-email">Email</label>
+                        <input class="input input-lg" id="admin-email" name="admin-email" type="email"
+                            placeholder="Admin Email" required />
 
-                        <label class="sr-only" for="password">Password</label>
-                        <input class="input input-lg" id="password" name="password" type="password"
-                            placeholder="Password" autocomplete="current-password" required />
+                        <label class="sr-only" for="admin-password">Password</label>
+                        <input class="input input-lg" id="admin-password" name="admin-password" type="password"
+                            placeholder="Password" required />
                     </div>
 
                     <div class="auth-row auth-row--inline">
                         <label class="check">
-                            <input type="checkbox" name="remember" /> <span>Remember me</span>
+                            <input type="checkbox" /> <span>Remember me</span>
                         </label>
                         <a class="small link" href="#">Forgot password?</a>
                     </div>
 
                     <button type="submit" class="btn btn-primary auth-btn">Login</button>
 
-                    <p class="small auth-alt">
-                        Don’t have an account? <a href="signup.html">Sign up here</a>
-                    </p>
-
                     <hr class="auth-divider" />
 
-                    <p class="privacy-note">
-                        <span aria-hidden="true">🔒</span> Your data is encrypted &amp; stored securely.
-                    </p>
-                    <p class="small">
-                        <a href="#">Privacy Policy</a>
+                    <p class="privacy-note"><span aria-hidden="true">🔒</span> Admin access is monitored and secured.
                     </p>
                 </form>
             </div>
