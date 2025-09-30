@@ -10,7 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const dockOpen = document.querySelector('[data-news-open]');
     const dockDismiss = document.querySelector('[data-news-dismiss]');
 
-    if (!overlay || !modal || !dock) return;
+    // Require modal + overlay; dock is optional
+    if (!overlay || !modal) return;
 
     const HIDE_KEY = 'cc_news_hide';
     const SUB_KEY = 'cc_news_sub';
@@ -30,8 +31,8 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.classList.remove('is-visible');
         releaseFocus();
     }
-    function showDock() { dock.classList.remove('is-hidden'); }
-    function hideDock() { dock.classList.add('is-hidden'); }
+    function showDock() { if (dock) dock.classList.remove('is-hidden'); }
+    function hideDock() { if (dock) dock.classList.add('is-hidden'); }
 
     if (isHidden() || isSub()) {
         hideModal(); hideDock();
@@ -61,26 +62,46 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // A11y focus trap
+    // ---- A11y focus trap (hardened) ----
     let prevFocus = null;
     let focusables = [];
+    let focusTrapActive = false;
+
     function trapFocus(container) {
-        prevFocus = document.activeElement;
-        focusables = Array.from(container.querySelectorAll(
-            'a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])'
-        )).filter(el => !el.disabled && el.offsetParent !== null);
-        if (focusables.length) focusables[0].focus();
-        container.addEventListener('keydown', onTrapKeydown);
+        if (!container) return;
+        try {
+            prevFocus = document.activeElement;
+            focusables = Array.from(container.querySelectorAll(
+                'a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])'
+            )).filter(el => !el.disabled && el.offsetParent !== null);
+
+            if (focusables.length) focusables[0].focus();
+            container.addEventListener('keydown', onTrapKeydown);
+            focusTrapActive = true;
+        } catch (_) { }
     }
+
     function releaseFocus() {
-        modal.removeEventListener('keydown', onTrapKeydown);
-        if (prevFocus && prevFocus.focus) prevFocus.focus();
+        try {
+            if (focusTrapActive && modal) {
+                modal.removeEventListener('keydown', onTrapKeydown);
+            }
+            focusTrapActive = false;
+
+            if (prevFocus && typeof prevFocus.focus === 'function') {
+                prevFocus.focus();
+            }
+        } catch (_) { }
     }
+
     function onTrapKeydown(e) {
         if (e.key !== 'Tab' || !focusables.length) return;
         const first = focusables[0];
         const last = focusables[focusables.length - 1];
-        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault(); last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault(); first.focus();
+        }
     }
 });
