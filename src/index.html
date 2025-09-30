@@ -23,11 +23,11 @@
 
             <!-- Main menu with mega-panels (no JS) -->
             <nav class="menu" aria-label="Main">
-                <a href="index.html" class="top-link" aria-haspopup="true" aria-expanded="false">Home</a>
+                <a href="index.html" class="top-link" aria-current="page">Home</a>
 
-                <!-- Services (mega) -->
+                <!-- Services -->
                 <div class="has-mega">
-                    <a href="#services" class="top-link" aria-haspopup="true" aria-expanded="false">Services</a>
+                    <a href="#services" class="top-link">Services</a>
                     <div class="mega-panel" role="group" aria-label="Services">
                         <div class="mega-col">
                             <h4 class="mega-title">Tax Filing &amp; Compliance</h4>
@@ -52,9 +52,9 @@
                     </div>
                 </div>
 
-                <!-- Client Portal (mega) -->
+                <!-- Client Portal -->
                 <div class="has-mega">
-                    <a href="#portal" class="top-link" aria-haspopup="true" aria-expanded="false">Client Portal</a>
+                    <a href="#portal" class="top-link">Client Portal</a>
                     <div class="mega-panel" role="group" aria-label="Client Portal">
                         <div class="mega-col">
                             <h4 class="mega-title">Secure Login / Register</h4>
@@ -74,9 +74,9 @@
                     </div>
                 </div>
 
-                <!-- Resources (mega) -->
+                <!-- Resources -->
                 <div class="has-mega">
-                    <a href="#resources" class="top-link" aria-haspopup="true" aria-expanded="false">Resources</a>
+                    <a href="#resources" class="top-link">Resources</a>
                     <div class="mega-panel" role="group" aria-label="Resources">
                         <div class="mega-col">
                             <h4 class="mega-title">FAQs</h4>
@@ -102,9 +102,10 @@
                 <!-- Admin Login -->
                 <a href="admin-login.html" class="top-link">Admin</a>
 
-                <!-- Primary CTA -->
+                <!-- CTA -->
                 <a class="btn btn-ghost cta" href="#contact">Book an Appointment</a>
             </nav>
+
         </div>
     </header>
 
@@ -274,6 +275,41 @@
         </section>
     </main>
 
+    <!-- Overlay -->
+    <div class="newsletter-overlay" data-news-overlay></div>
+
+    <!-- Modal -->
+    <section class="newsletter-pop" data-news-modal role="dialog" aria-modal="true" aria-labelledby="newsTitle"
+        aria-describedby="newsDesc">
+        <div class="news-pop-head">
+            <h3 id="newsTitle" class="news-pop-title">Constant &amp; Co</h3>
+            <button type="button" class="news-pop-close" data-news-close aria-label="Close">×</button>
+        </div>
+
+        <div class="news-pop-body">
+            <h2 class="section-title">Stay Updated</h2>
+            <p id="newsDesc" class="section-sub">Tax tips &amp; regulatory updates delivered to your inbox.</p>
+
+            <form class="news-pop-form" data-news-form action="#" method="post">
+                <input class="input input-lg" type="email" name="email" placeholder="Enter your email address"
+                    required />
+                <button class="btn btn-primary" type="submit">Subscribe</button>
+            </form>
+
+            <p class="privacy-note">We respect your privacy. Unsubscribe anytime.</p>
+        </div>
+    </section>
+
+    <!-- Docked teaser -->
+    <div class="newsletter-dock" data-news-dock>
+        <span class="news-dock-text">Get updates from Constant &amp; Co</span>
+        <div class="news-dock-actions">
+            <button class="btn btn-primary" type="button" data-news-open>Subscribe</button>
+            <button class="news-dock-dismiss" type="button" data-news-dismiss aria-label="Dismiss">×</button>
+        </div>
+    </div>
+
+
     <!-- ===== Footer ===== -->
     <footer role="contentinfo">
         <div class="container foot">
@@ -312,6 +348,7 @@
         </div>
         <div class="container copy">© 2025 Constant &amp; Co. All rights reserved.</div>
     </footer>
+    <script src="newsletter.js" defer></script>
 </body>
 
 </html>

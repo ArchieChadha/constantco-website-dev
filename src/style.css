@@ -80,6 +80,18 @@ header {
     padding: 0 20px;
 }
 
+.menu .top-link:focus-visible {
+    outline: 3px solid var(--sky);
+    outline-offset: 2px;
+    border-radius: 10px;
+}
+
+/* Active page highlight */
+.menu .top-link[aria-current="page"] {
+    font-weight: 700;
+    border-bottom: 2px solid var(--aqua);
+}
+
 .brand {
     display: flex;
     align-items: center;
@@ -318,6 +330,7 @@ section {
     font-size: 28px
 }
 
+/* Team */
 .team {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -348,6 +361,7 @@ section {
     font-size: .95rem;
 }
 
+/* Testimonials */
 .testimonials {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -363,6 +377,7 @@ section {
     box-shadow: var(--shadow-sm);
 }
 
+/* Newsletter (inline section) */
 .newsletter {
     display: flex;
     gap: 10px
@@ -524,6 +539,7 @@ footer a {
     background: var(--gray);
 }
 
+/* ===== Mobile-specific breakpoints ===== */
 @media (max-width:700px) {
     .auth-row {
         grid-template-columns: 1fr
@@ -536,7 +552,18 @@ footer a {
     }
 }
 
-/* ===== Responsive ===== */
+@media (max-width: 768px) {
+    .brand img {
+        height: 70px;
+        max-width: 180px;
+    }
+
+    .nav {
+        height: 100px;
+        padding: 0 10px;
+    }
+}
+
 @media (max-width:980px) {
     .hero-grid {
         grid-template-columns: 1fr
@@ -574,5 +601,164 @@ footer a {
 
     .newsletter {
         flex-direction: column
+    }
+}
+
+/* ===== Newsletter POPUP + DOCKED WIDGET ===== */
+
+/* overlay (hidden by default) */
+.newsletter-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .38);
+    display: none;
+    z-index: 9998;
+}
+
+/* modal container */
+.newsletter-pop {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    width: min(560px, 92vw);
+    transform: translate(-50%, -50%) scale(.98);
+    opacity: 0;
+    pointer-events: none;
+    background: #fff;
+    border: 1px solid var(--gray);
+    border-radius: 18px;
+    box-shadow: var(--shadow);
+    padding: 22px;
+    z-index: 9999;
+}
+
+/* header area inside modal */
+.news-pop-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.news-pop-title {
+    margin: 0;
+    font-size: 1.4rem;
+    color: var(--teal);
+}
+
+.news-pop-close {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 8px;
+}
+
+.news-pop-close:hover {
+    background: var(--aqua);
+}
+
+/* body area */
+.news-pop-body {
+    margin-top: 6px;
+}
+
+.news-pop-desc {
+    margin: 0 0 12px;
+    opacity: .9;
+}
+
+/* form inside modal reuses .input + .btn */
+.news-pop-form {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+@media (max-width:560px) {
+    .news-pop-form {
+        flex-direction: column;
+    }
+}
+
+/* visible states (you toggle by adding .show-newsletter to <body> or .is-visible to elements) */
+.show-newsletter .newsletter-overlay {
+    display: block;
+}
+
+.show-newsletter .newsletter-pop {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    pointer-events: auto;
+}
+
+/* optional: element-specific trigger if you don't toggle <body> */
+.newsletter-pop.is-visible {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    pointer-events: auto;
+}
+
+.newsletter-overlay.is-visible {
+    display: block;
+}
+
+/* bottom dock widget */
+.newsletter-dock {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    width: min(420px, 92vw);
+    background: #ffffff;
+    border: 1px solid var(--gray);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    padding: 14px;
+    z-index: 9990;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.news-dock-icon {
+    font-size: 22px;
+}
+
+.news-dock-text {
+    flex: 1;
+    font-size: .95rem;
+}
+
+.news-dock-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.news-dock-dismiss {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    padding: 6px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.news-dock-dismiss:hover {
+    background: var(--aqua);
+}
+
+/* hide dock via utility class */
+.is-hidden {
+    display: none !important;
+}
+
+/* motion preferences */
+@media (prefers-reduced-motion: no-preference) {
+    .newsletter-pop {
+        transition: transform .18s ease, opacity .18s ease;
     }
 }
