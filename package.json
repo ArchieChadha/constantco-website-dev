@@ -1,11 +1,22 @@
 {
-  "name": "constantco-website-tests",
-  "version": "1.0.0",
-  "description": "Basic testing for Constant & Co website",
-  "scripts": {
-    "test": "node tests/run-tests.js"
-  },
-  "devDependencies": {
-    "jsdom": "^23.0.1"
-  }
+	"name": "constantco-website-tests",
+	"version": "1.0.0",
+	"description": "Basic testing for Constant & Co website",
+	"type": "module",
+	"scripts": {
+		"test": "vitest",
+		"test:watch": "vitest --watch",
+		"test:coverage": "vitest run --coverage",
+		"e2e": "playwright test",
+		"serve": "http-server . -p 5173"
+	},
+	"devDependencies": {
+		"@playwright/test": "^1.55.1",
+		"@testing-library/dom": "^10.4.1",
+		"@testing-library/jest-dom": "^6.9.1",
+		"@testing-library/user-event": "^14.6.1",
+		"http-server": "^14.1.1",
+		"jsdom": "^23.2.0",
+		"vitest": "^3.2.4"
+	}
 }
