@@ -97,7 +97,7 @@
                 </div>
 
                 <!-- Contact -->
-                <a href="#contact" class="top-link">Contact</a>
+                <a href="contact.html" class="top-link">Contact</a>
 
                 <!-- Admin Login -->
                 <a href="admin-login.html" class="top-link">Admin</a>
@@ -117,7 +117,7 @@
                     Access your client portal to manage your profile and documents securely.
                 </p>
 
-                <form class="auth-card auth-form" action="#" method="post" novalidate>
+                <form id="loginForm" class="auth-card auth-form" action="#" method="post" novalidate>
                     <div class="auth-row">
                         <label class="sr-only" for="email">Email</label>
                         <input class="input input-lg" id="email" name="email" type="email" placeholder="Email"
@@ -137,6 +137,8 @@
 
                     <button type="submit" class="btn btn-primary auth-btn">Login</button>
 
+                    <p id="loginStatus" class="small auth-alt" aria-live="polite"></p>
+
                     <p class="small auth-alt">
                         Don’t have an account? <a href="signup.html">Sign up here</a>
                     </p>
@@ -150,6 +152,7 @@
                         <a href="#">Privacy Policy</a>
                     </p>
                 </form>
+
             </div>
         </section>
     </main>
@@ -189,7 +192,7 @@
         </div>
         <div class="container copy">© 2025 Constant &amp; Co. All rights reserved.</div>
     </footer>
-    <script src="newsletter.js"></script>
+    <script src="login.js" defer></script>
 </body>
 
 </html>

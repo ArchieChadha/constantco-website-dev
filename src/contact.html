@@ -4,15 +4,14 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Admin Login — Constant & Co</title>
-    <meta name="description" content="Admin login page for Constant & Co staff." />
+    <title>Contact — Constant & Co</title>
+    <meta name="description" content="Contact Constant & Co for accounting and advisory services." />
     <link rel="stylesheet" href="style.css" />
 </head>
 
 <body>
     <a href="#main" class="skip">Skip to content</a>
 
-    <!-- Header -->
     <header>
         <div class="container nav" role="navigation" aria-label="Primary">
             <a class="brand" href="index.html">
@@ -21,11 +20,11 @@
             </a>
 
             <nav class="menu" aria-label="Main">
-                <a href="index.html" class="top-link" aria-haspopup="true" aria-expanded="false">Home</a>
+                <a href="index.html" class="top-link">Home</a>
 
-                <!-- Services (mega) -->
+                <!-- Services -->
                 <div class="has-mega">
-                    <a href="#services" class="top-link" aria-haspopup="true" aria-expanded="false">Services</a>
+                    <a href="#services" class="top-link">Services</a>
                     <div class="mega-panel" role="group" aria-label="Services">
                         <div class="mega-col">
                             <h4 class="mega-title">Tax Filing &amp; Compliance</h4>
@@ -50,9 +49,9 @@
                     </div>
                 </div>
 
-                <!-- Client Portal (mega) -->
+                <!-- Client Portal -->
                 <div class="has-mega">
-                    <a href="#portal" class="top-link" aria-haspopup="true" aria-expanded="false">Client Portal</a>
+                    <a href="#portal" class="top-link">Client Portal</a>
                     <div class="mega-panel" role="group" aria-label="Client Portal">
                         <div class="mega-col">
                             <h4 class="mega-title">Secure Login / Register</h4>
@@ -72,9 +71,9 @@
                     </div>
                 </div>
 
-                <!-- Resources (mega) -->
+                <!-- Resources -->
                 <div class="has-mega">
-                    <a href="#resources" class="top-link" aria-haspopup="true" aria-expanded="false">Resources</a>
+                    <a href="#resources" class="top-link">Resources</a>
                     <div class="mega-panel" role="group" aria-label="Resources">
                         <div class="mega-col">
                             <h4 class="mega-title">FAQs</h4>
@@ -95,12 +94,12 @@
                 </div>
 
                 <!-- Contact -->
-                <a href="contact.html" class="top-link">Contact</a>
+                <a href="#contact" class="top-link" aria-current="page">Contact</a>
 
                 <!-- Admin Login -->
-                <a href="admin-login.html" class="top-link" aria-current="page">Admin</a>
+                <a href="admin-login.html" class="top-link">Admin</a>
 
-                <!-- Primary CTA -->
+                <!-- CTA -->
                 <a class="btn btn-ghost cta" href="#contact">Book an Appointment</a>
             </nav>
         </div>
@@ -109,39 +108,66 @@
     <main id="main">
         <section class="auth-hero">
             <div class="container">
-                <h1 class="auth-title">Admin Login</h1>
-                <p class="auth-sub">Staff members only. Please enter your admin credentials to continue.</p>
+                <h1 class="auth-title">Contact Us</h1>
+                <p class="auth-sub">Tell us a little about your needs. We’ll reply within one business day.</p>
 
-                <form class="auth-card auth-form" action="#" method="post" novalidate>
+                <form class="auth-card auth-form" id="contactForm" novalidate>
                     <div class="auth-row">
-                        <label class="sr-only" for="admin-email">Email</label>
-                        <input class="input input-lg" id="admin-email" name="admin-email" type="email"
-                            placeholder="Admin Email" required />
-
-                        <label class="sr-only" for="admin-password">Password</label>
-                        <input class="input input-lg" id="admin-password" name="admin-password" type="password"
-                            placeholder="Password" required />
+                        <div>
+                            <label class="sr-only" for="name">Full Name</label>
+                            <input id="name" name="name" type="text" class="input-lg" placeholder="Full Name"
+                                required />
+                        </div>
+                        <div>
+                            <label class="sr-only" for="email">Email</label>
+                            <input id="email" name="email" type="email" class="input-lg" placeholder="Email" required />
+                        </div>
                     </div>
 
+                    <div class="auth-row">
+                        <div>
+                            <label class="sr-only" for="phone">Phone (optional)</label>
+                            <input id="phone" name="phone" type="tel" class="input-lg" placeholder="Phone (optional)" />
+                        </div>
+                        <div>
+                            <label class="sr-only" for="subject">Subject</label>
+                            <input id="subject" name="subject" type="text" class="input-lg" placeholder="Subject"
+                                required />
+                        </div>
+                    </div>
+
+                    <!-- message row (single column) -->
+                    <div class="auth-row auth-row--single">
+                        <label class="sr-only" for="message">Message</label>
+                        <textarea id="message" name="message" class="input-lg" placeholder="How can we help?" rows="6"
+                            required></textarea>
+                    </div>
+
+                    <!-- consent + privacy link row -->
                     <div class="auth-row auth-row--inline">
                         <label class="check">
-                            <input type="checkbox" /> <span>Remember me</span>
+                            <input id="consent" type="checkbox" required />
+                            <span>I agree to the processing of my information per the <a href="#">Privacy
+                                    Policy</a>.</span>
                         </label>
-                        <a class="small link" href="#">Forgot password?</a>
                     </div>
 
-                    <button type="submit" class="btn btn-primary auth-btn">Login</button>
+                    <button type="submit" class="btn btn-primary auth-btn" id="contactSubmit">Send Message</button>
 
                     <hr class="auth-divider" />
-
-                    <p class="privacy-note"><span aria-hidden="true">🔒</span> Admin access is monitored and secured.
+                    <p class="small privacy-note">
+                        <span aria-hidden="true">🔒</span> Your data is encrypted &amp; stored securely.
                     </p>
+                    <p class="small">
+                        <a href="#">Privacy Policy</a>
+                    </p>
+
+                    <p id="contactStatus" class="small" aria-live="polite"></p>
                 </form>
             </div>
         </section>
     </main>
 
-    <!-- ===== Footer ===== -->
     <footer role="contentinfo">
         <div class="container foot">
             <div>
@@ -176,6 +202,8 @@
         </div>
         <div class="container copy">© 2025 Constant &amp; Co. All rights reserved.</div>
     </footer>
+
+    <script src="contact.js" defer></script>
 </body>
 
 </html>

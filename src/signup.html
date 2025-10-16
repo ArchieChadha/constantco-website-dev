@@ -53,7 +53,8 @@
 
                 <!-- Client Portal (mega) -->
                 <div class="has-mega">
-                    <a href="#portal" class="top-link" aria-haspopup="true" aria-expanded="false" aria-current="page">Client Portal</a>
+                    <a href="#portal" class="top-link" aria-haspopup="true" aria-expanded="false"
+                        aria-current="page">Client Portal</a>
                     <div class="mega-panel" role="group" aria-label="Client Portal">
                         <div class="mega-col">
                             <h4 class="mega-title">Secure Login / Register</h4>
@@ -96,7 +97,7 @@
                 </div>
 
                 <!-- Contact -->
-                <a href="#contact" class="top-link">Contact</a>
+                <a href="contact.html" class="top-link">Contact</a>
 
                 <!-- Admin Login -->
                 <a href="admin-login.html" class="top-link">Admin</a>
@@ -114,12 +115,12 @@
                 <p class="auth-sub">Sign up to access your client portal and upload documents securely.</p>
 
                 <!-- Sign Up Form -->
-                <form class="auth-card auth-form" action="#" method="post" novalidate>
+                <form id="signupForm" class="auth-card auth-form" action="#" method="post" novalidate>
                     <!-- Name + Email -->
                     <div class="auth-row">
                         <label class="sr-only" for="fullName">Full name</label>
                         <input class="input input-lg" id="fullName" name="fullName" type="text" placeholder="Full Name"
-                            required />
+                            required autocomplete="name" />
 
                         <label class="sr-only" for="email">Email</label>
                         <input class="input input-lg" id="email" name="email" type="email" placeholder="Email"
@@ -160,11 +161,11 @@
                     <div class="auth-row">
                         <label class="sr-only" for="password">Password</label>
                         <input class="input input-lg" id="password" name="password" type="password"
-                            placeholder="Password" autocomplete="new-password" required />
+                            placeholder="Password" autocomplete="new-password" minlength="8" required />
 
                         <label class="sr-only" for="confirmPassword">Confirm Password</label>
                         <input class="input input-lg" id="confirmPassword" name="confirmPassword" type="password"
-                            placeholder="Confirm Password" autocomplete="new-password" required />
+                            placeholder="Confirm Password" autocomplete="new-password" minlength="8" required />
                     </div>
 
                     <p id="pwd-hint" class="small">Use at least 8 characters with a number or symbol.</p>
@@ -172,10 +173,13 @@
                     <!-- Terms -->
                     <div class="auth-row auth-row--inline">
                         <label class="check">
-                            <input type="checkbox" name="agree" required />
+                            <input type="checkbox" id="consent" name="consent" required />
                             <span>I agree to the <a href="#">Terms</a> and <a href="#">Privacy Policy</a></span>
                         </label>
                     </div>
+
+                    <!-- Live status line for validation / API messages -->
+                    <p id="signupStatus" class="small" aria-live="polite"></p>
 
                     <!-- Submit -->
                     <button type="submit" class="btn btn-primary auth-btn">Sign Up</button>
@@ -230,6 +234,9 @@
         </div>
         <div class="container copy">© 2025 Constant &amp; Co. All rights reserved.</div>
     </footer>
+
+    <!-- Airtight validation + submit logic -->
+    <script src="signup.js" defer></script>
 </body>
 
 </html>
