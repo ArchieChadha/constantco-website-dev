@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Dashboard - Constant & Co</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <header>
+        <nav class="nav container">
+            <div class="brand">
+                <a class="brand" href="index.html">
+                    <img src="https://constantandco.com.au/wp-content/uploads/2022/09/Logo-New.png"
+                        alt="Constant & Co logo" />
+                </a>
+            </div>
+            <div class="menu">
+                <a href="index.html" class="top-link">Home</a>
+                <a href="contact.html" class="top-link">Contact</a>
+                <a href="login.html" class="top-link">Logout</a>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="dash-hero">
+            <div class="dash-greeter">
+                <h1 class="dash-title">Welcome, <span id="dashName">Client</span></h1>
+                <p class="dash-sub">Access your personal dashboard to upload documents or view your past records.</p>
+
+                <div class="dash-actions">
+                    <button id="btnUpload" class="dash-btn">📤 Upload Your Document</button>
+                    <button id="btnRecords" class="dash-btn">📁 View Past Records</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Upload Section -->
+        <section id="uploadSection" class="dash-section is-hidden">
+            <h2>Upload Your Document</h2>
+            <p>Please select a file to upload securely to our portal.</p>
+            <form class="dash-upload-form" id="uploadForm">
+                <input type="file" id="fileUpload" name="file" required>
+                <button type="submit" class="btn btn-primary">Upload</button>
+            </form>
+            <div id="uploadStatus" style="margin-top:10px;font-size:.95rem;"></div>
+        </section>
+
+        <!-- Records Section -->
+        <section id="recordsSection" class="dash-section is-hidden">
+            <h2>Past Records</h2>
+            <p>View your previously uploaded documents or records here.</p>
+            <div id="recordsList" class="records-list">
+                <p>No records found yet.</p>
+            </div>
+        </section>
+    </main>
+
+    <footer role="contentinfo">
+        <div class="container foot">
+            <div>
+                <div class="brand"><span>Constant & Co</span></div>
+                <p>Level 1, Melbourne VIC<br />03 9466 3688<br /><a
+                        href="mailto:info@constantco.au">info@constantco.au</a></p>
+            </div>
+            <div>
+                <h4>Services</h4>
+                <ul>
+                    <li><a href="#">Tax Returns</a></li>
+                    <li><a href="#">Business Advisory</a></li>
+                    <li><a href="#">Payroll</a></li>
+                    <li><a href="#">Auditing</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Company</h4>
+                <ul>
+                    <li><a href="#about">About</a></li>
+                    <li><a href="#resources">Our People</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Legal</h4>
+                <ul>
+                    <li><a href="#">Privacy Policy</a></li>
+                    <li><a href="#">Terms of Service</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="container copy">© 2025 Constant &amp; Co. All rights reserved.</div>
+    </footer>
+
+    <script src="dashboard.js" defer></script>
+</body>
+
+</html>
