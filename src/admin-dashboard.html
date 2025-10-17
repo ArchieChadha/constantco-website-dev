@@ -1,0 +1,104 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Admin Dashboard — Constant & Co</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    <header>
+        <nav class="nav container">
+            <div class="brand">
+                <a class="brand" href="index.html">
+                    <img src="https://constantandco.com.au/wp-content/uploads/2022/09/Logo-New.png" alt="Constant & Co logo" />
+                </a>
+            </div>
+            <div class="menu">
+                <a href="index.html" class="top-link">Home</a>
+                <a href="contact.html" class="top-link">Contact</a>
+                <a href="login.html" class="top-link">Logout</a>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="dash-hero">
+            <div class="dash-greeter">
+                <h1 class="dash-title">Welcome, <span id="dashName">Admin</span></h1>
+                <p class="dash-sub">Manage users, review uploads, and check upcoming appointments.</p>
+
+                <div class="dash-actions">
+                    <button id="btnUsers" class="dash-btn">👥 Manage Users</button>
+                    <button id="btnUploads" class="dash-btn">📂 Review Uploads</button>
+                    <button id="btnAppts" class="dash-btn">📅 Appointments</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Users -->
+        <section id="usersSection" class="dash-section is-hidden">
+            <h2>Users</h2>
+            <div class="records-list" id="usersList">
+                <p>No users loaded (demo).</p>
+            </div>
+        </section>
+
+        <!-- Uploads -->
+        <section id="uploadsSection" class="dash-section is-hidden">
+            <h2>Recent Uploads</h2>
+            <div class="records-list" id="uploadsList">
+                <p>No uploads yet (demo).</p>
+            </div>
+        </section>
+
+        <!-- Appointments -->
+        <section id="apptsSection" class="dash-section is-hidden">
+            <h2>Upcoming Appointments</h2>
+            <div class="records-list" id="apptsList">
+                <p>No appointments scheduled (demo).</p>
+            </div>
+        </section>
+    </main>
+
+    <footer role="contentinfo">
+        <div class="container foot">
+            <div>
+                <div class="brand"><span>Constant & Co</span></div>
+                <p>
+                    Level 1, Melbourne VIC<br />03 9466 3688<br />
+                    <a href="mailto:info@constantco.au">info@constantco.au</a>
+                </p>
+            </div>
+            <div>
+                <h4>Services</h4>
+                <ul>
+                    <li><a href="#">Tax Returns</a></li>
+                    <li><a href="#">Business Advisory</a></li>
+                    <li><a href="#">Payroll</a></li>
+                    <li><a href="#">Auditing</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Company</h4>
+                <ul>
+                    <li><a href="#about">About</a></li>
+                    <li><a href="#resources">Our People</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Legal</h4>
+                <ul>
+                    <li><a href="#">Privacy Policy</a></li>
+                    <li><a href="#">Terms of Service</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="container copy">© 2025 Constant &amp; Co. All rights reserved.</div>
+    </footer>
+
+    <script src="dashboard.js" defer></script>
+</body>
+</html>

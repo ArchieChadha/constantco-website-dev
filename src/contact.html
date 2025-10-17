@@ -16,7 +16,7 @@
         <div class="container nav" role="navigation" aria-label="Primary">
             <a class="brand" href="index.html">
                 <img src="https://constantandco.com.au/wp-content/uploads/2022/09/Logo-New.png"
-                    alt="Constant & Co logo" />
+                     alt="Constant & Co logo" />
             </a>
 
             <nav class="menu" aria-label="Main">
@@ -51,7 +51,7 @@
 
                 <!-- Client Portal -->
                 <div class="has-mega">
-                    <a href="#portal" class="top-link">Client Portal</a>
+                    <a href="login.html" class="top-link">Client Portal</a>
                     <div class="mega-panel" role="group" aria-label="Client Portal">
                         <div class="mega-col">
                             <h4 class="mega-title">Secure Login / Register</h4>
@@ -93,11 +93,8 @@
                     </div>
                 </div>
 
-                <!-- Contact -->
-                <a href="#contact" class="top-link" aria-current="page">Contact</a>
-
-                <!-- Admin Login -->
-                <a href="admin-login.html" class="top-link">Admin</a>
+                <!-- Contact (current page) -->
+                <a href="contact.html" class="top-link" aria-current="page">Contact</a>
 
                 <!-- CTA -->
                 <a class="btn btn-ghost cta" href="#contact">Book an Appointment</a>
@@ -106,7 +103,7 @@
     </header>
 
     <main id="main">
-        <section class="auth-hero">
+        <section id="contact" class="auth-hero">
             <div class="container">
                 <h1 class="auth-title">Contact Us</h1>
                 <p class="auth-sub">Tell us a little about your needs. We’ll reply within one business day.</p>
@@ -115,8 +112,7 @@
                     <div class="auth-row">
                         <div>
                             <label class="sr-only" for="name">Full Name</label>
-                            <input id="name" name="name" type="text" class="input-lg" placeholder="Full Name"
-                                required />
+                            <input id="name" name="name" type="text" class="input-lg" placeholder="Full Name" required />
                         </div>
                         <div>
                             <label class="sr-only" for="email">Email</label>
@@ -131,24 +127,21 @@
                         </div>
                         <div>
                             <label class="sr-only" for="subject">Subject</label>
-                            <input id="subject" name="subject" type="text" class="input-lg" placeholder="Subject"
-                                required />
+                            <input id="subject" name="subject" type="text" class="input-lg" placeholder="Subject" required />
                         </div>
                     </div>
 
                     <!-- message row (single column) -->
                     <div class="auth-row auth-row--single">
                         <label class="sr-only" for="message">Message</label>
-                        <textarea id="message" name="message" class="input-lg" placeholder="How can we help?" rows="6"
-                            required></textarea>
+                        <textarea id="message" name="message" class="input-lg" placeholder="How can we help?" rows="6" required></textarea>
                     </div>
 
                     <!-- consent + privacy link row -->
                     <div class="auth-row auth-row--inline">
                         <label class="check">
                             <input id="consent" type="checkbox" required />
-                            <span>I agree to the processing of my information per the <a href="#">Privacy
-                                    Policy</a>.</span>
+                            <span>I agree to the processing of my information per the <a href="#">Privacy Policy</a>.</span>
                         </label>
                     </div>
 
@@ -172,8 +165,10 @@
         <div class="container foot">
             <div>
                 <div class="brand"><span>Constant & Co</span></div>
-                <p>Level 1, Melbourne VIC<br />03 9466 3688<br /><a
-                        href="mailto:info@constantco.au">info@constantco.au</a></p>
+                <p>
+                    Level 1, Melbourne VIC<br />03 9466 3688<br />
+                    <a href="mailto:info@constantco.au">info@constantco.au</a>
+                </p>
             </div>
             <div>
                 <h4>Services</h4>
