@@ -1,11 +1,11 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Login — Constant & Co Client Portal</title>
-    <meta name="description" content="Login to your Constant & Co client portal." />
+    <title>Admin Login — Constant & Co</title>
+    <meta name="description" content="Admin login page for Constant & Co staff." />
     <link rel="stylesheet" href="style.css" />
 </head>
 
@@ -15,13 +15,11 @@
     <!-- Header -->
     <header>
         <div class="container nav" role="navigation" aria-label="Primary">
-            <!-- Logo -->
             <a class="brand" href="index.html">
                 <img src="https://constantandco.com.au/wp-content/uploads/2022/09/Logo-New.png"
                     alt="Constant & Co logo" />
             </a>
 
-            <!-- Main nav -->
             <!-- Main menu -->
             <nav class="menu" aria-label="Main">
                 <a href="index.html" class="top-link">Home</a>
@@ -55,7 +53,7 @@
 
                 <!-- Client Portal (points to unified login) -->
                 <div class="has-mega">
-                    <a href="login.html" class="top-link" aria-current="page">Client Portal</a>
+                    <a href="login.html" class="top-link">Client Portal</a>
                     <div class="mega-panel" role="group" aria-label="Client Portal">
                         <div class="mega-col">
                             <h4 class="mega-title">Secure Login / Register</h4>
@@ -108,61 +106,43 @@
     <main id="main">
         <section class="auth-hero">
             <div class="container">
-                <h1 class="auth-title">Login to Your Account</h1>
-                <p class="auth-sub">
-                    Access your client portal to manage your profile and documents securely.
-                </p>
+                <h1 class="auth-title">Admin Login</h1>
+                <p class="auth-sub">Staff members only. Please enter your admin credentials to continue.</p>
 
-                <form id="loginForm" class="auth-card auth-form" action="#" method="post" novalidate>
+                <form class="auth-card auth-form" id="adminLoginForm" method="post" novalidate>
+                    <div class="auth-row auth-row--two">
+                        <label class="sr-only" for="admin-id">Admin ID</label>
+                        <input class="input input-lg" id="admin-id" name="adminId" type="text" placeholder="Admin ID"
+                            required />
 
-                    <div class="auth-row">
-                        <label class="sr-only" for="email">Email</label>
-                        <input class="input input-lg" id="email" name="email" type="email" placeholder="Email"
-                            autocomplete="username" required />
-
-                        <label class="sr-only" for="password">Password</label>
-                        <input class="input input-lg" id="password" name="password" type="password"
-                            placeholder="Password" autocomplete="current-password" required />
+                        <label class="sr-only" for="admin-password">Password</label>
+                        <input class="input input-lg" id="admin-password" name="adminPassword" type="password"
+                            placeholder="Password" required />
                     </div>
 
                     <div class="auth-row auth-row--inline">
                         <label class="check">
-                            <input type="checkbox" name="remember" /> <span>Remember me</span>
+                            <input type="checkbox" /> <span>Remember me</span>
                         </label>
                         <a class="small link" href="#">Forgot password?</a>
                     </div>
 
                     <button type="submit" class="btn btn-primary auth-btn">Login</button>
 
-                    <p id="loginStatus" class="small auth-alt" aria-live="polite"></p>
-
-                    <p class="small auth-alt">
-                        Don’t have an account? <a href="signup.html">Sign up here</a>
-                    </p>
-
-                    <p class="small auth-alt">
-                        If you are a member of the staff, <a href="admin login.html">click here</a>.
-                    </p>
-
                     <hr class="auth-divider" />
-
-                    <p class="privacy-note">
-                        <span aria-hidden="true">🔒</span> Your data is encrypted &amp; stored securely.
-                    </p>
-                    <p class="small">
-                        <a href="#">Privacy Policy</a>
+                    <p class="privacy-note"><span aria-hidden="true">🔒</span> Admin access is monitored and secured.
                     </p>
                 </form>
             </div>
         </section>
     </main>
 
+    <!-- Footer -->
     <footer role="contentinfo">
         <div class="container foot">
             <div>
                 <div class="brand"><span>Constant & Co</span></div>
-                <p>
-                    Level 1, Melbourne VIC<br />03 9466 3688<br />
+                <p>Level 1, Melbourne VIC<br />03 9466 3688<br />
                     <a href="mailto:info@constantco.au">info@constantco.au</a>
                 </p>
             </div>
@@ -193,8 +173,6 @@
         </div>
         <div class="container copy">© 2025 Constant &amp; Co. All rights reserved.</div>
     </footer>
-
-    <script src="login.js" defer></script>
 </body>
 
 </html>
