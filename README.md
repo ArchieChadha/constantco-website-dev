@@ -37,6 +37,41 @@ The website will be mobile-friendly, SEO-optimized, and designed to reflect the 
 - **Contact:** Mai Nguyen (mai@constantandco.com.au)  
 
 
+## Setup Instructions
+
+### Quick Start
+```bash
+# 1. Install dependencies
+npm install
+cd api && npm install && cd ..
+
+# 2. Setup database (requires PostgreSQL)
+./setup.sh
+
+# 3. Configure environment
+# Edit api/.env and add your PostgreSQL password
+
+# 4. Start the server
+cd api && node server.js
+
+# 5. Open the website
+open src/index.html
+```
+
+### Manual Setup
+See `setup.md` for detailed instructions.
+
+### Requirements
+- Node.js (v14+)
+- PostgreSQL (v12+)
+- Modern web browser
+
+## Testing
+```bash
+# Run the test suite
+node tests/run-tests.js
+```
+
 ## Future Considerations
 - Advanced encryption for sensitive financial documents  
 - Managing appointment overload and double-booking  
