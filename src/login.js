@@ -19,11 +19,6 @@
     const email = (document.getElementById('email') || {}).value.trim();
     const password = (document.getElementById('password') || {}).value.trim();
 
-    if (!role) {
-      setStatus('Please select your role.');
-      alert('Please select your role.');
-      return;
-    }
     if (!email || !password) {
       setStatus('Please enter your email and password.');
       alert('Please enter your email and password.');
