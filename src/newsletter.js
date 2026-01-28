@@ -1,4 +1,4 @@
-// newsletter.js  — full, corrected
+// newsletter.js
 
 // One single API base that also works when the page is opened from file://
 const API_BASE =
