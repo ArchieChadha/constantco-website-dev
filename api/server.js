@@ -15,24 +15,58 @@ const PORT = process.env.PORT || 3001;
 /* ---------- Multer (FILE UPLOAD CONFIG) ---------- */
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, path.join(process.cwd(), 'uploads'));
+        cb(null, path.join(process.cwd(), 'uploads')); // safer path
     },
     filename: function (req, file, cb) {
-        const uniqueName = Date.now() + '-' + file.originalname;
+        const uniqueName = Date.now() + '-' + file.originalname.replace(/\s+/g, '_');
         cb(null, uniqueName);
     }
 });
 
 const upload = multer({
     storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
     fileFilter: (req, file, cb) => {
-        const allowed = ['application/pdf', 'image/png', 'image/jpeg'];
-        if (allowed.includes(file.mimetype)) {
+        const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg'];
+
+        if (allowedTypes.includes(file.mimetype)) {
             cb(null, true);
         } else {
-            cb(new Error('Only PDF, PNG, JPG allowed'));
+            cb(new Error('Only PDF, PNG, and JPG files are allowed'));
         }
+    }
+});
+
+/* -- FILE UPLOAD (Client Documents) -- */
+app.post('/api/upload', upload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+
+        const fileName = req.file.filename;
+
+        // Save to database (recommended for marks)
+        await pool.query(
+            'INSERT INTO uploaded_files (filename) VALUES ($1)',
+            [fileName]
+        );
+
+        console.log('Uploaded file:', fileName);
+
+        res.json({
+            message: 'File uploaded successfully',
+            file: fileName
+        });
+
+    } catch (err) {
+        console.error('Upload error:', err.message);
+
+        if (err.message.includes('Only')) {
+            return res.status(400).json({ error: err.message });
+        }
+
+        res.status(500).json({ error: 'Upload failed' });
     }
 });
 
