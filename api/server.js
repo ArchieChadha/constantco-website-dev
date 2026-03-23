@@ -4,15 +4,42 @@ import cors from 'cors';
 import pg from 'pg';
 import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
+import multer from 'multer';
+import path from 'path';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+/* ---------- Multer (FILE UPLOAD CONFIG) ---------- */
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, path.join(process.cwd(), 'uploads'));
+    },
+    filename: function (req, file, cb) {
+        const uniqueName = Date.now() + '-' + file.originalname;
+        cb(null, uniqueName);
+    }
+});
+
+const upload = multer({
+    storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    fileFilter: (req, file, cb) => {
+        const allowed = ['application/pdf', 'image/png', 'image/jpeg'];
+        if (allowed.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only PDF, PNG, JPG allowed'));
+        }
+    }
+});
+
 /* ---------- Middleware ---------- */
 app.use(cors({ origin: true }));
 app.use(express.json());
+app.use('/uploads', express.static('uploads'));
 
 /* ---------- Postgres Pool ---------- */
 const pool = new pg.Pool(
@@ -73,6 +100,30 @@ app.post('/api/newsletter', async (req, res) => {
     } catch (err) {
         console.error('Error saving newsletter:', err);
         res.status(500).json({ error: 'Server error' });
+    }
+});
+
+/* -- FILE UPLOAD (Client Documents) -- */
+app.post('/api/upload', upload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+
+        // OPTIONAL: link file to a client (if you pass client ID later)
+        const fileName = req.file.filename;
+        const filePath = req.file.path;
+
+        console.log('Uploaded file:', fileName);
+
+        res.json({
+            message: 'File uploaded successfully',
+            file: fileName
+        });
+
+    } catch (err) {
+        console.error('Upload error:', err);
+        res.status(500).json({ error: 'Upload failed' });
     }
 });
 

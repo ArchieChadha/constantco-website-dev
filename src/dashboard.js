@@ -7,6 +7,41 @@ document.addEventListener('DOMContentLoaded', () => {
     const uploadSection = document.getElementById('uploadSection');
     const recordsSection = document.getElementById('recordsSection');
 
+    /* =========================
+          FILE UPLOAD HANDLER
+       ========================= */
+    const uploadForm = document.getElementById('uploadForm');
+    const uploadStatus = document.getElementById('uploadStatus');
+
+    uploadForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const formData = new FormData(uploadForm);
+
+        try {
+            const res = await fetch('http://localhost:3001/api/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || 'Upload failed');
+            }
+
+            uploadStatus.textContent = data.message || 'Upload successful';
+            uploadStatus.style.color = '#1a7f37';
+            uploadForm.reset();
+
+        } catch (err) {
+            console.error(err);
+            uploadStatus.textContent = 'Upload failed';
+            uploadStatus.style.color = '#b00020';
+        }
+    });
+
+
     // optional: personalize if you stored a name in sessionStorage/localStorage
     const storedName = sessionStorage.getItem('clientName') || localStorage.getItem('clientName');
     if (storedName && nameEl) nameEl.textContent = storedName;
