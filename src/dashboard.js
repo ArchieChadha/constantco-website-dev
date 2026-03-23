@@ -8,13 +8,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const recordsSection = document.getElementById('recordsSection');
 
     /* =========================
-          FILE UPLOAD HANDLER
-       ========================= */
+       FILE UPLOAD HANDLER
+    ========================= */
     const uploadForm = document.getElementById('uploadForm');
     const uploadStatus = document.getElementById('uploadStatus');
 
     uploadForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
+
+        uploadStatus.textContent = '';
+        uploadStatus.style.color = '';
 
         const formData = new FormData(uploadForm);
 
@@ -32,11 +35,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             uploadStatus.textContent = data.message || 'Upload successful';
             uploadStatus.style.color = '#1a7f37';
+
             uploadForm.reset();
 
         } catch (err) {
             console.error(err);
-            uploadStatus.textContent = 'Upload failed';
+            uploadStatus.textContent = err.message || 'Upload failed';
             uploadStatus.style.color = '#b00020';
         }
     });
