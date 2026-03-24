@@ -171,7 +171,7 @@ app.post('/api/signup', async (req, res) => {
             (name, email, password, phone, client_type, service, note, created_at)
             VALUES
             ($1, $2, $3, $4, $5, $6, $7, NOW())
-            RETURNING id, name, email, created_at
+            RETURNING id, name, email, phone, client_type, service, note, created_at
         `;
 
         const { rows } = await pool.query(insertSql, [
@@ -201,7 +201,10 @@ app.post('/api/login', async (req, res) => {
         }
 
         const { rows } = await pool.query(
-            'SELECT id, name, email, password FROM portal_clients WHERE email = $1 LIMIT 1',
+            `SELECT id, name, email, phone, client_type, service, note, password
+             FROM portal_clients
+             WHERE email = $1
+             LIMIT 1`,
             [email.trim()]
         );
 
@@ -213,7 +216,11 @@ app.post('/api/login', async (req, res) => {
         const stored = user.password || '';
         let ok = false;
 
-        if (stored.startsWith('$2a$') || stored.startsWith('$2b$') || stored.startsWith('$2y$')) {
+        if (
+            stored.startsWith('$2a$') ||
+            stored.startsWith('$2b$') ||
+            stored.startsWith('$2y$')
+        ) {
             ok = await bcrypt.compare(password, stored);
         } else {
             ok = password === stored;
@@ -228,12 +235,154 @@ app.post('/api/login', async (req, res) => {
             client: {
                 id: user.id,
                 name: user.name,
-                email: user.email
+                email: user.email,
+                phone: user.phone,
+                client_type: user.client_type,
+                service: user.service,
+                note: user.note
             }
         });
     } catch (err) {
         console.error('Login error:', err);
         res.status(500).json({ error: 'Server error' });
+    }
+});
+
+/* -- Client Profile -- */
+app.get('/api/profile', async (req, res) => {
+    try {
+        const { clientId } = req.query;
+
+        if (!clientId) {
+            return res.status(400).json({ error: 'Client ID required' });
+        }
+
+        const { rows } = await pool.query(
+            `SELECT id, name, email, phone, client_type, service, note, created_at, updated_at
+             FROM portal_clients
+             WHERE id = $1
+             LIMIT 1`,
+            [clientId]
+        );
+
+        const client = rows[0];
+        if (!client) {
+            return res.status(404).json({ error: 'Client not found' });
+        }
+
+        res.json({ ok: true, client });
+    } catch (err) {
+        console.error('Profile fetch error:', err);
+        res.status(500).json({ error: 'Failed to fetch profile' });
+    }
+});
+
+/* -- Update Client Profile -- */
+app.put('/api/profile', async (req, res) => {
+    try {
+        const {
+            clientId,
+            name = '',
+            email = '',
+            phone = '',
+            client_type = '',
+            service = '',
+            note = ''
+        } = req.body || {};
+
+        if (!clientId) {
+            return res.status(400).json({ error: 'Client ID required' });
+        }
+
+        if (!name.trim() || !isEmail(email)) {
+            return res.status(400).json({ error: 'Valid name and email are required' });
+        }
+
+        const { rows: duplicate } = await pool.query(
+            `SELECT id
+             FROM portal_clients
+             WHERE email = $1 AND id <> $2
+             LIMIT 1`,
+            [email.trim(), clientId]
+        );
+
+        if (duplicate.length) {
+            return res.status(409).json({ error: 'That email is already in use' });
+        }
+
+        const { rows } = await pool.query(
+            `UPDATE portal_clients
+             SET name = $1,
+                 email = $2,
+                 phone = $3,
+                 client_type = $4,
+                 service = $5,
+                 note = $6,
+                 updated_at = NOW()
+             WHERE id = $7
+             RETURNING id, name, email, phone, client_type, service, note, updated_at`,
+            [
+                name.trim(),
+                email.trim(),
+                phone.trim() || null,
+                client_type || null,
+                service || null,
+                note.trim() || null,
+                clientId
+            ]
+        );
+
+        if (!rows.length) {
+            return res.status(404).json({ error: 'Client not found' });
+        }
+
+        res.json({
+            ok: true,
+            message: 'Profile updated successfully',
+            client: rows[0]
+        });
+    } catch (err) {
+        console.error('Profile update error:', err);
+        res.status(500).json({ error: 'Failed to update profile' });
+    }
+});
+
+/* -- Services Overview -- */
+app.get('/api/services', async (req, res) => {
+    try {
+        const { clientId } = req.query;
+
+        if (!clientId) {
+            return res.status(400).json({ error: 'Client ID required' });
+        }
+
+        const { rows } = await pool.query(
+            `SELECT id, service, client_type, note
+             FROM portal_clients
+             WHERE id = $1
+             LIMIT 1`,
+            [clientId]
+        );
+
+        const client = rows[0];
+        if (!client) {
+            return res.status(404).json({ error: 'Client not found' });
+        }
+
+        res.json({
+            ok: true,
+            services: [
+                {
+                    title: client.service || 'No service selected',
+                    status: 'Active',
+                    client_type: client.client_type || 'Not specified',
+                    note: client.note || 'No additional notes available'
+                }
+            ]
+        });
+    } catch (err) {
+        console.error('Services fetch error:', err);
+        res.status(500).json({ error: 'Failed to fetch services' });
     }
 });
 
