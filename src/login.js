@@ -45,14 +45,26 @@
         body: JSON.stringify({ email, password })
       });
 
-      const data = await res.json();
+      const text = await res.text();
+      let data;
+
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error('Server returned an invalid response');
+      }
 
       if (!res.ok) {
         throw new Error(data.error || 'Login failed');
       }
 
+      // Store client session details
       sessionStorage.setItem('clientId', data.client.id);
-      sessionStorage.setItem('clientName', data.client.name);
+      sessionStorage.setItem('clientName', data.client.name || '');
+      sessionStorage.setItem('clientEmail', data.client.email || '');
+      sessionStorage.setItem('clientPhone', data.client.phone || '');
+      sessionStorage.setItem('clientType', data.client.client_type || '');
+      sessionStorage.setItem('clientService', data.client.service || '');
 
       setStatus('Login successful!', true);
       setBusy(false);
