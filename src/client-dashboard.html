@@ -38,16 +38,18 @@
             </div>
         </section>
 
-        <!-- Upload Section -->
         <section id="uploadSection" class="dash-section is-hidden">
             <h2>Upload Your Document</h2>
             <p>Please select a file to upload securely to our portal.</p>
-            <form id="uploadForm" enctype="multipart/form-data"> <input type="file" name="file" required> <button
-                    type="submit">Upload</button> </form>
+
+            <form id="uploadForm" class="dash-upload-form" enctype="multipart/form-data">
+                <input type="file" name="file" required>
+                <button type="submit" class="btn btn-primary">Upload</button>
+            </form>
+
             <div id="uploadStatus" style="margin-top:10px;font-size:.95rem;"></div>
         </section>
 
-        <!-- Records Section -->
         <section id="recordsSection" class="dash-section is-hidden">
             <h2>Past Records</h2>
             <p>View your previously uploaded documents or records here.</p>
@@ -61,8 +63,9 @@
         <div class="container foot">
             <div>
                 <div class="brand"><span>Constant & Co</span></div>
-                <p>Level 1, Melbourne VIC<br />03 9466 3688<br /><a
-                        href="mailto:info@constantco.au">info@constantco.au</a></p>
+                <p>Level 1, Melbourne VIC<br />03 9466 3688<br />
+                    <a href="mailto:info@constantco.au">info@constantco.au</a>
+                </p>
             </div>
             <div>
                 <h4>Services</h4>
