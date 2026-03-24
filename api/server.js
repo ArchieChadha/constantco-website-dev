@@ -1,4 +1,4 @@
-// server.js  (ES module)
+// server.js (ES module)
 import express from 'express';
 import cors from 'cors';
 import pg from 'pg';
@@ -12,68 +12,12 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-/* ---------- Multer (FILE UPLOAD CONFIG) ---------- */
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, path.join(process.cwd(), 'uploads')); // safer path
-    },
-    filename: function (req, file, cb) {
-        const uniqueName = Date.now() + '-' + file.originalname.replace(/\s+/g, '_');
-        cb(null, uniqueName);
-    }
-});
-
-const upload = multer({
-    storage,
-    limits: { fileSize: 100 * 1024 * 1024 }, // 100MB limit
-    fileFilter: (req, file, cb) => {
-        const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg'];
-
-        if (allowedTypes.includes(file.mimetype)) {
-            cb(null, true);
-        } else {
-            cb(new Error('Only PDF, PNG, and JPG files are allowed'));
-        }
-    }
-});
-
-/* -- FILE UPLOAD (Client Documents) -- */
-app.post('/api/upload', upload.single('file'), async (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).json({ error: 'No file uploaded' });
-        }
-
-        const fileName = req.file.filename;
-
-        // Save to database (recommended for marks)
-        await pool.query(
-            'INSERT INTO uploaded_files (filename) VALUES ($1)',
-            [fileName]
-        );
-
-        console.log('Uploaded file:', fileName);
-
-        res.json({
-            message: 'File uploaded successfully',
-            file: fileName
-        });
-
-    } catch (err) {
-        console.error('Upload error:', err.message);
-
-        if (err.message.includes('Only')) {
-            return res.status(400).json({ error: err.message });
-        }
-
-        res.status(500).json({ error: 'Upload failed' });
-    }
-});
-
 /* ---------- Middleware ---------- */
 app.use(cors({ origin: true }));
 app.use(express.json());
-app.use('/uploads', express.static('uploads'));
+
+const uploadsFolder = path.join(process.cwd(), 'uploads');
+app.use('/uploads', express.static(uploadsFolder));
 
 /* ---------- Postgres Pool ---------- */
 const pool = new pg.Pool(
@@ -94,6 +38,34 @@ app.use((req, _res, next) => {
     next();
 });
 
+/* ---------- File Upload Setup ---------- */
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, uploadsFolder);
+    },
+    filename: (req, file, cb) => {
+        const safeName = file.originalname.replace(/\s+/g, '_');
+        const uniqueName = `${Date.now()}-${safeName}`;
+        cb(null, uniqueName);
+    }
+});
+
+const upload = multer({
+    storage,
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg'];
+        if (allowedTypes.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only PDF, PNG, and JPG files are allowed'));
+        }
+    }
+});
+
+/* ---------- Helpers ---------- */
+const isEmail = (s = '') => /^\S+@\S+\.\S+$/.test(s);
+
 /* ---------- Health ---------- */
 app.get('/api/health', async (_req, res) => {
     try {
@@ -105,31 +77,29 @@ app.get('/api/health', async (_req, res) => {
     }
 });
 
-/* ---------- Helpers ---------- */
-const isEmail = (s = '') => /^\S+@\S+\.\S+$/.test(s);
-
-/* ============================================================================
-   ROUTES
-============================================================================ */
-
 /* -- Newsletter -- */
 app.post('/api/newsletter', async (req, res) => {
     try {
         const { email } = req.body || {};
+
         if (!isEmail(email)) {
             return res.status(400).json({ error: 'Valid email required' });
         }
 
         const sql = `
-      INSERT INTO newsletter_subscribers (email, created_at)
-      VALUES ($1, NOW())
-      ON CONFLICT (email) DO NOTHING
-      RETURNING id, email, created_at
-    `;
+            INSERT INTO newsletter_subscribers (email, created_at)
+            VALUES ($1, NOW())
+            ON CONFLICT (email) DO NOTHING
+            RETURNING id, email, created_at
+        `;
+
         const { rows } = await pool.query(sql, [email.trim()]);
         const row = rows[0] || null;
 
-        if (!row) return res.status(200).json({ message: 'Already subscribed' });
+        if (!row) {
+            return res.status(200).json({ message: 'Already subscribed' });
+        }
+
         res.json({ message: 'Subscribed successfully', subscriber: row });
     } catch (err) {
         console.error('Error saving newsletter:', err);
@@ -137,42 +107,19 @@ app.post('/api/newsletter', async (req, res) => {
     }
 });
 
-/* -- FILE UPLOAD (Client Documents) -- */
-app.post('/api/upload', upload.single('file'), async (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).json({ error: 'No file uploaded' });
-        }
-
-        // OPTIONAL: link file to a client (if you pass client ID later)
-        const fileName = req.file.filename;
-        const filePath = req.file.path;
-
-        console.log('Uploaded file:', fileName);
-
-        res.json({
-            message: 'File uploaded successfully',
-            file: fileName
-        });
-
-    } catch (err) {
-        console.error('Upload error:', err);
-        res.status(500).json({ error: 'Upload failed' });
-    }
-});
-
 /* -- Contact -- */
 app.post('/api/contact', async (req, res) => {
     try {
         const { name, email, phone, subject, message } = req.body || {};
+
         if (!name || !isEmail(email) || !subject || !message) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
         await pool.query(
             `INSERT INTO contact_messages
-        (name, email, phone, subject, message, created_at)
-       VALUES ($1, $2, $3, $4, $5, NOW())`,
+             (name, email, phone, subject, message, created_at)
+             VALUES ($1, $2, $3, $4, $5, NOW())`,
             [name.trim(), email.trim(), (phone || '').trim(), subject.trim(), message.trim()]
         );
 
@@ -183,7 +130,7 @@ app.post('/api/contact', async (req, res) => {
     }
 });
 
-/* -- SIGNUP (with strong-password rule) -- */
+/* -- Signup -- */
 app.post('/api/signup', async (req, res) => {
     try {
         const {
@@ -196,38 +143,37 @@ app.post('/api/signup', async (req, res) => {
             password = '',
         } = req.body || {};
 
-        // Strong password: ≥8 chars, at least one digit and one special
         const passwordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
 
         if (!name.trim() || !isEmail(email)) {
             return res.status(400).json({ error: 'Please provide a valid name and email.' });
         }
+
         if (!passwordRegex.test(password)) {
             return res.status(400).json({
-                error:
-                    'Password must be at least 8 characters long and include at least one number and one special character.',
+                error: 'Password must be at least 8 characters long and include at least one number and one special character.',
             });
         }
 
-        // Already registered?
         const { rows: existing } = await pool.query(
             'SELECT id FROM portal_clients WHERE email = $1 LIMIT 1',
             [email.trim()]
         );
+
         if (existing.length) {
             return res.status(409).json({ error: 'Email already registered. Please log in instead.' });
         }
 
-        // Hash and store in the `password` column (make sure your table has this column)
         const hash = await bcrypt.hash(password, 10);
 
         const insertSql = `
-      INSERT INTO portal_clients
-        (name, email, password, phone, client_type, service, note, created_at)
-      VALUES
-        ($1, $2, $3, $4, $5, $6, $7, NOW())
-      RETURNING id, name, email, created_at
-    `;
+            INSERT INTO portal_clients
+            (name, email, password, phone, client_type, service, note, created_at)
+            VALUES
+            ($1, $2, $3, $4, $5, $6, $7, NOW())
+            RETURNING id, name, email, created_at
+        `;
+
         const { rows } = await pool.query(insertSql, [
             name.trim(),
             email.trim(),
@@ -245,56 +191,138 @@ app.post('/api/signup', async (req, res) => {
     }
 });
 
-/* -- LOGIN (works with hashed or legacy plain-text) -- */
+/* -- Login -- */
 app.post('/api/login', async (req, res) => {
     try {
         const { email, password } = req.body || {};
+
         if (!email || !password) {
             return res.status(400).json({ error: 'Email and password required' });
         }
 
-        // IMPORTANT: this selects the `password` column
         const { rows } = await pool.query(
             'SELECT id, name, email, password FROM portal_clients WHERE email = $1 LIMIT 1',
             [email.trim()]
         );
+
         const user = rows[0];
-        if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+        if (!user) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
 
         const stored = user.password || '';
         let ok = false;
 
-        // If it looks like a bcrypt hash, compare; else allow legacy plain-text match.
         if (stored.startsWith('$2a$') || stored.startsWith('$2b$') || stored.startsWith('$2y$')) {
             ok = await bcrypt.compare(password, stored);
         } else {
             ok = password === stored;
         }
 
-        if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
+        if (!ok) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
 
-        res.json({ ok: true, client: { id: user.id, name: user.name, email: user.email } });
+        res.json({
+            ok: true,
+            client: {
+                id: user.id,
+                name: user.name,
+                email: user.email
+            }
+        });
     } catch (err) {
         console.error('Login error:', err);
         res.status(500).json({ error: 'Server error' });
     }
 });
 
-/* -- DB Info (debug) -- */
+/* -- Upload document -- */
+app.post('/api/upload', upload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+
+        const clientId = req.body.clientId || null;
+        const fileName = req.file.filename;
+        const filePath = `uploads/${fileName}`;
+
+        const result = await pool.query(
+            `INSERT INTO client_documents (client_id, file_name, file_path, uploaded_at)
+             VALUES ($1, $2, $3, NOW())
+             RETURNING *`,
+            [clientId, fileName, filePath]
+        );
+
+        console.log('Uploaded file:', fileName);
+        console.log('Inserted row:', result.rows[0]);
+
+        res.json({
+            message: 'File uploaded successfully',
+            file: fileName
+        });
+    } catch (err) {
+        console.error('Upload error:', err);
+        res.status(500).json({ error: 'Upload failed' });
+    }
+});
+
+/* -- View past records -- */
+app.get('/api/records', async (req, res) => {
+    try {
+        const { clientId } = req.query;
+
+        if (!clientId) {
+            return res.status(400).json({ error: 'Client ID required' });
+        }
+
+        const { rows } = await pool.query(
+            `SELECT id, client_id, file_name, file_path, uploaded_at
+             FROM client_documents
+             WHERE client_id = $1
+             ORDER BY uploaded_at DESC`,
+            [clientId]
+        );
+
+        res.json(rows);
+    } catch (err) {
+        console.error('Records fetch error:', err);
+        res.status(500).json({ error: 'Failed to fetch records' });
+    }
+});
+
+/* -- DB Info -- */
 app.get('/api/dbinfo', async (_req, res) => {
     try {
         const { rows } = await pool.query(`
-      SELECT current_database() AS db,
-             current_user AS usr,
-             inet_server_addr()::text AS host,
-             inet_server_port() AS port,
-             current_schema() AS schema
-    `);
+            SELECT current_database() AS db,
+                   current_user AS usr,
+                   inet_server_addr()::text AS host,
+                   inet_server_port() AS port,
+                   current_schema() AS schema
+        `);
         res.json(rows[0]);
     } catch (e) {
         console.error(e);
         res.status(500).json({ error: 'dbinfo failed' });
     }
+});
+
+/* ---------- Multer Error Handler ---------- */
+app.use((err, req, res, next) => {
+    if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({ error: 'File too large. Maximum size is 10MB.' });
+        }
+        return res.status(400).json({ error: err.message });
+    }
+
+    if (err) {
+        return res.status(400).json({ error: err.message || 'Upload failed' });
+    }
+
+    next();
 });
 
 /* ---------- Start ---------- */

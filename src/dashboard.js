@@ -1,5 +1,10 @@
-// Smooth reveal for Upload + Records
+// dashboard.js
 document.addEventListener('DOMContentLoaded', () => {
+    const API_BASE =
+        (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+            ? 'http://localhost:3001'
+            : '';
+
     const nameEl = document.getElementById('dashName');
     const btnUpload = document.getElementById('btnUpload');
     const btnRecords = document.getElementById('btnRecords');
@@ -7,65 +12,46 @@ document.addEventListener('DOMContentLoaded', () => {
     const uploadSection = document.getElementById('uploadSection');
     const recordsSection = document.getElementById('recordsSection');
 
-    /* =========================
-       FILE UPLOAD HANDLER
-    ========================= */
     const uploadForm = document.getElementById('uploadForm');
     const uploadStatus = document.getElementById('uploadStatus');
+    const recordsList = document.getElementById('recordsList');
 
-    uploadForm?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        uploadStatus.textContent = '';
-        uploadStatus.style.color = '';
-
-        const formData = new FormData(uploadForm);
-
-        try {
-            const res = await fetch('http://localhost:3001/api/upload', {
-                method: 'POST',
-                body: formData
-            });
-
-            const data = await res.json();
-
-            if (!res.ok) {
-                throw new Error(data.error || 'Upload failed');
-            }
-
-            uploadStatus.textContent = data.message || 'Upload successful';
-            uploadStatus.style.color = '#1a7f37';
-
-            uploadForm.reset();
-
-        } catch (err) {
-            console.error(err);
-            uploadStatus.textContent = err.message || 'Upload failed';
-            uploadStatus.style.color = '#b00020';
-        }
-    });
-
-
-    // optional: personalize if you stored a name in sessionStorage/localStorage
+    // ================================
+    // USER NAME DISPLAY
+    // ================================
     const storedName = sessionStorage.getItem('clientName') || localStorage.getItem('clientName');
-    if (storedName && nameEl) nameEl.textContent = storedName;
+    if (storedName && nameEl) {
+        nameEl.textContent = storedName;
+    }
 
+    function setUploadStatus(message = '', ok = false) {
+        if (!uploadStatus) return;
+        uploadStatus.textContent = message;
+        uploadStatus.style.color = ok ? '#1a7f37' : '#b00020';
+    }
+
+    // ================================
+    // SECTION HANDLING
+    // ================================
     function openSection(section) {
         if (!section) return;
-        // make it renderable
+
         section.classList.remove('is-hidden');
-        // next frame -> add open class to animate
+
         requestAnimationFrame(() => {
             section.classList.add('is-open');
         });
-        // scroll into view after animation starts
-        setTimeout(() => section.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+
+        setTimeout(() => {
+            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 60);
     }
 
     function closeSection(section) {
         if (!section) return;
+
         section.classList.remove('is-open');
-        // after transition finishes, fully hide
+
         section.addEventListener('transitionend', function onEnd(e) {
             if (e.propertyName === 'max-height') {
                 section.classList.add('is-hidden');
@@ -74,49 +60,136 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function toggleSection(section) {
-        if (section.classList.contains('is-hidden') || !section.classList.contains('is-open')) {
-            openSection(section);
-        } else {
-            closeSection(section);
-        }
-    }
-
-    // Buttons open their sections; also close the other to keep the page tidy
     btnUpload?.addEventListener('click', () => {
         openSection(uploadSection);
-        if (recordsSection?.classList.contains('is-open')) closeSection(recordsSection);
+        if (recordsSection?.classList.contains('is-open')) {
+            closeSection(recordsSection);
+        }
     });
 
     btnRecords?.addEventListener('click', () => {
         openSection(recordsSection);
-        if (uploadSection?.classList.contains('is-open')) closeSection(uploadSection);
-        // you can load records here if you have an API:
-        // loadRecords();
+        if (uploadSection?.classList.contains('is-open')) {
+            closeSection(uploadSection);
+        }
+        loadRecords();
     });
 
-    // If you want one section pre-opened on load, uncomment:
-    // openSection(uploadSection);
+    // ================================
+    // FILE UPLOAD
+    // ================================
+    uploadForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-    /* ---- (optional) stub for records fetch) ----
-    async function loadRecords() {
-      const list = document.getElementById('recordsList');
-      list.textContent = 'Loading...';
-      try {
-        const res = await fetch('http://localhost:3001/api/records'); // adjust to your API
-        const data = await res.json();
-        if (!Array.isArray(data) || data.length === 0) {
-          list.textContent = 'No records found.';
-          return;
+        setUploadStatus('');
+
+        const clientId = sessionStorage.getItem('clientId');
+        if (!clientId) {
+            setUploadStatus('Session expired. Please log in again.');
+            return;
         }
-        list.innerHTML = data.map(d => `
-          <div class="record-item">
-            <strong>${d.title}</strong> — <small>${new Date(d.created_at).toLocaleString()}</small>
-          </div>
-        `).join('');
-      } catch (e) {
-        list.textContent = 'Failed to load records.';
-      }
+
+        const fileInput = uploadForm.querySelector('input[type="file"]');
+        const file = fileInput?.files?.[0];
+
+        if (!file) {
+            setUploadStatus('Please select a file.');
+            return;
+        }
+
+        const btn = uploadForm.querySelector('button[type="submit"]');
+        if (btn) {
+            btn.disabled = true;
+            btn.dataset.original = btn.textContent;
+            btn.textContent = 'Uploading...';
+        }
+
+        const formData = new FormData(uploadForm);
+        formData.append('clientId', clientId);
+
+        try {
+            const res = await fetch(`${API_BASE}/api/upload`, {
+                method: 'POST',
+                body: formData
+            });
+
+            // 🔥 Fix JSON crash (important)
+            const text = await res.text();
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch {
+                throw new Error('Server returned invalid response');
+            }
+
+            if (!res.ok) {
+                throw new Error(data.error || 'Upload failed');
+            }
+
+            setUploadStatus(data.message || 'Upload successful', true);
+            uploadForm.reset();
+
+            // 🔥 Auto refresh records after upload
+            loadRecords();
+
+        } catch (err) {
+            console.error(err);
+            setUploadStatus(err.message || 'Upload failed');
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = btn.dataset.original || 'Upload';
+            }
+        }
+    });
+
+    // ================================
+    // LOAD RECORDS
+    // ================================
+    async function loadRecords() {
+        if (!recordsList) return;
+
+        const clientId = sessionStorage.getItem('clientId');
+        if (!clientId) {
+            recordsList.textContent = 'Session expired. Please log in again.';
+            return;
+        }
+
+        recordsList.textContent = 'Loading...';
+
+        try {
+            const res = await fetch(`${API_BASE}/api/records?clientId=${encodeURIComponent(clientId)}`);
+
+            // 🔥 Fix JSON crash here too
+            const text = await res.text();
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch {
+                throw new Error('Invalid server response');
+            }
+
+            if (!res.ok) {
+                throw new Error(data.error || 'Failed to load records');
+            }
+
+            if (!Array.isArray(data) || data.length === 0) {
+                recordsList.textContent = 'No records found yet.';
+                return;
+            }
+
+            recordsList.innerHTML = data.map(record => `
+                <div class="record-item">
+                    <strong>${record.file_name}</strong><br>
+                    <small>${new Date(record.uploaded_at).toLocaleString()}</small><br>
+                    <a href="${API_BASE}/${record.file_path}" target="_blank">Open file</a>
+                </div>
+            `).join('');
+
+        } catch (err) {
+            console.error(err);
+            recordsList.textContent = err.message || 'Failed to load records.';
+        }
     }
-    */
+
 });
