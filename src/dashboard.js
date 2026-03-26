@@ -1,8 +1,18 @@
-// dashboard.js
 document.addEventListener('DOMContentLoaded', () => {
     const API_BASE =
         (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
             ? 'http://localhost:3001'
+            : '';
+
+    // ================================
+    // FORMAT HELPER (GLOBAL)
+    // ================================
+    const formatText = (text) =>
+        text
+            ? text
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ')
             : '';
 
     // ================================
@@ -48,9 +58,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (profileName) profileName.textContent = client.name || '—';
         if (profileEmail) profileEmail.textContent = client.email || '—';
         if (profilePhone) profilePhone.textContent = client.phone || '—';
-        if (profileType) profileType.textContent = client.client_type || '—';
 
-        // Keep session data updated too
+        // ✅ FORMATTED
+        if (profileType) profileType.textContent = formatText(client.client_type) || '—';
+
         sessionStorage.setItem('clientName', client.name || '');
         sessionStorage.setItem('clientEmail', client.email || '');
         sessionStorage.setItem('clientPhone', client.phone || '');
@@ -73,15 +84,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         servicesList.innerHTML = data.services.map(service => `
             <div class="portal-service-item">
-                <h4>${service.title || 'Service'}</h4>
-                <p><strong>Status:</strong> ${service.status || 'Active'}</p>
-                <p><strong>Client Type:</strong> ${service.client_type || 'Not specified'}</p>
-                <p><strong>Notes:</strong> ${service.note || 'No additional notes available'}</p>
+                <h4>${formatText(service.title || 'Service')}</h4>
+                <p><strong>Status:</strong> ${formatText(service.status || 'Active')}</p>
+                <p><strong>Client Type:</strong> ${formatText(service.client_type || 'Not specified')}</p>
+                <p><strong>Notes:</strong> ${formatText(service.note || 'No additional notes available')}</p>
             </div>
         `).join('');
 
         if (clientService && data.services[0]?.title) {
-            clientService.textContent = data.services[0].title;
+            clientService.textContent = formatText(data.services[0].title);
         }
     }
 
@@ -110,10 +121,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Make available to inline HTML onclick
     window.openSection = function (sectionId) {
         showSection(sectionId);
-
         if (sectionId === 'recordsSection') {
             loadRecords();
         }
@@ -131,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // ================================
-    // LOAD PROFILE FROM DATABASE
+    // LOAD PROFILE
     // ================================
     async function loadProfile() {
         if (!clientId) {
@@ -142,30 +151,26 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const res = await fetch(`${API_BASE}/api/profile?clientId=${encodeURIComponent(clientId)}`);
             const text = await res.text();
-            const data = safeJsonParse(text, 'Invalid profile response');
+            const data = safeJsonParse(text);
 
-            if (!res.ok) {
-                throw new Error(data.error || 'Failed to load profile');
-            }
+            if (!res.ok) throw new Error(data.error);
 
             fillProfile(data.client);
         } catch (err) {
-            console.error('Profile load failed:', err);
+            console.error(err);
 
-            // fallback to anything already in sessionStorage
-            const fallbackClient = {
-                name: sessionStorage.getItem('clientName') || 'Client',
-                email: sessionStorage.getItem('clientEmail') || '—',
-                phone: sessionStorage.getItem('clientPhone') || '—',
-                client_type: sessionStorage.getItem('clientType') || '—',
-                service: sessionStorage.getItem('clientService') || '—'
-            };
-            fillProfile(fallbackClient);
+            fillProfile({
+                name: sessionStorage.getItem('clientName'),
+                email: sessionStorage.getItem('clientEmail'),
+                phone: sessionStorage.getItem('clientPhone'),
+                client_type: sessionStorage.getItem('clientType'),
+                service: sessionStorage.getItem('clientService')
+            });
         }
     }
 
     // ================================
-    // LOAD SERVICES FROM DATABASE
+    // LOAD SERVICES
     // ================================
     async function loadServices() {
         if (!clientId || !servicesList) return;
@@ -173,22 +178,21 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const res = await fetch(`${API_BASE}/api/services?clientId=${encodeURIComponent(clientId)}`);
             const text = await res.text();
-            const data = safeJsonParse(text, 'Invalid services response');
+            const data = safeJsonParse(text);
 
-            if (!res.ok) {
-                throw new Error(data.error || 'Failed to load services');
-            }
+            if (!res.ok) throw new Error(data.error);
 
             fillServices(data);
         } catch (err) {
-            console.error('Services load failed:', err);
+            console.error(err);
 
-            const fallbackService = sessionStorage.getItem('clientService') || 'Tax Filing & Compliance';
+            const fallback = sessionStorage.getItem('clientService') || 'Tax Filing & Compliance';
+
             servicesList.innerHTML = `
                 <div class="portal-service-item">
-                    <h4>${fallbackService}</h4>
+                    <h4>${formatText(fallback)}</h4>
                     <p><strong>Status:</strong> Active</p>
-                    <p><strong>Client Type:</strong> ${sessionStorage.getItem('clientType') || 'Not specified'}</p>
+                    <p><strong>Client Type:</strong> ${formatText(sessionStorage.getItem('clientType'))}</p>
                     <p><strong>Notes:</strong> No additional notes available</p>
                 </div>
             `;
@@ -208,20 +212,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const fileInput = uploadForm.querySelector('input[type="file"]');
-        const file = fileInput?.files?.[0];
+        const file = uploadForm.querySelector('input[type="file"]').files[0];
+        if (!file) return setUploadStatus('Please select a file.');
 
-        if (!file) {
-            setUploadStatus('Please select a file.');
-            return;
-        }
-
-        const btn = uploadForm.querySelector('button[type="submit"]');
-        if (btn) {
-            btn.disabled = true;
-            btn.dataset.original = btn.textContent;
-            btn.textContent = 'Uploading...';
-        }
+        const btn = uploadForm.querySelector('button');
+        btn.disabled = true;
+        btn.textContent = 'Uploading...';
 
         const formData = new FormData(uploadForm);
         formData.append('clientId', clientId);
@@ -232,27 +228,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: formData
             });
 
-            const text = await res.text();
-            const data = safeJsonParse(text, 'Server returned invalid upload response');
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
 
-            if (!res.ok) {
-                throw new Error(data.error || 'Upload failed');
-            }
-
-            setUploadStatus(data.message || 'Upload successful', true);
+            setUploadStatus('Upload successful', true);
             uploadForm.reset();
-
-            // Refresh records immediately
-            await loadRecords();
+            loadRecords();
 
         } catch (err) {
-            console.error('Upload failed:', err);
-            setUploadStatus(err.message || 'Upload failed');
+            setUploadStatus(err.message);
         } finally {
-            if (btn) {
-                btn.disabled = false;
-                btn.textContent = btn.dataset.original || 'Upload';
-            }
+            btn.disabled = false;
+            btn.textContent = 'Upload';
         }
     });
 
@@ -260,23 +247,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // LOAD RECORDS
     // ================================
     async function loadRecords() {
-        if (!recordsList) return;
-
-        if (!clientId) {
-            recordsList.textContent = 'Session expired. Please log in again.';
-            return;
-        }
+        if (!recordsList || !clientId) return;
 
         recordsList.textContent = 'Loading...';
 
         try {
-            const res = await fetch(`${API_BASE}/api/records?clientId=${encodeURIComponent(clientId)}`);
-            const text = await res.text();
-            const data = safeJsonParse(text, 'Invalid records response');
-
-            if (!res.ok) {
-                throw new Error(data.error || 'Failed to load records');
-            }
+            const res = await fetch(`${API_BASE}/api/records?clientId=${clientId}`);
+            const data = await res.json();
 
             if (!Array.isArray(data) || data.length === 0) {
                 recordsList.textContent = 'No records found yet.';
@@ -290,9 +267,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <a href="${API_BASE}/${record.file_path}" target="_blank">Open file</a>
                 </div>
             `).join('');
-        } catch (err) {
-            console.error('Records load failed:', err);
-            recordsList.textContent = err.message || 'Failed to load records.';
+        } catch {
+            recordsList.textContent = 'Failed to load records.';
         }
     }
 
@@ -302,10 +278,4 @@ document.addEventListener('DOMContentLoaded', () => {
     loadProfile();
     loadServices();
     loadRecords();
-
-    // Show first section by default if sections are hide/show based
-    const profileSection = document.getElementById('profileSection');
-    if (profileSection && profileSection.classList.contains('is-hidden')) {
-        showSection('profileSection');
-    }
 });
