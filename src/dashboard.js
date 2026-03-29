@@ -34,6 +34,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const clientId = sessionStorage.getItem('clientId');
 
+    const bookingFeeValue = document.getElementById('bookingFeeValue');
+    const serviceChargeValue = document.getElementById('serviceChargeValue');
+    const totalChargeValue = document.getElementById('totalChargeValue');
+    const amountPaidValue = document.getElementById('amountPaidValue');
+    const chargeValue = document.getElementById('chargeValue');
+    const chargeStatus = document.getElementById('chargeStatus');
+    const chargeService = document.getElementById('chargeService');
+
     // ================================
     // HELPERS
     // ================================
@@ -273,9 +281,70 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ================================
+    // LOAD CHARGES
+    // ================================
+    async function loadCharges() {
+        if (!clientId || !chargeValue) return;
+
+        try {
+            const res = await fetch(`${API_BASE}/api/charges?clientId=${encodeURIComponent(clientId)}`);
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || 'Failed to load charges');
+            }
+
+            if (bookingFeeValue) {
+                bookingFeeValue.textContent = `$${(Number(data.bookingFee || 0) / 100).toFixed(2)}`;
+            }
+
+            if (serviceChargeValue) {
+                serviceChargeValue.textContent = `$${(Number(data.serviceCharge || 0) / 100).toFixed(2)}`;
+            }
+
+            if (totalChargeValue) {
+                totalChargeValue.textContent = `$${(Number(data.totalCharge || 0) / 100).toFixed(2)}`;
+            }
+
+            if (amountPaidValue) {
+                amountPaidValue.textContent = `$${(Number(data.amountPaid || 0) / 100).toFixed(2)}`;
+            }
+
+            if (chargeValue) {
+                chargeValue.textContent = `$${(Number(data.totalDue || 0) / 100).toFixed(2)}`;
+            }
+
+            if (chargeStatus) {
+                chargeStatus.textContent = formatText(data.status || 'Pending');
+            }
+
+            if (chargeService) {
+                chargeService.textContent = formatText(data.serviceName || 'Not assigned');
+            }
+
+            const payBtn = document.querySelector('.payment-action-btn');
+            if (payBtn) {
+                if (Number(data.totalDue || 0) <= 0) {
+                    payBtn.textContent = 'No Payment Due';
+                    payBtn.classList.add('is-disabled');
+                    payBtn.removeAttribute('href');
+                } else {
+                    payBtn.textContent = '💳 Pay Now';
+                    payBtn.setAttribute('href', 'payment.html');
+                    payBtn.classList.remove('is-disabled');
+                }
+            }
+
+        } catch (err) {
+            console.error('Charge load error:', err);
+        }
+    }
+
+    // ================================
     // INITIAL LOAD
     // ================================
     loadProfile();
     loadServices();
     loadRecords();
+    loadCharges();
 });
