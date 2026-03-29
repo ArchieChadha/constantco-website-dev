@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pay Charges - Constant & Co</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://js.stripe.com/v3/"></script>
+</head>
+
+<body>
+
+    <main class="payment-page">
+        <section class="payment-shell container">
+            <div class="payment-layout">
+
+                <div class="payment-summary-card">
+                    <p class="payment-eyebrow">Secure Payment</p>
+                    <h1 class="payment-title">Complete Your Payment</h1>
+                    <p class="payment-sub">
+                        Use your card to securely pay your outstanding balance through Constant &amp; Co.
+                    </p>
+
+                    <div class="payment-summary-box">
+                        <div class="payment-summary-row">
+                            <span>Service</span>
+                            <strong id="paymentService">—</strong>
+                        </div>
+                        <div class="payment-summary-row">
+                            <span>Booking Fee</span>
+                            <strong id="paymentBookingFee">$0.00 AUD</strong>
+                        </div>
+                        <div class="payment-summary-row">
+                            <span>Service Charge</span>
+                            <strong id="paymentServiceCharge">$0.00 AUD</strong>
+                        </div>
+                        <div class="payment-summary-row">
+                            <span>Status</span>
+                            <strong class="payment-status" id="paymentStatus">—</strong>
+                        </div>
+                        <div class="payment-summary-row payment-summary-total">
+                            <span>Total Due</span>
+                            <strong id="paymentTotalDue">$0.00 AUD</strong>
+                        </div>
+                    </div>
+
+                    <ul class="payment-feature-list">
+                        <li>Secure card processing</li>
+                        <li>No card data stored on your portal</li>
+                        <li>Protected third-party payment form</li>
+                    </ul>
+                </div>
+
+                <div class="payment-card">
+                    <h2 class="payment-form-title">Card Details</h2>
+                    <p class="payment-form-sub">
+                        Enter your payment information below.
+                    </p>
+
+                    <form id="payment-form" class="payment-form">
+                        <div id="payment-element"></div>
+
+                        <button id="submit-payment" class="btn btn-primary payment-btn" type="submit">
+                            Pay Now
+                        </button>
+
+                        <p id="payment-message" class="payment-message"></p>
+                    </form>
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <script src="payment.js"></script>
+</body>
+
+</html>
