@@ -6,11 +6,148 @@ import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
 import multer from 'multer';
 import path from 'path';
+import Stripe from 'stripe';
 
 dotenv.config();
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+/*------ Stripe Webhook ------*/
+app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+    let event;
+
+    try {
+        event = stripe.webhooks.constructEvent(
+            req.body,
+            sig,
+            process.env.STRIPE_WEBHOOK_SECRET
+        );
+    } catch (err) {
+        console.error('Webhook signature verification failed:', err.message);
+        return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    const client = await pool.connect();
+
+    try {
+        await client.query('BEGIN');
+
+        // 1. Deduplicate by Stripe event ID
+        const existingEvent = await client.query(
+            `SELECT id
+             FROM processed_stripe_events
+             WHERE stripe_event_id = $1
+             LIMIT 1`,
+            [event.id]
+        );
+
+        if (existingEvent.rows.length > 0) {
+            await client.query('ROLLBACK');
+            console.log(`Duplicate webhook ignored: ${event.id}`);
+            return res.json({ received: true, duplicate: true });
+        }
+
+        // Record the event first
+        await client.query(
+            `INSERT INTO processed_stripe_events
+             (stripe_event_id, event_type, created_at)
+             VALUES ($1, $2, NOW())`,
+            [event.id, event.type]
+        );
+
+        if (event.type === 'payment_intent.succeeded') {
+            const paymentIntent = event.data.object;
+            const paidAmount = Number(paymentIntent.amount_received || paymentIntent.amount || 0);
+            const currency = paymentIntent.currency || 'aud';
+
+            // 2. Find the billing record for this payment intent
+            const billingResult = await client.query(
+                `SELECT id, client_id, total_charge, amount_paid
+                 FROM appointment_billing
+                 WHERE stripe_payment_intent_id = $1
+                 LIMIT 1`,
+                [paymentIntent.id]
+            );
+
+            if (!billingResult.rows.length) {
+                throw new Error(`No billing record found for payment intent ${paymentIntent.id}`);
+            }
+
+            const billing = billingResult.rows[0];
+
+            // 3. Deduplicate by payment intent ID too
+            const existingPayment = await client.query(
+                `SELECT id
+                 FROM client_payments
+                 WHERE stripe_payment_intent_id = $1
+                 LIMIT 1`,
+                [paymentIntent.id]
+            );
+
+            if (!existingPayment.rows.length) {
+                await client.query(
+                    `INSERT INTO client_payments
+                     (billing_id, client_id, stripe_payment_intent_id, amount, currency, status, created_at)
+                     VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+                    [
+                        billing.id,
+                        billing.client_id,
+                        paymentIntent.id,
+                        paidAmount,
+                        currency,
+                        'succeeded'
+                    ]
+                );
+
+                const newAmountPaid = Math.min(
+                    Number(billing.total_charge),
+                    Number(billing.amount_paid) + paidAmount
+                );
+
+                const newAmountDue = Math.max(
+                    Number(billing.total_charge) - newAmountPaid,
+                    0
+                );
+
+                const newStatus = newAmountDue === 0 ? 'Paid' : 'Pending';
+
+                await client.query(
+                    `UPDATE appointment_billing
+                     SET amount_paid = $1,
+                         amount_due = $2,
+                         payment_status = $3,
+                         updated_at = NOW()
+                     WHERE id = $4`,
+                    [newAmountPaid, newAmountDue, newStatus, billing.id]
+                );
+            }
+        }
+
+        if (event.type === 'payment_intent.payment_failed') {
+            const paymentIntent = event.data.object;
+
+            await client.query(
+                `UPDATE appointment_billing
+                 SET payment_status = 'Failed',
+                     updated_at = NOW()
+                 WHERE stripe_payment_intent_id = $1`,
+                [paymentIntent.id]
+            );
+        }
+
+        await client.query('COMMIT');
+        res.json({ received: true });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('Webhook processing error:', err);
+        res.status(500).json({ error: 'Webhook handling failed' });
+    } finally {
+        client.release();
+    }
+});
 
 /* ---------- Middleware ---------- */
 app.use(cors({ origin: true }));
@@ -441,6 +578,235 @@ app.get('/api/records', async (req, res) => {
     }
 });
 
+/*----- Booking Billing -------*/
+app.post('/api/create-booking-billing', async (req, res) => {
+    try {
+        const {
+            appointmentId,
+            clientId,
+            serviceName = '',
+            bookingFee = 0
+        } = req.body || {};
+
+        if (!appointmentId || !clientId) {
+            return res.status(400).json({ error: 'Appointment ID and Client ID are required' });
+        }
+
+        const booking = Number(bookingFee) || 0;
+        const service = 0;
+        const total = booking + service;
+        const paid = 0;
+        const due = total;
+        const status = due === 0 ? 'Paid' : 'Pending';
+
+        const existing = await pool.query(
+            `SELECT id
+             FROM appointment_billing
+             WHERE appointment_id = $1
+             LIMIT 1`,
+            [appointmentId]
+        );
+
+        if (existing.rows.length) {
+            return res.status(409).json({ error: 'Billing record already exists for this appointment' });
+        }
+
+        const result = await pool.query(
+            `INSERT INTO appointment_billing
+             (appointment_id, client_id, service_name, booking_fee, service_charge, total_charge, amount_paid, amount_due, payment_status, created_at, updated_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
+             RETURNING *`,
+            [appointmentId, clientId, serviceName, booking, service, total, paid, due, status]
+        );
+
+        res.json({
+            ok: true,
+            billing: result.rows[0]
+        });
+    } catch (err) {
+        console.error('Create booking billing error:', err);
+        res.status(500).json({ error: 'Failed to create booking billing record' });
+    }
+});
+
+/*------Admin Billing------*/
+
+app.put('/api/admin/billing/:appointmentId', async (req, res) => {
+    try {
+        const { appointmentId } = req.params;
+        const {
+            clientId,
+            serviceName = '',
+            bookingFee = 0,
+            serviceCharge = 0,
+            amountPaid = 0
+        } = req.body || {};
+
+        if (!clientId) {
+            return res.status(400).json({ error: 'Client ID required' });
+        }
+
+        const booking = Number(bookingFee) || 0;
+        const service = Number(serviceCharge) || 0;
+        const paid = Number(amountPaid) || 0;
+
+        const total = booking + service;
+        const due = Math.max(total - paid, 0);
+        const status = due === 0 ? 'Paid' : 'Pending';
+
+        const existing = await pool.query(
+            `SELECT id
+             FROM appointment_billing
+             WHERE appointment_id = $1
+             LIMIT 1`,
+            [appointmentId]
+        );
+
+        let result;
+
+        if (existing.rows.length) {
+            result = await pool.query(
+                `UPDATE appointment_billing
+                 SET client_id = $1,
+                     service_name = $2,
+                     booking_fee = $3,
+                     service_charge = $4,
+                     total_charge = $5,
+                     amount_paid = $6,
+                     amount_due = $7,
+                     payment_status = $8,
+                     updated_at = NOW()
+                 WHERE appointment_id = $9
+                 RETURNING *`,
+                [clientId, serviceName, booking, service, total, paid, due, status, appointmentId]
+            );
+        } else {
+            result = await pool.query(
+                `INSERT INTO appointment_billing
+                 (appointment_id, client_id, service_name, booking_fee, service_charge, total_charge, amount_paid, amount_due, payment_status, created_at, updated_at)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
+                 RETURNING *`,
+                [appointmentId, clientId, serviceName, booking, service, total, paid, due, status]
+            );
+        }
+
+        res.json({
+            ok: true,
+            billing: result.rows[0]
+        });
+    } catch (err) {
+        console.error('Admin billing update error:', err);
+        res.status(500).json({ error: 'Failed to update billing' });
+    }
+});
+
+/* ---------- STRIPE PAYMENT ---------- */
+app.get('/api/charges', async (req, res) => {
+    try {
+        const { clientId } = req.query;
+
+        if (!clientId) {
+            return res.status(400).json({ error: 'Client ID required' });
+        }
+
+        const { rows } = await pool.query(
+            `SELECT appointment_id, service_name, booking_fee, service_charge, total_charge, amount_paid, amount_due, payment_status
+             FROM appointment_billing
+             WHERE client_id = $1
+             ORDER BY updated_at DESC
+             LIMIT 1`,
+            [clientId]
+        );
+
+        if (!rows.length) {
+            return res.json({
+                appointmentId: null,
+                bookingFee: 0,
+                serviceCharge: 0,
+                totalCharge: 0,
+                amountPaid: 0,
+                totalDue: 0,
+                status: 'Up to date',
+                serviceName: 'Not assigned'
+            });
+        }
+
+        const row = rows[0];
+
+        res.json({
+            appointmentId: row.appointment_id,
+            bookingFee: row.booking_fee,
+            serviceCharge: row.service_charge,
+            totalCharge: row.total_charge,
+            amountPaid: row.amount_paid,
+            totalDue: row.amount_due,
+            status: row.payment_status,
+            serviceName: row.service_name
+        });
+    } catch (err) {
+        console.error('Charges fetch error:', err);
+        res.status(500).json({ error: 'Failed to fetch charges' });
+    }
+});
+
+/*------ Payment Intent -------*/
+app.post('/api/create-payment-intent', async (req, res) => {
+    try {
+        const { clientId } = req.body || {};
+
+        if (!clientId) {
+            return res.status(400).json({ error: 'Client ID required' });
+        }
+
+        const { rows } = await pool.query(
+            `SELECT id, service_name, amount_due
+             FROM appointment_billing
+             WHERE client_id = $1
+             ORDER BY updated_at DESC
+             LIMIT 1`,
+            [clientId]
+        );
+
+        if (!rows.length) {
+            return res.status(404).json({ error: 'No billing record found' });
+        }
+
+        const billing = rows[0];
+        const amountDue = Number(billing.amount_due || 0);
+
+        if (amountDue <= 0) {
+            return res.status(400).json({ error: 'No outstanding balance to pay' });
+        }
+
+        const paymentIntent = await stripe.paymentIntents.create({
+            amount: amountDue,
+            currency: 'aud',
+            automatic_payment_methods: { enabled: true },
+            metadata: {
+                clientId: String(clientId),
+                billingId: String(billing.id),
+                serviceName: billing.service_name || 'Appointment payment'
+            }
+        });
+
+        await pool.query(
+            `UPDATE appointment_billing
+             SET stripe_payment_intent_id = $1,
+                 updated_at = NOW()
+             WHERE id = $2`,
+            [paymentIntent.id, billing.id]
+        );
+
+        res.json({
+            clientSecret: paymentIntent.client_secret,
+            publishableKey: process.env.STRIPE_PUBLISHABLE_KEY
+        });
+    } catch (err) {
+        console.error('Stripe error:', err);
+        res.status(500).json({ error: 'Payment initialization failed' });
+    }
+});
+
 /* -- DB Info -- */
 app.get('/api/dbinfo', async (_req, res) => {
     try {
@@ -473,6 +839,7 @@ app.use((err, req, res, next) => {
 
     next();
 });
+
 
 /* ---------- Start ---------- */
 app.listen(PORT, () => {
