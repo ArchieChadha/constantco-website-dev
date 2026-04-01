@@ -97,6 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const fullName = document.getElementById("fullName");
         const email = document.getElementById("email");
         const phone = document.getElementById("phone");
+        const company = document.getElementById("company");
         const appointmentTime = document.getElementById("appointmentTime");
         const notes = document.getElementById("notes");
         const consent = document.getElementById("consent");
@@ -138,7 +139,7 @@ document.addEventListener("DOMContentLoaded", () => {
             fullName: fullName.value.trim(),
             email: email.value.trim(),
             phone: phone.value.trim(),
-            company: document.getElementById("company").value.trim(),
+            company: company.value.trim(),
             service: service.value,
             meetingType: meetingType.value,
             appointmentDate: appointmentDate.value,
@@ -147,7 +148,32 @@ document.addEventListener("DOMContentLoaded", () => {
             bookingCost: bookingCost.textContent
         };
 
+        /* Keep summary page working */
         localStorage.setItem("constantCoAppointment", JSON.stringify(bookingData));
+
+        /* Save into admin dashboard appointments */
+        const existingAppointments = JSON.parse(localStorage.getItem("cc_admin_appointments")) || [];
+
+        const adminAppointment = {
+            id: "appointment_" + Date.now(),
+            client: bookingData.fullName,
+            email: bookingData.email,
+            phone: bookingData.phone,
+            company: bookingData.company || "N/A",
+            date: bookingData.appointmentDate,
+            time: bookingData.appointmentTime,
+            type: bookingData.meetingType + " - " + bookingData.service,
+            status: "Scheduled",
+            duration: "60",
+            notes: bookingData.notes || "N/A",
+            cost: bookingData.bookingCost
+        };
+
+        existingAppointments.push(adminAppointment);
+        localStorage.setItem("cc_admin_appointments", JSON.stringify(existingAppointments));
+
+        statusText.textContent = "Your appointment request has been submitted successfully.";
+        statusText.style.color = "#236B7D";
 
         window.location.href = "./booking-summary.html";
     });
