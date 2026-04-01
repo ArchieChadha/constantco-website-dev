@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Booking Summary — Constant & Co</title>
+    <meta name="description" content="Appointment booking summary for Constant & Co." />
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    <a href="#main" class="skip">Skip to content</a>
+
+    <header>
+        <div class="container nav" role="navigation" aria-label="Primary">
+            <a class="brand" href="./index.html">
+                <img src="https://constantandco.com.au/wp-content/uploads/2022/09/Logo-New.png"
+                    alt="Constant & Co logo" />
+            </a>
+
+            <nav class="menu" aria-label="Main">
+                <a href="./index.html" class="top-link">Home</a>
+                <a href="./appointment.html" class="top-link">Appointment</a>
+                <a href="./contact.html" class="top-link">Contact</a>
+                <a class="btn btn-ghost cta" href="./appointment.html">Book Another Appointment</a>
+            </nav>
+        </div>
+    </header>
+
+    <main id="main">
+        <section class="appointment-hero">
+            <div class="container">
+                <div class="eyebrow">Booking Confirmed</div>
+                <h1 class="appointment-title">Booking Summary</h1>
+                <p class="appointment-sub">
+                    Your appointment request has been submitted successfully.
+                </p>
+            </div>
+        </section>
+
+        <section class="appointment-section">
+            <div class="container">
+                <div class="auth-card appointment-form-clean summary-card">
+                    <h2 class="appointment-form-title">Appointment Details</h2>
+
+                    <div class="summary-grid">
+                        <p><strong>Name:</strong> <span id="summaryName">-</span></p>
+                        <p><strong>Email:</strong> <span id="summaryEmail">-</span></p>
+                        <p><strong>Phone:</strong> <span id="summaryPhone">-</span></p>
+                        <p><strong>Business Name:</strong> <span id="summaryCompany">-</span></p>
+                        <p><strong>Service:</strong> <span id="summaryService">-</span></p>
+                        <p><strong>Meeting Type:</strong> <span id="summaryMeetingType">-</span></p>
+                        <p><strong>Date:</strong> <span id="summaryDate">-</span></p>
+                        <p><strong>Time:</strong> <span id="summaryTime">-</span></p>
+                        <p><strong>Cost:</strong> <span id="summaryCost">-</span></p>
+                        <p><strong>Notes:</strong> <span id="summaryNotes">-</span></p>
+                    </div>
+
+                    <div class="summary-actions">
+                        <a href="./appointment.html" class="btn btn-primary">Book Another Appointment</a>
+                        <button type="button" class="btn btn-ghost" id="backHomeBtn">Back to Home</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer role="contentinfo">
+        <div class="container foot">
+            <div>
+                <div class="brand">
+                    <span>Constant &amp; Co</span>
+                </div>
+                <p class="contact-info">
+                    Level 1, Melbourne VIC<br />
+                    03 9466 3688<br />
+                    <a href="mailto:info@constantco.au">info@constantco.au</a>
+                </p>
+            </div>
+        </div>
+        <div class="container copy">© 2025 Constant &amp; Co. All rights reserved.</div>
+    </footer>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const data = JSON.parse(localStorage.getItem("constantCoAppointment"));
+
+            if (!data) {
+                window.location.href = "./appointment.html";
+                return;
+            }
+
+            document.getElementById("summaryName").textContent = data.fullName || "N/A";
+            document.getElementById("summaryEmail").textContent = data.email || "N/A";
+            document.getElementById("summaryPhone").textContent = data.phone || "N/A";
+            document.getElementById("summaryCompany").textContent = data.company || "N/A";
+            document.getElementById("summaryService").textContent = data.service || "N/A";
+            document.getElementById("summaryMeetingType").textContent = data.meetingType || "N/A";
+            document.getElementById("summaryDate").textContent = data.appointmentDate || "N/A";
+            document.getElementById("summaryTime").textContent = data.appointmentTime || "N/A";
+            document.getElementById("summaryCost").textContent = data.bookingCost || "N/A";
+            document.getElementById("summaryNotes").textContent = data.notes || "N/A";
+
+            document.getElementById("backHomeBtn").addEventListener("click", () => {
+                window.location.href = "./index.html";
+            });
+        });
+    </script>
+</body>
+
+</html>
