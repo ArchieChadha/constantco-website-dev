@@ -1,21 +1,13 @@
+const API_BASE =
+    (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+        ? 'http://localhost:3001'
+        : '';
+
 const STORAGE_KEYS = {
     clients: "cc_admin_clients",
     invoices: "cc_admin_invoices",
-    appointments: "cc_admin_appointments",
     admins: "cc_admin_admins"
 };
-
-const DEFAULT_ADMINS = [
-    {
-        id: "a1",
-        name: "Admin User",
-        email: "admin@constantco.au",
-        password: "admin123",
-        role: "Super Admin",
-        verified: true,
-        joinDate: new Date().toISOString().split("T")[0]
-    }
-];
 
 function loadJsonArray(key, fallback = []) {
     try {
@@ -30,11 +22,8 @@ function loadJsonArray(key, fallback = []) {
 
 let clients = loadJsonArray(STORAGE_KEYS.clients);
 let invoices = loadJsonArray(STORAGE_KEYS.invoices);
-let appointments = loadJsonArray(STORAGE_KEYS.appointments);
+let appointments = [];
 let admins = loadJsonArray(STORAGE_KEYS.admins);
-if (!admins.length) {
-    admins = DEFAULT_ADMINS.slice();
-}
 
 let currentUser = null;
 let editState = {
@@ -52,7 +41,6 @@ const loginError = document.getElementById("loginError");
 function saveAll() {
     localStorage.setItem(STORAGE_KEYS.clients, JSON.stringify(clients));
     localStorage.setItem(STORAGE_KEYS.invoices, JSON.stringify(invoices));
-    localStorage.setItem(STORAGE_KEYS.appointments, JSON.stringify(appointments));
     localStorage.setItem(STORAGE_KEYS.admins, JSON.stringify(admins));
 }
 
@@ -74,24 +62,39 @@ function getStatusBadge(status) {
 
 function setRecentActivity(text) {
     const activityText = document.getElementById("activityText");
-    activityText.textContent = text;
+    if (activityText) {
+        activityText.textContent = text;
+    }
 }
 
 function updateStats() {
-    document.getElementById("statClients").textContent = clients.length;
-    document.getElementById("statInvoices").textContent = invoices.filter(i => i.status !== "Paid").length;
-    document.getElementById("statAppointments").textContent = appointments.length;
-    document.getElementById("statAdmins").textContent = admins.length;
+    const statClients = document.getElementById("statClients");
+    const statInvoices = document.getElementById("statInvoices");
+    const statAppointments = document.getElementById("statAppointments");
+    const statAdmins = document.getElementById("statAdmins");
 
-    document.getElementById("totalAdmins").textContent = admins.length;
-    document.getElementById("verifiedAdmins").textContent = admins.filter(a => a.verified).length;
-    document.getElementById("pendingAdmins").textContent = admins.filter(a => !a.verified).length;
-    document.getElementById("superAdmins").textContent = admins.filter(a => a.role === "Super Admin").length;
+    const totalAdmins = document.getElementById("totalAdmins");
+    const verifiedAdmins = document.getElementById("verifiedAdmins");
+    const pendingAdmins = document.getElementById("pendingAdmins");
+    const superAdmins = document.getElementById("superAdmins");
+
+    if (statClients) statClients.textContent = clients.length;
+    if (statInvoices) statInvoices.textContent = invoices.filter(i => i.status !== "Paid").length;
+    if (statAppointments) statAppointments.textContent = appointments.length;
+    if (statAdmins) statAdmins.textContent = admins.length;
+
+    if (totalAdmins) totalAdmins.textContent = admins.length;
+    if (verifiedAdmins) verifiedAdmins.textContent = admins.filter(a => a.verified).length;
+    if (pendingAdmins) pendingAdmins.textContent = admins.filter(a => !a.verified).length;
+    if (superAdmins) superAdmins.textContent = admins.filter(a => a.role === "Super Admin").length;
 }
 
 function renderClients() {
     const tbody = document.getElementById("clientsTable");
-    const term = document.getElementById("searchClients").value.trim().toLowerCase();
+    const searchInput = document.getElementById("searchClients");
+    if (!tbody || !searchInput) return;
+
+    const term = searchInput.value.trim().toLowerCase();
 
     const filtered = clients.filter(c =>
         c.name.toLowerCase().includes(term) ||
@@ -123,7 +126,10 @@ function renderClients() {
 
 function renderInvoices() {
     const tbody = document.getElementById("invoicesTable");
-    const term = document.getElementById("searchInvoices").value.trim().toLowerCase();
+    const searchInput = document.getElementById("searchInvoices");
+    if (!tbody || !searchInput) return;
+
+    const term = searchInput.value.trim().toLowerCase();
 
     const filtered = invoices.filter(invoice =>
         invoice.number.toLowerCase().includes(term) ||
@@ -154,11 +160,15 @@ function renderInvoices() {
 
 function renderAppointments() {
     const tbody = document.getElementById("appointmentsTable");
-    const term = document.getElementById("searchAppointments").value.trim().toLowerCase();
+    const searchInput = document.getElementById("searchAppointments");
+    if (!tbody || !searchInput) return;
+
+    const term = searchInput.value.trim().toLowerCase();
 
     const filtered = appointments.filter(item =>
-        item.client.toLowerCase().includes(term) ||
-        item.type.toLowerCase().includes(term)
+        (item.client || '').toLowerCase().includes(term) ||
+        (item.type || '').toLowerCase().includes(term) ||
+        (item.email || '').toLowerCase().includes(term)
     );
 
     if (!filtered.length) {
@@ -185,6 +195,7 @@ function renderAppointments() {
 
 function renderAdmins() {
     const tbody = document.getElementById("adminsTable");
+    if (!tbody) return;
 
     if (!admins.length) {
         tbody.innerHTML = '<tr class="empty-row"><td colspan="6">No admin users found.</td></tr>';
@@ -219,28 +230,68 @@ function renderAll() {
     saveAll();
 }
 
+async function loadAppointmentsFromBackend() {
+    try {
+        const res = await fetch(`${API_BASE}/api/admin/appointments`);
+        const data = await res.json();
+
+        if (!res.ok) {
+            throw new Error(data.error || 'Failed to fetch appointments');
+        }
+
+        appointments = (data.appointments || []).map(item => ({
+            id: String(item.id),
+            client: item.full_name,
+            email: item.email,
+            phone: item.phone,
+            company: item.company || "N/A",
+            date: item.appointment_date,
+            time: item.appointment_time,
+            type: `${item.meeting_type} - ${item.service_name}`,
+            status: item.booking_status,
+            duration: "60",
+            notes: item.notes || "N/A",
+            cost: item.booking_fee ? `$${(Number(item.booking_fee) / 100).toFixed(2)}` : "$0.00"
+        }));
+
+        renderAppointments();
+        updateStats();
+    } catch (err) {
+        console.error('Load appointments error:', err);
+    }
+}
+
 function showPage(pageName) {
     document.querySelectorAll(".nav-btn").forEach(btn => {
         btn.classList.toggle("active", btn.dataset.page === pageName);
     });
 
     document.querySelectorAll(".page").forEach(page => page.classList.remove("active"));
-    document.getElementById(`page-${pageName}`).classList.add("active");
+    const target = document.getElementById(`page-${pageName}`);
+    if (target) target.classList.add("active");
+
+    if (pageName === "appointments") {
+        loadAppointmentsFromBackend();
+    }
 }
 
-/** Apply successful portal login (main login form on admin-portal.html). */
 function applyAdminSession(matched) {
     loginError.classList.add("hidden");
     currentUser = matched;
 
-    document.getElementById("userName").textContent = matched.name;
-    document.getElementById("userRole").textContent = matched.role;
-    document.getElementById("userAvatar").textContent = matched.name.charAt(0).toUpperCase();
+    const userName = document.getElementById("userName");
+    const userRole = document.getElementById("userRole");
+    const userAvatar = document.getElementById("userAvatar");
+
+    if (userName) userName.textContent = matched.name;
+    if (userRole) userRole.textContent = matched.role;
+    if (userAvatar) userAvatar.textContent = matched.name.charAt(0).toUpperCase();
 
     loginScreen.classList.add("hidden");
     adminApp.classList.add("active");
 
     renderAll();
+    loadAppointmentsFromBackend();
     showPage("appointments");
     setRecentActivity(`Welcome back, ${matched.name}.`);
 }
@@ -253,28 +304,41 @@ document.querySelectorAll("[data-open-page]").forEach(btn => {
     btn.addEventListener("click", () => showPage(btn.dataset.openPage));
 });
 
-loginForm.addEventListener("submit", (event) => {
+loginForm.addEventListener("submit", async (event) => {
     event.preventDefault();
 
     const email = document.getElementById("loginEmail").value.trim();
     const password = document.getElementById("loginPassword").value.trim();
 
-    const matched = admins.find(admin => admin.email === email && admin.password === password);
+    loginError.classList.add("hidden");
+    loginError.textContent = "";
 
-    if (!matched) {
-        loginError.textContent = "Invalid email or password.";
+    try {
+        const res = await fetch(`${API_BASE}/api/admin/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            throw new Error(data.error || 'Login failed');
+        }
+
+        applyAdminSession({
+            id: String(data.admin.id),
+            name: data.admin.name,
+            email: data.admin.email,
+            role: data.admin.role,
+            verified: data.admin.verified
+        });
+    } catch (err) {
+        loginError.textContent = err.message || "Invalid email or password.";
         loginError.classList.remove("hidden");
-        return;
     }
-
-    if (!matched.verified) {
-        loginError.textContent = "Your account is pending verification.";
-        loginError.classList.remove("hidden");
-        return;
-    }
-
-    applyAdminSession(matched);
 });
+
 document.getElementById("logoutBtn").addEventListener("click", () => {
     currentUser = null;
     adminApp.classList.remove("active");
@@ -287,11 +351,13 @@ document.getElementById("searchInvoices").addEventListener("input", renderInvoic
 document.getElementById("searchAppointments").addEventListener("input", renderAppointments);
 
 function openModal(id) {
-    document.getElementById(id).classList.add("active");
+    const modal = document.getElementById(id);
+    if (modal) modal.classList.add("active");
 }
 
 function closeModal(id) {
-    document.getElementById(id).classList.remove("active");
+    const modal = document.getElementById(id);
+    if (modal) modal.classList.remove("active");
 }
 
 document.querySelectorAll("[data-close]").forEach(button => {
@@ -426,35 +492,59 @@ window.deleteInvoice = function (id) {
 
 document.getElementById("addAppointmentBtn").addEventListener("click", () => {
     editState.appointment = null;
-    document.getElementById("appointmentModalTitle").textContent = "Schedule Appointment";
+    document.getElementById("appointmentModalTitle").textContent = "Appointment Details";
     document.getElementById("portalAppointmentForm").reset();
-    openModal("appointmentModal");
+
+    document.getElementById("appointmentClient").readOnly = true;
+    document.getElementById("appointmentDate").readOnly = true;
+    document.getElementById("appointmentTime").readOnly = true;
+    document.getElementById("appointmentType").readOnly = true;
+    document.getElementById("appointmentDuration").readOnly = true;
+
+    alert("New appointments should be created from the client booking page.");
 });
 
-document.getElementById("portalAppointmentForm").addEventListener("submit", (event) => {
+document.getElementById("portalAppointmentForm").addEventListener("submit", async (event) => {
     event.preventDefault();
 
-    const appointment = {
-        id: editState.appointment || uid("appointment"),
-        client: document.getElementById("appointmentClient").value.trim(),
-        date: document.getElementById("appointmentDate").value,
-        time: document.getElementById("appointmentTime").value,
-        type: document.getElementById("appointmentType").value,
-        status: document.getElementById("appointmentStatus").value,
-        duration: document.getElementById("appointmentDuration").value.trim(),
-        notes: document.getElementById("appointmentNotes").value.trim()
-    };
-
-    if (editState.appointment) {
-        appointments = appointments.map(a => a.id === editState.appointment ? appointment : a);
-        setRecentActivity(`Appointment updated for ${appointment.client}`);
-    } else {
-        appointments.push(appointment);
-        setRecentActivity(`Appointment created for ${appointment.client}`);
+    if (!editState.appointment) {
+        alert("New appointments should be created from the client booking page.");
+        return;
     }
 
-    renderAll();
-    closeModal("appointmentModal");
+    try {
+        const typeValue = document.getElementById("appointmentType").value;
+        const typeParts = String(typeValue).split(" - ");
+        const meetingType = typeParts[0] || "Consultation";
+        const serviceName = typeParts[1] || typeValue;
+
+        const res = await fetch(`${API_BASE}/api/admin/appointments/${editState.appointment}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                fullName: document.getElementById("appointmentClient").value.trim(),
+                appointmentDate: document.getElementById("appointmentDate").value,
+                appointmentTime: document.getElementById("appointmentTime").value,
+                serviceName,
+                meetingType,
+                bookingStatus: document.getElementById("appointmentStatus").value,
+                notes: document.getElementById("appointmentNotes").value.trim()
+            })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            throw new Error(data.error || 'Failed to update appointment');
+        }
+
+        await loadAppointmentsFromBackend();
+        closeModal("appointmentModal");
+        setRecentActivity(`Appointment updated for ${document.getElementById("appointmentClient").value.trim()}`);
+    } catch (err) {
+        console.error(err);
+        alert(err.message || 'Something went wrong.');
+    }
 });
 
 window.editAppointment = function (id) {
@@ -463,24 +553,46 @@ window.editAppointment = function (id) {
 
     editState.appointment = id;
     document.getElementById("appointmentModalTitle").textContent = "Edit Appointment";
+
     document.getElementById("appointmentClient").value = appointment.client;
     document.getElementById("appointmentDate").value = appointment.date || "";
     document.getElementById("appointmentTime").value = appointment.time || "";
-    document.getElementById("appointmentType").value = appointment.type;
-    document.getElementById("appointmentStatus").value = appointment.status;
+    document.getElementById("appointmentType").value = appointment.type || "";
+    document.getElementById("appointmentStatus").value = appointment.status || "Scheduled";
     document.getElementById("appointmentDuration").value = appointment.duration || "60";
     document.getElementById("appointmentNotes").value = appointment.notes || "";
+
+    document.getElementById("appointmentClient").readOnly = false;
+    document.getElementById("appointmentDate").readOnly = false;
+    document.getElementById("appointmentTime").readOnly = false;
+    document.getElementById("appointmentType").readOnly = false;
+    document.getElementById("appointmentDuration").readOnly = true;
+
     openModal("appointmentModal");
 };
 
-window.deleteAppointment = function (id) {
+window.deleteAppointment = async function (id) {
     const appointment = appointments.find(a => a.id === id);
     if (!appointment) return;
     if (!confirm(`Delete appointment for "${appointment.client}"?`)) return;
 
-    appointments = appointments.filter(a => a.id !== id);
-    renderAll();
-    setRecentActivity(`Appointment deleted for ${appointment.client}`);
+    try {
+        const res = await fetch(`${API_BASE}/api/admin/appointments/${id}`, {
+            method: 'DELETE'
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            throw new Error(data.error || 'Failed to delete appointment');
+        }
+
+        await loadAppointmentsFromBackend();
+        setRecentActivity(`Appointment deleted for ${appointment.client}`);
+    } catch (err) {
+        console.error(err);
+        alert(err.message || 'Something went wrong.');
+    }
 };
 
 document.getElementById("addAdminBtn").addEventListener("click", () => {
