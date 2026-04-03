@@ -38,6 +38,21 @@ CREATE TABLE IF NOT EXISTS portal_clients (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
+ALTER TABLE portal_clients ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP;
+
+-- One-time password reset tokens (hashed)
+CREATE TABLE IF NOT EXISTS password_resets (
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(255) NOT NULL,
+    token_hash VARCHAR(64) NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    used_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_password_resets_token_hash ON password_resets (token_hash);
+CREATE INDEX IF NOT EXISTS idx_password_resets_email ON password_resets (email);
+
 -- Insert some sample data (optional)
 INSERT INTO newsletter_subscribers (email) VALUES 
     ('test@example.com') 
