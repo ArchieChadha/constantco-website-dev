@@ -87,7 +87,7 @@ open src/index.html
 ```bash
 npm test
 ```
-See `tests/TEST_PLAN.md` for the full matrix. API integration tests run only when `tests/.api-up` contains `1` and the API is listening on port 3001.
+API integration tests run only when `tests/.api-up` contains `1` and the API is listening on port 3001.
 
 ## Troubleshooting
 
