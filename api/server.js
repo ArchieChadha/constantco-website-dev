@@ -7,6 +7,7 @@ import bcrypt from 'bcryptjs';
 import multer from 'multer';
 import path from 'path';
 import Stripe from 'stripe';
+import crypto from 'crypto';
 
 dotenv.config();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -205,6 +206,22 @@ const upload = multer({
 /* ---------- Helpers ---------- */
 const isEmail = (s = '') => /^\S+@\S+\.\S+$/.test(s);
 
+const PASSWORD_RULE =
+    /^(?=.*[0-9])(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
+
+/** Build reset URL for dev (same folder as referring login page). */
+function passwordResetUrlFromReferer(referer, token) {
+    if (!referer || !token) return null;
+    try {
+        const u = new URL(referer);
+        const path = u.pathname.replace(/\/[^/]+$/, '');
+        const resetPath = `${path}/reset-password.html`;
+        return `${u.origin}${resetPath}?token=${encodeURIComponent(token)}`;
+    } catch {
+        return null;
+    }
+}
+
 /* ---------- Health ---------- */
 app.get('/api/health', async (_req, res) => {
     try {
@@ -384,6 +401,125 @@ app.post('/api/login', async (req, res) => {
     } catch (err) {
         console.error('Login error:', err);
         res.status(500).json({ error: 'Server error' });
+    }
+});
+
+/* -- Forgot password: request reset link (token stored hashed) -- */
+app.post('/api/request-password-reset', async (req, res) => {
+    try {
+        const email = (req.body?.email || '').trim();
+        if (!isEmail(email)) {
+            return res.status(400).json({ error: 'Please enter a valid email address.' });
+        }
+
+        const okMsg =
+            'If that email is registered, you can use the reset link to choose a new password. The link expires in one hour.';
+
+        const { rows: users } = await pool.query(
+            'SELECT id FROM portal_clients WHERE email = $1 LIMIT 1',
+            [email]
+        );
+
+        if (!users.length) {
+            return res.json({ ok: true, message: okMsg });
+        }
+
+        await pool.query(
+            'DELETE FROM password_resets WHERE email = $1 AND used_at IS NULL',
+            [email]
+        );
+
+        const token = crypto.randomBytes(32).toString('hex');
+        const tokenHash = crypto
+            .createHash('sha256')
+            .update(token)
+            .digest('hex');
+        const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
+        await pool.query(
+            `INSERT INTO password_resets (email, token_hash, expires_at)
+             VALUES ($1, $2, $3)`,
+            [email, tokenHash, expiresAt]
+        );
+
+        const referer = req.get('referer') || '';
+        let devResetLink = passwordResetUrlFromReferer(referer, token);
+        if (!devResetLink && process.env.PUBLIC_WEB_ORIGIN) {
+            const base = String(process.env.PUBLIC_WEB_ORIGIN).replace(/\/$/, '');
+            devResetLink = `${base}/src/reset-password.html?token=${encodeURIComponent(token)}`;
+        }
+
+        if (devResetLink) {
+            console.log('[password-reset] link:', devResetLink);
+        } else {
+            console.log(
+                '[password-reset] token issued (set PUBLIC_WEB_ORIGIN or open forgot-password from the site so Referer builds the link)'
+            );
+        }
+
+        const payload = { ok: true, message: okMsg };
+        if (process.env.NODE_ENV !== 'production' && devResetLink) {
+            payload.devResetLink = devResetLink;
+        }
+        return res.json(payload);
+    } catch (err) {
+        console.error('request-password-reset:', err);
+        return res.status(500).json({ error: 'Server error' });
+    }
+});
+
+/* -- Reset password with token from email/link -- */
+app.post('/api/reset-password', async (req, res) => {
+    const token = String(req.body?.token ?? '').trim();
+    const newPassword = String(req.body?.newPassword ?? '');
+
+    if (!token || !PASSWORD_RULE.test(newPassword)) {
+        return res.status(400).json({
+            error: 'Invalid or expired link, or password must be at least 8 characters with a number and special character.',
+        });
+    }
+
+    const client = await pool.connect();
+    try {
+        const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+        const { rows } = await client.query(
+            `SELECT id, email FROM password_resets
+             WHERE token_hash = $1 AND used_at IS NULL AND expires_at > NOW()
+             LIMIT 1`,
+            [tokenHash]
+        );
+
+        if (!rows.length) {
+            return res.status(400).json({
+                error: 'Invalid or expired reset link. Please request a new one.',
+            });
+        }
+
+        const row = rows[0];
+        const hash = await bcrypt.hash(newPassword, 10);
+
+        await client.query('BEGIN');
+        await client.query(
+            'UPDATE portal_clients SET password = $1 WHERE email = $2',
+            [hash, row.email]
+        );
+        await client.query(
+            'UPDATE password_resets SET used_at = NOW() WHERE id = $1',
+            [row.id]
+        );
+        await client.query('COMMIT');
+
+        return res.json({ ok: true, message: 'Password updated. You can log in with your new password.' });
+    } catch (err) {
+        try {
+            await client.query('ROLLBACK');
+        } catch {
+        }
+        console.error('reset-password:', err);
+        return res.status(500).json({ error: 'Server error' });
+    } finally {
+        client.release();
     }
 });
 

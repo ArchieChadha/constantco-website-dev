@@ -1,6 +1,8 @@
 (function () {
   const API_BASE =
-    (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+    (location.protocol === 'file:' ||
+      location.hostname === 'localhost' ||
+      location.hostname === '127.0.0.1')
       ? 'http://localhost:3001'
       : '';
 
@@ -75,7 +77,13 @@
 
     } catch (err) {
       console.error('Login error:', err);
-      setStatus(err.message || 'Login failed');
+      const isNetworkError =
+        err && (err.name === 'TypeError' || /load failed|failed to fetch/i.test(String(err.message || '')));
+      if (isNetworkError) {
+        setStatus('Unable to reach login server. Please make sure the backend is running on port 3001.');
+      } else {
+        setStatus(err.message || 'Login failed');
+      }
       setBusy(false);
     }
   });

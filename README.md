@@ -68,9 +68,19 @@ See `setup.md` for detailed instructions.
 
 ## Testing
 ```bash
-# Run the test suite
-node tests/run-tests.js
+# Full suite: Vitest (DOM + optional API) + static HTML/CSS checks
+npm test
+
+# Optional: API integration tests (requires API on 127.0.0.1:3001 and tests/.api-up containing 1)
+# echo 1 > tests/.api-up && npx vitest run tests/api.integration.test.js --config vitest.config.mjs
+
+# Static checks only
+npm run test:basic
 ```
+
+Case-style IDs (AP-, CP-, CL-, API-, FE-) appear in Vitest test names in `tests/*.test.js` and in the Part 1 static checks in `tests/basic-tests.cjs`.
+
+**Why you might not see `5/5`:** That summary comes from **Part 1** (`basic-tests.cjs`). It only runs when you use **`npm test`** (full suite). If you run **`npm run test:vitest`** or **`npx vitest`** alone, you only get Vitest’s output (`Tests N passed`), not the static `5/5` suites.
 
 ## Future Considerations
 - Advanced encryption for sensitive financial documents  

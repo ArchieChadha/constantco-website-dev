@@ -34,6 +34,12 @@ jspm_packages/
 # dotenv environment variables file
 .env
 
+# Local flag: create tests/.api-up with "1" to enable API integration tests
+tests/.api-up
+
+# Local test plan (not versioned)
+tests/TEST_PLAN.md
+
 # IDE files
 .vscode/
 .idea/
