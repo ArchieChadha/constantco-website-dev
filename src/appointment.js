@@ -161,7 +161,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const clientId = sessionStorage.getItem("clientId");
             const feeNumber = Number(bookingData.bookingCost.replace('$', '')) * 100;
 
-            // 1. Create appointment
+            // 1. create appointment in DB
             const appointmentRes = await fetch(`${API_BASE}/api/appointments`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -188,7 +188,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const appointmentId = appointmentData.appointment.id;
 
-            // 2. Create billing record
+            // 2. create initial billing row
             const billingRes = await fetch(`${API_BASE}/api/create-booking-billing`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
