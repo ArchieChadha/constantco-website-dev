@@ -78,7 +78,7 @@ npm test
 npm run test:basic
 ```
 
-See `tests/TEST_PLAN.md` for case IDs (AP-, CP-, CL-, API-, FE-).
+Case-style IDs (AP-, CP-, CL-, API-, FE-) appear in Vitest test names in `tests/*.test.js` and in the Part 1 static checks in `tests/basic-tests.cjs`.
 
 **Why you might not see `5/5`:** That summary comes from **Part 1** (`basic-tests.cjs`). It only runs when you use **`npm test`** (full suite). If you run **`npm run test:vitest`** or **`npx vitest`** alone, you only get Vitest’s output (`Tests N passed`), not the static `5/5` suites.
 
