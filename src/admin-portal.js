@@ -5,10 +5,7 @@ const STORAGE_KEYS = {
     admins: "cc_admin_admins"
 };
 
-let clients = JSON.parse(localStorage.getItem(STORAGE_KEYS.clients)) || [];
-let invoices = JSON.parse(localStorage.getItem(STORAGE_KEYS.invoices)) || [];
-let appointments = JSON.parse(localStorage.getItem(STORAGE_KEYS.appointments)) || [];
-let admins = JSON.parse(localStorage.getItem(STORAGE_KEYS.admins)) || [
+const DEFAULT_ADMINS = [
     {
         id: "a1",
         name: "Admin User",
@@ -19,6 +16,25 @@ let admins = JSON.parse(localStorage.getItem(STORAGE_KEYS.admins)) || [
         joinDate: new Date().toISOString().split("T")[0]
     }
 ];
+
+function loadJsonArray(key, fallback = []) {
+    try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : fallback;
+    } catch {
+        return fallback;
+    }
+}
+
+let clients = loadJsonArray(STORAGE_KEYS.clients);
+let invoices = loadJsonArray(STORAGE_KEYS.invoices);
+let appointments = loadJsonArray(STORAGE_KEYS.appointments);
+let admins = loadJsonArray(STORAGE_KEYS.admins);
+if (!admins.length) {
+    admins = DEFAULT_ADMINS.slice();
+}
 
 let currentUser = null;
 let editState = {
@@ -211,6 +227,24 @@ function showPage(pageName) {
     document.querySelectorAll(".page").forEach(page => page.classList.remove("active"));
     document.getElementById(`page-${pageName}`).classList.add("active");
 }
+
+/** Apply successful portal login (main login form on admin-portal.html). */
+function applyAdminSession(matched) {
+    loginError.classList.add("hidden");
+    currentUser = matched;
+
+    document.getElementById("userName").textContent = matched.name;
+    document.getElementById("userRole").textContent = matched.role;
+    document.getElementById("userAvatar").textContent = matched.name.charAt(0).toUpperCase();
+
+    loginScreen.classList.add("hidden");
+    adminApp.classList.add("active");
+
+    renderAll();
+    showPage("appointments");
+    setRecentActivity(`Welcome back, ${matched.name}.`);
+}
+
 document.querySelectorAll(".nav-btn").forEach(btn => {
     btn.addEventListener("click", () => showPage(btn.dataset.page));
 });
@@ -239,19 +273,7 @@ loginForm.addEventListener("submit", (event) => {
         return;
     }
 
-    loginError.classList.add("hidden");
-    currentUser = matched;
-
-    document.getElementById("userName").textContent = matched.name;
-    document.getElementById("userRole").textContent = matched.role;
-    document.getElementById("userAvatar").textContent = matched.name.charAt(0).toUpperCase();
-
-    loginScreen.classList.add("hidden");
-    adminApp.classList.add("active");
-
-    renderAll();
-    showPage("appointments");
-    setRecentActivity(`Welcome back, ${matched.name}.`);
+    applyAdminSession(matched);
 });
 document.getElementById("logoutBtn").addEventListener("click", () => {
     currentUser = null;

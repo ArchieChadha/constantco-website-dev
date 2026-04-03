@@ -3,23 +3,18 @@ import { JSDOM } from 'jsdom';
 import fs from 'node:fs';
 import path from 'node:path';
 
-describe('Admin Login (admin-login.html)', () => {
+/** Admin auth UI lives on admin-portal.html (single login screen). */
+describe('Admin portal login (admin-portal.html)', () => {
     it('has a login form and a password field', () => {
-        const root = path.join(process.cwd(), 'admin-login.html');
-        const src = path.join(process.cwd(), 'src', 'admin-login.html');
-        const filePath = fs.existsSync(root) ? root : src;
-        if (!fs.existsSync(filePath)) throw new Error(`Missing admin-login.html`);
+        const filePath = path.join(process.cwd(), 'src', 'admin-portal.html');
+        if (!fs.existsSync(filePath)) throw new Error(`Missing admin-portal.html`);
         const html = fs.readFileSync(filePath, 'utf8');
 
         const { window } = new JSDOM(html);
         const d = window.document;
 
-        const form = d.querySelector('form');
-        const password =
-            d.querySelector('input[type="password"]') ||
-            d.querySelector('input[name*="pass" i]') ||
-            d.querySelector('input[id*="pass" i]') ||
-            d.querySelector('input[autocomplete="current-password"]');
+        const form = d.getElementById('loginForm');
+        const password = d.getElementById('loginPassword');
 
         expect(!!form && !!password).toBe(true);
     });
