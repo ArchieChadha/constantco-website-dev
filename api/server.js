@@ -629,6 +629,7 @@ app.post('/api/create-booking-billing', async (req, res) => {
     }
 });
 
+
 /*------Admin Billing------*/
 
 app.put('/api/admin/billing/:appointmentId', async (req, res) => {

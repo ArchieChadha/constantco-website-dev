@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appointment Access - Constant & Co</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <a href="#main" class="skip">Skip to content</a>
+
+    <header>
+        <div class="container nav" role="navigation" aria-label="Primary">
+            <a class="brand" href="./index.html">
+                <img src="https://constantandco.com.au/wp-content/uploads/2022/09/Logo-New.png"
+                    alt="Constant & Co logo" />
+            </a>
+
+            <nav class="menu" aria-label="Main">
+                <a href="./index.html" class="top-link">Home</a>
+                <a href="./contact.html" class="top-link">Contact</a>
+            </nav>
+        </div>
+    </header>
+
+    <main id="main" class="appointment-access-page">
+        <section class="appointment-access-wrap">
+            <div class="container">
+                <div class="appointment-access-layout">
+
+                    <div class="appointment-access-hero">
+                        <p class="appointment-access-eyebrow">Appointment Booking</p>
+                        <h1 class="appointment-access-title">Log In to Book Your Appointment</h1>
+                        <p class="appointment-access-sub">
+                            Please log in with your client account to continue with appointment booking.
+                            If you do not have an account yet, you can create one first.
+                        </p>
+                    </div>
+
+                    <div class="appointment-access-card auth-card">
+                        <h2 class="appointment-access-form-title">Client Login</h2>
+                        <p class="appointment-access-form-sub">Enter your account details below.</p>
+
+                        <form id="appointmentAccessForm" class="auth-form" novalidate>
+                            <div class="auth-row auth-row--single">
+                                <div>
+                                    <label class="sr-only" for="email">Email Address</label>
+                                    <input id="email" name="email" type="email" class="input-lg"
+                                        placeholder="Email Address" required />
+                                </div>
+                            </div>
+
+                            <div class="auth-row auth-row--single">
+                                <div>
+                                    <label class="sr-only" for="password">Password</label>
+                                    <input id="password" name="password" type="password" class="input-lg"
+                                        placeholder="Password" required />
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary auth-btn appointment-access-btn">
+                                Log In
+                            </button>
+
+                            <p id="appointmentAccessStatus" class="small appointment-access-status" aria-live="polite">
+                            </p>
+                        </form>
+
+                        <div class="appointment-access-signup">
+                            <p>Don’t have an account?</p>
+                            <a href="./signup.html?redirect=appointment-access" class="link">Create one here</a>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer role="contentinfo">
+        <div class="container foot">
+            <div>
+                <div class="brand">
+                    <span>Constant &amp; Co</span>
+                </div>
+                <p class="contact-info">
+                    Level 1, Melbourne VIC<br />
+                    03 9466 3688<br />
+                    <a href="mailto:info@constantco.au">info@constantco.au</a>
+                </p>
+            </div>
+            <div>
+                <h4>Portal</h4>
+                <ul>
+                    <li><a href="./index.html">Home</a></li>
+                    <li><a href="./contact.html">Contact</a></li>
+                    <li><a href="./appointment-access.html">Appointment Access</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="container copy">© 2025 Constant &amp; Co. All rights reserved.</div>
+    </footer>
+
+    <script src="appointment-access.js"></script>
+</body>
+
+</html>
