@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "Constant & Co website — static front-end, Express API, automated tests",
   "scripts": {
-    "test": "vitest run --config vitest.config.mjs --reporter=verbose && node tests/run-tests.cjs",
+    "test": "node tests/run-tests.cjs && vitest run --config vitest.config.mjs --reporter=verbose && node tests/print-test-footer.cjs",
     "test:vitest": "vitest run --config vitest.config.mjs",
     "test:basic": "node tests/run-tests.cjs",
     "test:api": "vitest run tests/api.integration.test.js --config vitest.config.mjs --reporter=verbose"

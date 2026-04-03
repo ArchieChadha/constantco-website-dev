@@ -80,6 +80,8 @@ npm run test:basic
 
 See `tests/TEST_PLAN.md` for case IDs (AP-, CP-, CL-, API-, FE-).
 
+**Why you might not see `5/5`:** That summary comes from **Part 1** (`basic-tests.cjs`). It only runs when you use **`npm test`** (full suite). If you run **`npm run test:vitest`** or **`npx vitest`** alone, you only get Vitest’s output (`Tests N passed`), not the static `5/5` suites.
+
 ## Future Considerations
 - Advanced encryption for sensitive financial documents  
 - Managing appointment overload and double-booking  
