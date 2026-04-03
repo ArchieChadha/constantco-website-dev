@@ -85,9 +85,9 @@ open src/index.html
 
 ## Testing
 ```bash
-# Run the test suite
-node tests/run-tests.js
+npm test
 ```
+API integration tests run only when `tests/.api-up` contains `1` and the API is listening on port 3001.
 
 ## Troubleshooting
 
