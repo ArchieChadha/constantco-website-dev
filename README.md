@@ -68,9 +68,17 @@ See `setup.md` for detailed instructions.
 
 ## Testing
 ```bash
-# Run the test suite
-node tests/run-tests.js
+# Full suite: Vitest (DOM + optional API) + static HTML/CSS checks
+npm test
+
+# Optional: API integration tests (requires API on 127.0.0.1:3001 and tests/.api-up containing 1)
+# echo 1 > tests/.api-up && npx vitest run tests/api.integration.test.js --config vitest.config.mjs
+
+# Static checks only
+npm run test:basic
 ```
+
+See `tests/TEST_PLAN.md` for case IDs (AP-, CP-, CL-, API-, FE-).
 
 ## Future Considerations
 - Advanced encryption for sensitive financial documents  
