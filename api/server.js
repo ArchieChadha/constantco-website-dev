@@ -716,6 +716,8 @@ app.get('/api/records', async (req, res) => {
     }
 });
 
+/*-------Client Appointment-------*/
+
 app.post('/api/appointments', async (req, res) => {
     try {
         const {
@@ -823,7 +825,68 @@ app.post('/api/create-booking-billing', async (req, res) => {
     }
 });
 
-/*------Appointments-------*/
+/*-----Admin Login-------*/
+
+app.post('/api/admin/login', async (req, res) => {
+    try {
+        const { email, password } = req.body || {};
+
+        if (!email || !password) {
+            return res.status(400).json({ error: 'Email and password are required' });
+        }
+
+        const { rows } = await pool.query(
+            `SELECT id, full_name, email, password, role, verified
+             FROM admins
+             WHERE email = $1
+             LIMIT 1`,
+            [email.trim()]
+        );
+
+        const admin = rows[0];
+
+        if (!admin) {
+            return res.status(401).json({ error: 'Invalid email or password' });
+        }
+
+        if (!admin.verified) {
+            return res.status(403).json({ error: 'Your admin account is pending verification' });
+        }
+
+        let ok = false;
+        const stored = admin.password || '';
+
+        if (
+            stored.startsWith('$2a$') ||
+            stored.startsWith('$2b$') ||
+            stored.startsWith('$2y$')
+        ) {
+            ok = await bcrypt.compare(password, stored);
+        } else {
+            ok = password === stored;
+        }
+
+        if (!ok) {
+            return res.status(401).json({ error: 'Invalid email or password' });
+        }
+
+        res.json({
+            ok: true,
+            admin: {
+                id: admin.id,
+                name: admin.full_name,
+                email: admin.email,
+                role: admin.role,
+                verified: admin.verified
+            }
+        });
+    } catch (err) {
+        console.error('Admin login error:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+/*------Admin Appointments-------*/
 
 app.get('/api/admin/appointments', async (_req, res) => {
     try {
@@ -844,16 +907,41 @@ app.get('/api/admin/appointments', async (_req, res) => {
     }
 });
 
-app.get('/api/admin/appointments/:appointmentId', async (req, res) => {
+app.put('/api/admin/appointments/:appointmentId', async (req, res) => {
     try {
         const { appointmentId } = req.params;
+        const {
+            fullName = '',
+            appointmentDate = '',
+            appointmentTime = '',
+            serviceName = '',
+            meetingType = '',
+            bookingStatus = 'Scheduled',
+            notes = ''
+        } = req.body || {};
 
         const { rows } = await pool.query(
-            `SELECT *
-             FROM appointments
-             WHERE id = $1
-             LIMIT 1`,
-            [appointmentId]
+            `UPDATE appointments
+             SET full_name = $1,
+                 appointment_date = $2,
+                 appointment_time = $3,
+                 service_name = $4,
+                 meeting_type = $5,
+                 booking_status = $6,
+                 notes = $7,
+                 updated_at = NOW()
+             WHERE id = $8
+             RETURNING *`,
+            [
+                fullName.trim(),
+                appointmentDate,
+                appointmentTime,
+                serviceName,
+                meetingType,
+                bookingStatus,
+                notes.trim() || null,
+                appointmentId
+            ]
         );
 
         if (!rows.length) {
@@ -865,8 +953,128 @@ app.get('/api/admin/appointments/:appointmentId', async (req, res) => {
             appointment: rows[0]
         });
     } catch (err) {
-        console.error('Admin appointment fetch error:', err);
-        res.status(500).json({ error: 'Failed to fetch appointment' });
+        console.error('Admin appointment update error:', err);
+        res.status(500).json({ error: 'Failed to update appointment' });
+    }
+});
+
+/*------Delete Appointment--------*/
+
+app.delete('/api/admin/appointments/:appointmentId', async (req, res) => {
+    try {
+        const { appointmentId } = req.params;
+
+        const { rowCount } = await pool.query(
+            `DELETE FROM appointments
+             WHERE id = $1`,
+            [appointmentId]
+        );
+
+        if (!rowCount) {
+            return res.status(404).json({ error: 'Appointment not found' });
+        }
+
+        res.json({ ok: true });
+    } catch (err) {
+        console.error('Admin appointment delete error:', err);
+        res.status(500).json({ error: 'Failed to delete appointment' });
+    }
+});
+
+/*-----Get all appointments for admin----*/
+
+app.get('/api/admin/appointments', async (_req, res) => {
+    try {
+        const { rows } = await pool.query(
+            `SELECT id, client_id, full_name, email, phone, company, service_name, meeting_type,
+                    appointment_date, appointment_time, notes, booking_fee, booking_status, created_at
+             FROM appointments
+             ORDER BY created_at DESC`
+        );
+
+        res.json({
+            ok: true,
+            appointments: rows
+        });
+    } catch (err) {
+        console.error('Admin appointments fetch error:', err);
+        res.status(500).json({ error: 'Failed to fetch appointments' });
+    }
+});
+
+/*------Update appointment from admin portal----*/
+
+app.put('/api/admin/appointments/:appointmentId', async (req, res) => {
+    try {
+        const { appointmentId } = req.params;
+        const {
+            fullName = '',
+            appointmentDate = '',
+            appointmentTime = '',
+            serviceName = '',
+            meetingType = '',
+            bookingStatus = 'Scheduled',
+            notes = ''
+        } = req.body || {};
+
+        const { rows } = await pool.query(
+            `UPDATE appointments
+             SET full_name = $1,
+                 appointment_date = $2,
+                 appointment_time = $3,
+                 service_name = $4,
+                 meeting_type = $5,
+                 booking_status = $6,
+                 notes = $7,
+                 updated_at = NOW()
+             WHERE id = $8
+             RETURNING *`,
+            [
+                fullName.trim(),
+                appointmentDate,
+                appointmentTime,
+                serviceName,
+                meetingType,
+                bookingStatus,
+                notes.trim() || null,
+                appointmentId
+            ]
+        );
+
+        if (!rows.length) {
+            return res.status(404).json({ error: 'Appointment not found' });
+        }
+
+        res.json({
+            ok: true,
+            appointment: rows[0]
+        });
+    } catch (err) {
+        console.error('Admin appointment update error:', err);
+        res.status(500).json({ error: 'Failed to update appointment' });
+    }
+});
+
+/*------Delete appointment from admin portal------*/
+
+app.delete('/api/admin/appointments/:appointmentId', async (req, res) => {
+    try {
+        const { appointmentId } = req.params;
+
+        const { rowCount } = await pool.query(
+            `DELETE FROM appointments
+             WHERE id = $1`,
+            [appointmentId]
+        );
+
+        if (!rowCount) {
+            return res.status(404).json({ error: 'Appointment not found' });
+        }
+
+        res.json({ ok: true });
+    } catch (err) {
+        console.error('Admin appointment delete error:', err);
+        res.status(500).json({ error: 'Failed to delete appointment' });
     }
 });
 
