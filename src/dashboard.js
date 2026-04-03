@@ -4,16 +4,31 @@ document.addEventListener('DOMContentLoaded', () => {
             ? 'http://localhost:3001'
             : '';
 
+    const clientId = sessionStorage.getItem('clientId');
+
     // ================================
-    // FORMAT HELPER (GLOBAL)
+    // FORMAT HELPERS
     // ================================
-    const formatText = (text) =>
-        text
+    function formatText(text) {
+        return text
             ? text
                 .split(' ')
                 .map(word => word.charAt(0).toUpperCase() + word.slice(1))
                 .join(' ')
             : '';
+    }
+
+    function formatMoney(cents) {
+        return `$${(Number(cents || 0) / 100).toFixed(2)}`;
+    }
+
+    function safeJsonParse(text, fallbackError = 'Invalid server response') {
+        try {
+            return JSON.parse(text);
+        } catch {
+            throw new Error(fallbackError);
+        }
+    }
 
     // ================================
     // ELEMENTS
@@ -32,8 +47,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const uploadStatus = document.getElementById('uploadStatus');
     const recordsList = document.getElementById('recordsList');
 
-    const clientId = sessionStorage.getItem('clientId');
-
     const bookingFeeValue = document.getElementById('bookingFeeValue');
     const serviceChargeValue = document.getElementById('serviceChargeValue');
     const totalChargeValue = document.getElementById('totalChargeValue');
@@ -41,6 +54,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const chargeValue = document.getElementById('chargeValue');
     const chargeStatus = document.getElementById('chargeStatus');
     const chargeService = document.getElementById('chargeService');
+
+    const payBtn = document.querySelector('.payment-action-btn');
+
+    // ================================
+    // GUARD
+    // ================================
+    if (!clientId) {
+        window.location.href = './login.html';
+        return;
+    }
 
     // ================================
     // HELPERS
@@ -51,14 +74,6 @@ document.addEventListener('DOMContentLoaded', () => {
         uploadStatus.style.color = ok ? '#1a7f37' : '#b00020';
     }
 
-    function safeJsonParse(text, fallbackError = 'Invalid server response') {
-        try {
-            return JSON.parse(text);
-        } catch {
-            throw new Error(fallbackError);
-        }
-    }
-
     function fillProfile(client) {
         if (!client) return;
 
@@ -66,8 +81,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (profileName) profileName.textContent = client.name || '—';
         if (profileEmail) profileEmail.textContent = client.email || '—';
         if (profilePhone) profilePhone.textContent = client.phone || '—';
-
-        // ✅ FORMATTED
         if (profileType) profileType.textContent = formatText(client.client_type) || '—';
 
         sessionStorage.setItem('clientName', client.name || '');
@@ -95,12 +108,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 <h4>${formatText(service.title || 'Service')}</h4>
                 <p><strong>Status:</strong> ${formatText(service.status || 'Active')}</p>
                 <p><strong>Client Type:</strong> ${formatText(service.client_type || 'Not specified')}</p>
-                <p><strong>Notes:</strong> ${formatText(service.note || 'No additional notes available')}</p>
+                <p><strong>Notes:</strong> ${service.note || 'No additional notes available'}</p>
             </div>
         `).join('');
 
         if (clientService && data.services[0]?.title) {
             clientService.textContent = formatText(data.services[0].title);
+        }
+    }
+
+    function updatePayButton(totalDue) {
+        if (!payBtn) return;
+
+        if (Number(totalDue || 0) <= 0) {
+            payBtn.textContent = 'No Payment Due';
+            payBtn.classList.add('is-disabled');
+            payBtn.removeAttribute('href');
+        } else {
+            payBtn.textContent = '💳 Pay Now';
+            payBtn.classList.remove('is-disabled');
+            payBtn.setAttribute('href', 'payment.html');
         }
     }
 
@@ -131,8 +158,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.openSection = function (sectionId) {
         showSection(sectionId);
+
         if (sectionId === 'recordsSection') {
             loadRecords();
+        }
+
+        if (sectionId === 'chargesSection') {
+            loadCharges();
         }
     };
 
@@ -151,21 +183,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // LOAD PROFILE
     // ================================
     async function loadProfile() {
-        if (!clientId) {
-            if (nameEl) nameEl.textContent = 'Client';
-            return;
-        }
-
         try {
             const res = await fetch(`${API_BASE}/api/profile?clientId=${encodeURIComponent(clientId)}`);
             const text = await res.text();
             const data = safeJsonParse(text);
 
-            if (!res.ok) throw new Error(data.error);
+            if (!res.ok) {
+                throw new Error(data.error || 'Failed to load profile');
+            }
 
             fillProfile(data.client);
         } catch (err) {
-            console.error(err);
+            console.error('Profile load error:', err);
 
             fillProfile({
                 name: sessionStorage.getItem('clientName'),
@@ -181,26 +210,28 @@ document.addEventListener('DOMContentLoaded', () => {
     // LOAD SERVICES
     // ================================
     async function loadServices() {
-        if (!clientId || !servicesList) return;
+        if (!servicesList) return;
 
         try {
             const res = await fetch(`${API_BASE}/api/services?clientId=${encodeURIComponent(clientId)}`);
             const text = await res.text();
             const data = safeJsonParse(text);
 
-            if (!res.ok) throw new Error(data.error);
+            if (!res.ok) {
+                throw new Error(data.error || 'Failed to load services');
+            }
 
             fillServices(data);
         } catch (err) {
-            console.error(err);
+            console.error('Services load error:', err);
 
-            const fallback = sessionStorage.getItem('clientService') || 'Tax Filing & Compliance';
+            const fallback = sessionStorage.getItem('clientService') || 'No Service Selected';
 
             servicesList.innerHTML = `
                 <div class="portal-service-item">
                     <h4>${formatText(fallback)}</h4>
                     <p><strong>Status:</strong> Active</p>
-                    <p><strong>Client Type:</strong> ${formatText(sessionStorage.getItem('clientType'))}</p>
+                    <p><strong>Client Type:</strong> ${formatText(sessionStorage.getItem('clientType')) || 'Not specified'}</p>
                     <p><strong>Notes:</strong> No additional notes available</p>
                 </div>
             `;
@@ -215,17 +246,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         setUploadStatus('');
 
-        if (!clientId) {
-            setUploadStatus('Session expired. Please log in again.');
+        const fileInput = uploadForm.querySelector('input[type="file"]');
+        const file = fileInput?.files?.[0];
+
+        if (!file) {
+            setUploadStatus('Please select a file.');
             return;
         }
 
-        const file = uploadForm.querySelector('input[type="file"]').files[0];
-        if (!file) return setUploadStatus('Please select a file.');
-
-        const btn = uploadForm.querySelector('button');
-        btn.disabled = true;
-        btn.textContent = 'Uploading...';
+        const btn = uploadForm.querySelector('button[type="submit"]');
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'Uploading...';
+        }
 
         const formData = new FormData(uploadForm);
         formData.append('clientId', clientId);
@@ -237,17 +270,22 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error);
 
-            setUploadStatus('Upload successful', true);
+            if (!res.ok) {
+                throw new Error(data.error || 'Upload failed');
+            }
+
+            setUploadStatus('Upload successful.', true);
             uploadForm.reset();
             loadRecords();
-
         } catch (err) {
-            setUploadStatus(err.message);
+            console.error('Upload error:', err);
+            setUploadStatus(err.message || 'Upload failed.');
         } finally {
-            btn.disabled = false;
-            btn.textContent = 'Upload';
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = 'Upload';
+            }
         }
     });
 
@@ -255,13 +293,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // LOAD RECORDS
     // ================================
     async function loadRecords() {
-        if (!recordsList || !clientId) return;
+        if (!recordsList) return;
 
         recordsList.textContent = 'Loading...';
 
         try {
-            const res = await fetch(`${API_BASE}/api/records?clientId=${clientId}`);
+            const res = await fetch(`${API_BASE}/api/records?clientId=${encodeURIComponent(clientId)}`);
             const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || 'Failed to load records');
+            }
 
             if (!Array.isArray(data) || data.length === 0) {
                 recordsList.textContent = 'No records found yet.';
@@ -272,10 +314,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="record-item">
                     <strong>${record.file_name}</strong><br>
                     <small>${new Date(record.uploaded_at).toLocaleString()}</small><br>
-                    <a href="${API_BASE}/${record.file_path}" target="_blank">Open file</a>
+                    <a href="${API_BASE}/${record.file_path}" target="_blank" rel="noopener noreferrer">Open file</a>
                 </div>
             `).join('');
-        } catch {
+        } catch (err) {
+            console.error('Records load error:', err);
             recordsList.textContent = 'Failed to load records.';
         }
     }
@@ -284,8 +327,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // LOAD CHARGES
     // ================================
     async function loadCharges() {
-        if (!clientId || !chargeValue) return;
-
         try {
             const res = await fetch(`${API_BASE}/api/charges?clientId=${encodeURIComponent(clientId)}`);
             const data = await res.json();
@@ -295,23 +336,23 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (bookingFeeValue) {
-                bookingFeeValue.textContent = `$${(Number(data.bookingFee || 0) / 100).toFixed(2)}`;
+                bookingFeeValue.textContent = formatMoney(data.bookingFee);
             }
 
             if (serviceChargeValue) {
-                serviceChargeValue.textContent = `$${(Number(data.serviceCharge || 0) / 100).toFixed(2)}`;
+                serviceChargeValue.textContent = formatMoney(data.serviceCharge);
             }
 
             if (totalChargeValue) {
-                totalChargeValue.textContent = `$${(Number(data.totalCharge || 0) / 100).toFixed(2)}`;
+                totalChargeValue.textContent = formatMoney(data.totalCharge);
             }
 
             if (amountPaidValue) {
-                amountPaidValue.textContent = `$${(Number(data.amountPaid || 0) / 100).toFixed(2)}`;
+                amountPaidValue.textContent = formatMoney(data.amountPaid);
             }
 
             if (chargeValue) {
-                chargeValue.textContent = `$${(Number(data.totalDue || 0) / 100).toFixed(2)}`;
+                chargeValue.textContent = formatMoney(data.totalDue);
             }
 
             if (chargeStatus) {
@@ -322,21 +363,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 chargeService.textContent = formatText(data.serviceName || 'Not assigned');
             }
 
-            const payBtn = document.querySelector('.payment-action-btn');
-            if (payBtn) {
-                if (Number(data.totalDue || 0) <= 0) {
-                    payBtn.textContent = 'No Payment Due';
-                    payBtn.classList.add('is-disabled');
-                    payBtn.removeAttribute('href');
-                } else {
-                    payBtn.textContent = '💳 Pay Now';
-                    payBtn.setAttribute('href', 'payment.html');
-                    payBtn.classList.remove('is-disabled');
-                }
-            }
-
+            updatePayButton(data.totalDue);
         } catch (err) {
             console.error('Charge load error:', err);
+
+            if (bookingFeeValue) bookingFeeValue.textContent = '$0.00';
+            if (serviceChargeValue) serviceChargeValue.textContent = '$0.00';
+            if (totalChargeValue) totalChargeValue.textContent = '$0.00';
+            if (amountPaidValue) amountPaidValue.textContent = '$0.00';
+            if (chargeValue) chargeValue.textContent = '$0.00';
+            if (chargeStatus) chargeStatus.textContent = 'Unavailable';
+            if (chargeService) chargeService.textContent = 'Not assigned';
+
+            updatePayButton(0);
         }
     }
 
