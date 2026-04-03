@@ -1,4 +1,12 @@
 document.addEventListener("DOMContentLoaded", () => {
+    // Login guard
+    const clientId = sessionStorage.getItem("clientId");
+
+    if (!clientId) {
+        window.location.href = "./appointment-access.html";
+        return;
+    }
+
     const form = document.getElementById("appointmentForm");
     const service = document.getElementById("service");
     const meetingType = document.getElementById("meetingType");
@@ -91,8 +99,13 @@ document.addEventListener("DOMContentLoaded", () => {
     service.addEventListener("change", updateCost);
     meetingType.addEventListener("change", updateCost);
 
-    form.addEventListener("submit", (event) => {
+    form.addEventListener("submit", async (event) => {
         event.preventDefault();
+
+        const API_BASE =
+            (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+                ? 'http://localhost:3001'
+                : '';
 
         const fullName = document.getElementById("fullName");
         const email = document.getElementById("email");
@@ -123,14 +136,8 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
 
-        if (!consent.checked) {
-            statusText.textContent = "Please complete all required fields and accept the terms.";
-            statusText.style.color = "#c62828";
-            return;
-        }
-
-        if (hasError) {
-            statusText.textContent = "Please complete all required fields correctly before submitting.";
+        if (!consent.checked || hasError) {
+            statusText.textContent = "Please complete all required fields correctly.";
             statusText.style.color = "#c62828";
             return;
         }
@@ -148,14 +155,14 @@ document.addEventListener("DOMContentLoaded", () => {
             bookingCost: bookingCost.textContent
         };
 
-        /* Keep summary page working */
+        // Save locally
         localStorage.setItem("constantCoAppointment", JSON.stringify(bookingData));
 
-        /* Save into admin dashboard appointments */
         const existingAppointments = JSON.parse(localStorage.getItem("cc_admin_appointments")) || [];
+        const appointmentId = "appointment_" + Date.now();
 
         const adminAppointment = {
-            id: "appointment_" + Date.now(),
+            id: appointmentId,
             client: bookingData.fullName,
             email: bookingData.email,
             phone: bookingData.phone,
@@ -172,10 +179,37 @@ document.addEventListener("DOMContentLoaded", () => {
         existingAppointments.push(adminAppointment);
         localStorage.setItem("cc_admin_appointments", JSON.stringify(existingAppointments));
 
-        statusText.textContent = "Your appointment request has been submitted successfully.";
-        statusText.style.color = "#236B7D";
+        try {
+            // Convert "$120" → 12000 cents
+            const feeNumber = Number(bookingData.bookingCost.replace('$', '')) * 100;
 
-        window.location.href = "./booking-summary.html";
+            const response = await fetch(`${API_BASE}/api/create-booking-billing`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    appointmentId,
+                    clientId,
+                    serviceName: bookingData.service,
+                    bookingFee: feeNumber
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || "Failed to create booking billing record.");
+            }
+
+            statusText.textContent = "Redirecting to payment...";
+            statusText.style.color = "#236B7D";
+
+            window.location.href = "./payment.html";
+
+        } catch (err) {
+            console.error(err);
+            statusText.textContent = err.message || "Something went wrong. Please try again.";
+            statusText.style.color = "#c62828";
+        }
     });
 
     updateCost();
