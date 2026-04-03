@@ -155,35 +155,41 @@ document.addEventListener("DOMContentLoaded", () => {
             bookingCost: bookingCost.textContent
         };
 
-        // Save locally
         localStorage.setItem("constantCoAppointment", JSON.stringify(bookingData));
 
-        const existingAppointments = JSON.parse(localStorage.getItem("cc_admin_appointments")) || [];
-        const appointmentId = "appointment_" + Date.now();
-
-        const adminAppointment = {
-            id: appointmentId,
-            client: bookingData.fullName,
-            email: bookingData.email,
-            phone: bookingData.phone,
-            company: bookingData.company || "N/A",
-            date: bookingData.appointmentDate,
-            time: bookingData.appointmentTime,
-            type: bookingData.meetingType + " - " + bookingData.service,
-            status: "Scheduled",
-            duration: "60",
-            notes: bookingData.notes || "N/A",
-            cost: bookingData.bookingCost
-        };
-
-        existingAppointments.push(adminAppointment);
-        localStorage.setItem("cc_admin_appointments", JSON.stringify(existingAppointments));
-
         try {
-            // Convert "$120" → 12000 cents
+            const clientId = sessionStorage.getItem("clientId");
             const feeNumber = Number(bookingData.bookingCost.replace('$', '')) * 100;
 
-            const response = await fetch(`${API_BASE}/api/create-booking-billing`, {
+            // 1. Create appointment
+            const appointmentRes = await fetch(`${API_BASE}/api/appointments`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    clientId,
+                    fullName: bookingData.fullName,
+                    email: bookingData.email,
+                    phone: bookingData.phone,
+                    company: bookingData.company,
+                    serviceName: bookingData.service,
+                    meetingType: bookingData.meetingType,
+                    appointmentDate: bookingData.appointmentDate,
+                    appointmentTime: bookingData.appointmentTime,
+                    notes: bookingData.notes,
+                    bookingFee: feeNumber
+                })
+            });
+
+            const appointmentData = await appointmentRes.json();
+
+            if (!appointmentRes.ok) {
+                throw new Error(appointmentData.error || 'Failed to create appointment');
+            }
+
+            const appointmentId = appointmentData.appointment.id;
+
+            // 2. Create billing record
+            const billingRes = await fetch(`${API_BASE}/api/create-booking-billing`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -194,10 +200,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 })
             });
 
-            const data = await response.json();
+            const billingData = await billingRes.json();
 
-            if (!response.ok) {
-                throw new Error(data.error || "Failed to create booking billing record.");
+            if (!billingRes.ok) {
+                throw new Error(billingData.error || 'Failed to create booking billing record');
             }
 
             statusText.textContent = "Redirecting to payment...";

@@ -119,7 +119,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const { error } = await stripe.confirmPayment({
             elements,
             confirmParams: {
-                return_url: `${window.location.origin}/payment-success.html`
+                return_url: `http://127.0.0.1:5500/src/payment-success.html`
             }
         });
 

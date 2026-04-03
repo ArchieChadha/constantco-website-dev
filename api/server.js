@@ -169,6 +169,8 @@ const pool = new pg.Pool(
         }
 );
 
+app.use(express.static(path.join(process.cwd(), 'src')));
+
 /* ---------- Tiny request log ---------- */
 app.use((req, _res, next) => {
     console.log(`${req.method} ${req.url}`);
@@ -578,6 +580,62 @@ app.get('/api/records', async (req, res) => {
     }
 });
 
+app.post('/api/appointments', async (req, res) => {
+    try {
+        const {
+            clientId,
+            fullName = '',
+            email = '',
+            phone = '',
+            company = '',
+            serviceName = '',
+            meetingType = '',
+            appointmentDate = '',
+            appointmentTime = '',
+            notes = '',
+            bookingFee = 0
+        } = req.body || {};
+
+        if (!clientId) {
+            return res.status(400).json({ error: 'Client ID required' });
+        }
+
+        if (!fullName || !email || !phone || !serviceName || !meetingType || !appointmentDate || !appointmentTime) {
+            return res.status(400).json({ error: 'Missing required appointment fields' });
+        }
+
+        const fee = Number(bookingFee) || 0;
+
+        const { rows } = await pool.query(
+            `INSERT INTO appointments
+             (client_id, full_name, email, phone, company, service_name, meeting_type, appointment_date, appointment_time, notes, booking_fee, booking_status, created_at, updated_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'Scheduled', NOW(), NOW())
+             RETURNING *`,
+            [
+                clientId,
+                fullName.trim(),
+                email.trim(),
+                phone.trim(),
+                company.trim() || null,
+                serviceName,
+                meetingType,
+                appointmentDate,
+                appointmentTime,
+                notes.trim() || null,
+                fee
+            ]
+        );
+
+        res.json({
+            ok: true,
+            appointment: rows[0]
+        });
+    } catch (err) {
+        console.error('Create appointment error:', err);
+        res.status(500).json({ error: 'Failed to create appointment' });
+    }
+});
+
 /*----- Booking Billing -------*/
 app.post('/api/create-booking-billing', async (req, res) => {
     try {
@@ -629,6 +687,52 @@ app.post('/api/create-booking-billing', async (req, res) => {
     }
 });
 
+/*------Appointments-------*/
+
+app.get('/api/admin/appointments', async (_req, res) => {
+    try {
+        const { rows } = await pool.query(
+            `SELECT id, client_id, full_name, email, phone, company, service_name, meeting_type,
+                    appointment_date, appointment_time, notes, booking_fee, booking_status, created_at
+             FROM appointments
+             ORDER BY created_at DESC`
+        );
+
+        res.json({
+            ok: true,
+            appointments: rows
+        });
+    } catch (err) {
+        console.error('Admin appointments fetch error:', err);
+        res.status(500).json({ error: 'Failed to fetch appointments' });
+    }
+});
+
+app.get('/api/admin/appointments/:appointmentId', async (req, res) => {
+    try {
+        const { appointmentId } = req.params;
+
+        const { rows } = await pool.query(
+            `SELECT *
+             FROM appointments
+             WHERE id = $1
+             LIMIT 1`,
+            [appointmentId]
+        );
+
+        if (!rows.length) {
+            return res.status(404).json({ error: 'Appointment not found' });
+        }
+
+        res.json({
+            ok: true,
+            appointment: rows[0]
+        });
+    } catch (err) {
+        console.error('Admin appointment fetch error:', err);
+        res.status(500).json({ error: 'Failed to fetch appointment' });
+    }
+});
 
 /*------Admin Billing------*/
 
