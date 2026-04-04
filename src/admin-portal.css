@@ -49,10 +49,11 @@ a {
 
 /* Login */
 .login-screen {
+    margin:0;
     min-height: 100vh;
     display: grid;
     place-items: center;
-    padding: 24px;
+    padding: 0px;
     background: linear-gradient(135deg, rgba(174, 230, 230, 0.45), rgba(35, 107, 125, 0.12));
 }
 
@@ -195,6 +196,8 @@ a {
 
 /* App */
 .admin-app {
+    padding: 0;
+    margin: 0;
     display: none;
     min-height: 100vh;
 }
