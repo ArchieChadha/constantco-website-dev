@@ -31,6 +31,8 @@ app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async
         return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
+    console.log('🔥 Webhook received:', event.type);
+
     const client = await pool.connect();
 
     try {
@@ -51,7 +53,7 @@ app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async
             return res.json({ received: true, duplicate: true });
         }
 
-        // Record the event first
+        // 2. Record the event first
         await client.query(
             `INSERT INTO processed_stripe_events
              (stripe_event_id, event_type, created_at)
@@ -61,25 +63,34 @@ app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async
 
         if (event.type === 'payment_intent.succeeded') {
             const paymentIntent = event.data.object;
+
+            console.log('✅ Payment success:', paymentIntent.id);
+
             const paidAmount = Number(paymentIntent.amount_received || paymentIntent.amount || 0);
             const currency = paymentIntent.currency || 'aud';
+            const billingId = Number(paymentIntent.metadata.billingId || 0);
 
-            // 2. Find the billing record for this payment intent
+            console.log('🧠 billingId from metadata:', billingId);
+
+            if (!billingId) {
+                throw new Error(`Missing billingId in payment intent metadata for ${paymentIntent.id}`);
+            }
+
             const billingResult = await client.query(
                 `SELECT id, client_id, total_charge, amount_paid
                  FROM appointment_billing
-                 WHERE stripe_payment_intent_id = $1
+                 WHERE id = $1
                  LIMIT 1`,
-                [paymentIntent.id]
+                [billingId]
             );
 
             if (!billingResult.rows.length) {
-                throw new Error(`No billing record found for payment intent ${paymentIntent.id}`);
+                throw new Error(`No billing record found for billing ID ${billingId}`);
             }
 
             const billing = billingResult.rows[0];
+            console.log('🧠 Billing row found:', billing);
 
-            // 3. Deduplicate by payment intent ID too
             const existingPayment = await client.query(
                 `SELECT id
                  FROM client_payments
@@ -115,28 +126,44 @@ app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async
 
                 const newStatus = newAmountDue === 0 ? 'Paid' : 'Pending';
 
-                await client.query(
+                const result = await client.query(
                     `UPDATE appointment_billing
                      SET amount_paid = $1,
                          amount_due = $2,
                          payment_status = $3,
                          updated_at = NOW()
-                     WHERE id = $4`,
+                     WHERE id = $4
+                     RETURNING *`,
                     [newAmountPaid, newAmountDue, newStatus, billing.id]
                 );
+
+                console.log('🧠 Rows updated:', result.rowCount);
+                console.log('🧠 Updated row:', result.rows[0]);
+            } else {
+                console.log('ℹ️ Payment already recorded for:', paymentIntent.id);
             }
         }
 
         if (event.type === 'payment_intent.payment_failed') {
             const paymentIntent = event.data.object;
+            const billingId = Number(paymentIntent.metadata.billingId || 0);
 
-            await client.query(
+            if (!billingId) {
+                throw new Error(`Missing billingId in failed payment metadata for ${paymentIntent.id}`);
+            }
+
+            const result = await client.query(
                 `UPDATE appointment_billing
                  SET payment_status = 'Failed',
                      updated_at = NOW()
-                 WHERE stripe_payment_intent_id = $1`,
-                [paymentIntent.id]
+                 WHERE id = $1
+                 RETURNING *`,
+                [billingId]
             );
+
+            console.log('❌ Payment failed:', paymentIntent.id);
+            console.log('🧠 Failed rows updated:', result.rowCount);
+            console.log('🧠 Failed updated row:', result.rows[0]);
         }
 
         await client.query('COMMIT');
@@ -1238,6 +1265,7 @@ app.post('/api/create-payment-intent', async (req, res) => {
             }
         });
 
+        // Save payment intent ID so webhook can match the correct billing row
         await pool.query(
             `UPDATE appointment_billing
              SET stripe_payment_intent_id = $1,
