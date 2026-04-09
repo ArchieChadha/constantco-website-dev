@@ -801,6 +801,46 @@ app.post('/api/appointments', async (req, res) => {
     }
 });
 
+/*-----Booking Validation (to prevent double booking)------*/
+app.post('/api/create-booking', async (req, res) => {
+    try {
+        const { clientId, service, date, time } = req.body;
+
+        // 1. Check if slot already exists
+        const existing = await pool.query(
+            `SELECT id 
+             FROM appointments
+             WHERE date = $1 AND time = $2
+             LIMIT 1`,
+            [date, time]
+        );
+
+        // 2. If already booked → reject
+        if (existing.rows.length > 0) {
+            return res.status(400).json({
+                error: 'This time slot is already booked. Please select another.'
+            });
+        }
+
+        // 3. If available → insert booking
+        const result = await pool.query(
+            `INSERT INTO appointments (client_id, service, date, time)
+             VALUES ($1, $2, $3, $4)
+             RETURNING *`,
+            [clientId, service, date, time]
+        );
+
+        res.json({
+            message: 'Appointment booked successfully',
+            booking: result.rows[0]
+        });
+
+    } catch (err) {
+        console.error('Booking error:', err);
+        res.status(500).json({ error: 'Booking failed' });
+    }
+});
+
 /*----- Booking Billing -------*/
 app.post('/api/create-booking-billing', async (req, res) => {
     try {
