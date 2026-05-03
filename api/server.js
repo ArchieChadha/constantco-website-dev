@@ -744,7 +744,6 @@ app.get('/api/records', async (req, res) => {
 });
 
 /*-------Client Appointment-------*/
-
 app.post('/api/appointments', async (req, res) => {
     try {
         const {
@@ -767,6 +766,23 @@ app.post('/api/appointments', async (req, res) => {
 
         if (!fullName || !email || !phone || !serviceName || !meetingType || !appointmentDate || !appointmentTime) {
             return res.status(400).json({ error: 'Missing required appointment fields' });
+        }
+
+        // Prevent double booking
+        const existing = await pool.query(
+            `SELECT id
+             FROM appointments
+             WHERE appointment_date = $1
+               AND appointment_time = $2
+               AND booking_status IN ('Scheduled', 'Confirmed')
+             LIMIT 1`,
+            [appointmentDate, appointmentTime]
+        );
+
+        if (existing.rows.length > 0) {
+            return res.status(409).json({
+                error: 'This time slot is already booked. Please select another.'
+            });
         }
 
         const fee = Number(bookingFee) || 0;
@@ -798,46 +814,6 @@ app.post('/api/appointments', async (req, res) => {
     } catch (err) {
         console.error('Create appointment error:', err);
         res.status(500).json({ error: 'Failed to create appointment' });
-    }
-});
-
-/*-----Booking Validation (to prevent double booking)------*/
-app.post('/api/create-booking', async (req, res) => {
-    try {
-        const { clientId, service, date, time } = req.body;
-
-        // 1. Check if slot already exists
-        const existing = await pool.query(
-            `SELECT id 
-             FROM appointments
-             WHERE date = $1 AND time = $2
-             LIMIT 1`,
-            [date, time]
-        );
-
-        // 2. If already booked → reject
-        if (existing.rows.length > 0) {
-            return res.status(400).json({
-                error: 'This time slot is already booked. Please select another.'
-            });
-        }
-
-        // 3. If available → insert booking
-        const result = await pool.query(
-            `INSERT INTO appointments (client_id, service, date, time)
-             VALUES ($1, $2, $3, $4)
-             RETURNING *`,
-            [clientId, service, date, time]
-        );
-
-        res.json({
-            message: 'Appointment booked successfully',
-            booking: result.rows[0]
-        });
-
-    } catch (err) {
-        console.error('Booking error:', err);
-        res.status(500).json({ error: 'Booking failed' });
     }
 });
 
