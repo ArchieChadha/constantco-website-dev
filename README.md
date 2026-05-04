@@ -28,7 +28,7 @@ The website will be mobile-friendly, SEO-optimized, and designed to reflect the 
 - Abdul Kaiyum Tahsin – *30434113*  
 - Divya Chhabra – *30414437*  
 - Mohammad Ashraful Islam – *30430589*  
-- Sajan Dhamala – *[Student ID]*  
+- Sajan Dhamala – *30432707*  
 
 
 ## Client Information
