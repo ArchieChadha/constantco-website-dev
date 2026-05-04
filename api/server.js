@@ -8,9 +8,13 @@ import multer from 'multer';
 import path from 'path';
 import Stripe from 'stripe';
 import crypto from 'crypto';
+import OpenAI from 'openai';
 
 dotenv.config();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY
+});
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -180,6 +184,37 @@ app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async
 /* ---------- Middleware ---------- */
 app.use(cors({ origin: true }));
 app.use(express.json());
+
+/* ---------- AI Chatbot ---------- */
+app.post('/api/ai-chatbot', async (req, res) => {
+    try {
+        const { message = '' } = req.body || {};
+        if (!message.trim()) {
+            return res.status(400).json({ error: 'Message is required' });
+        }
+        const response = await openai.responses.create({
+            model: 'gpt-5.5-mini',
+            input: [
+                {
+                    role: 'system',
+                    content:
+                        'You are the Constant & Co website assistant. Help users with appointment booking, payments, client portal, document uploads, accounting services, FAQs, and contact information. Keep answers short, helpful, and professional. If the question is outside Constant & Co website support, politely redirect the user.'
+                },
+                {
+                    role: 'user',
+                    content: message
+                }
+            ]
+        });
+        res.json({
+            ok: true,
+            reply: response.output_text || 'Sorry, I could not generate a response.'
+        });
+    } catch (err) {
+        console.error('AI chatbot error:', err);
+        res.status(500).json({ error: 'AI chatbot failed' });
+    }
+});
 
 const uploadsFolder = path.join(process.cwd(), 'uploads');
 app.use('/uploads', express.static(uploadsFolder));
