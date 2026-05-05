@@ -357,6 +357,164 @@ section {
     box-shadow: var(--shadow-sm);
 }
 
+/* ===== Footer ===== */
+footer {
+    background: #0f2e36;
+    color: #e8f3f6;
+    margin-top: 30px;
+}
+
+footer a {
+    color: #e8f3f6;
+}
+
+.foot {
+    display: grid;
+    grid-template-columns: 2fr repeat(5, minmax(0, 1fr));
+    gap: 18px;
+    padding: 36px 0;
+}
+
+.contact-info p {
+    margin: 4px 0;
+    font-size: 0.95rem;
+}
+
+.contact-info a {
+    color: #e8f3f6;
+    text-decoration: none;
+}
+
+.contact-info a:hover {
+    text-decoration: underline;
+}
+
+.copy {
+    padding: 14px 0;
+    border-top: 1px solid rgba(255, 255, 255, .15);
+    font-size: .9rem;
+    opacity: .9;
+}
+
+/* ===== Utilities ===== */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+}
+
+.input-error {
+    border-color: #e57373 !important;
+}
+
+/* ===== Auth ===== */
+.auth-hero {
+    padding: 42px 0 32px;
+}
+
+.auth-title {
+    font-size: 2.6rem;
+    line-height: 1.15;
+    color: #0f2e36;
+    margin: 0 0 6px;
+}
+
+.auth-sub {
+    margin: 0 0 22px;
+    opacity: .9;
+}
+
+.auth-card {
+    max-width: 620px;
+    background: #fff;
+    border: 1px solid var(--gray);
+    border-radius: 16px;
+    padding: 22px;
+    box-shadow: var(--shadow-sm);
+}
+
+.auth-form {
+    margin-top: 12px;
+}
+
+.auth-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 20px;
+    row-gap: 20px;
+}
+
+.auth-row--inline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+}
+
+.auth-row.auth-row--single {
+    grid-template-columns: 1fr;
+}
+
+.input-lg {
+    height: 48px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--gray);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.input-lg:focus {
+    outline: 3px solid var(--aqua);
+    border-color: transparent;
+}
+
+.auth-form>.auth-row+.auth-row {
+    margin-top: 20px;
+}
+
+.check {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.small {
+    font-size: .95rem;
+}
+
+.link {
+    color: var(--teal);
+}
+
+.auth-btn {
+    margin-top: 10px;
+    min-width: 120px;
+}
+
+.auth-divider {
+    margin: 16px 0;
+    border: 0;
+    height: 1px;
+    background: var(--gray);
+}
+
+.contact-form .auth-row--inline {
+    justify-content: flex-start;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.contact-form .privacy-link {
+    white-space: nowrap;
+}
+
 /* ===== NEWSLETTER POPUP ===== */
 
 /* Overlay */

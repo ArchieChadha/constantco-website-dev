@@ -964,6 +964,88 @@ app.post('/api/admin/login', async (req, res) => {
     }
 });
 
+/*-----Internal Login: Admin or Staff-----*/
+app.post('/api/internal-login', async (req, res) => {
+    try {
+        const { email, password } = req.body || {};
+
+        if (!email || !password) {
+            return res.status(400).json({ error: 'Email and password are required' });
+        }
+
+        let user = null;
+        let userType = null;
+
+        // 1. Check admins table first
+        const adminResult = await pool.query(
+            `SELECT id, full_name, email, password, role, verified
+             FROM admins
+             WHERE email = $1
+             LIMIT 1`,
+            [email.trim()]
+        );
+
+        if (adminResult.rows.length) {
+            user = adminResult.rows[0];
+            userType = 'admin';
+        }
+
+        // 2. If not admin, check staff_users table
+        if (!user) {
+            const staffResult = await pool.query(
+                `SELECT id, full_name, email, password, verified
+                 FROM staff_users
+                 WHERE email = $1
+                 LIMIT 1`,
+                [email.trim()]
+            );
+
+            if (staffResult.rows.length) {
+                user = staffResult.rows[0];
+                userType = 'staff';
+            }
+        }
+
+        if (!user) {
+            return res.status(401).json({ error: 'Invalid email or password' });
+        }
+
+        if (!user.verified) {
+            return res.status(403).json({ error: 'Account is not verified' });
+        }
+
+        const stored = user.password || '';
+        let ok = false;
+
+        if (
+            stored.startsWith('$2a$') ||
+            stored.startsWith('$2b$') ||
+            stored.startsWith('$2y$')
+        ) {
+            ok = await bcrypt.compare(password, stored);
+        } else {
+            ok = password === stored;
+        }
+
+        if (!ok) {
+            return res.status(401).json({ error: 'Invalid email or password' });
+        }
+
+        res.json({
+            ok: true,
+            user: {
+                id: user.id,
+                name: user.full_name,
+                email: user.email,
+                role: userType
+            }
+        });
+    } catch (err) {
+        console.error('Internal login error:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 /*------Admin Appointments-------*/
 
 app.get('/api/admin/appointments', async (_req, res) => {
@@ -985,56 +1067,6 @@ app.get('/api/admin/appointments', async (_req, res) => {
     }
 });
 
-app.put('/api/admin/appointments/:appointmentId', async (req, res) => {
-    try {
-        const { appointmentId } = req.params;
-        const {
-            fullName = '',
-            appointmentDate = '',
-            appointmentTime = '',
-            serviceName = '',
-            meetingType = '',
-            bookingStatus = 'Scheduled',
-            notes = ''
-        } = req.body || {};
-
-        const { rows } = await pool.query(
-            `UPDATE appointments
-             SET full_name = $1,
-                 appointment_date = $2,
-                 appointment_time = $3,
-                 service_name = $4,
-                 meeting_type = $5,
-                 booking_status = $6,
-                 notes = $7,
-                 updated_at = NOW()
-             WHERE id = $8
-             RETURNING *`,
-            [
-                fullName.trim(),
-                appointmentDate,
-                appointmentTime,
-                serviceName,
-                meetingType,
-                bookingStatus,
-                notes.trim() || null,
-                appointmentId
-            ]
-        );
-
-        if (!rows.length) {
-            return res.status(404).json({ error: 'Appointment not found' });
-        }
-
-        res.json({
-            ok: true,
-            appointment: rows[0]
-        });
-    } catch (err) {
-        console.error('Admin appointment update error:', err);
-        res.status(500).json({ error: 'Failed to update appointment' });
-    }
-});
 
 /*------Delete Appointment--------*/
 
@@ -1059,26 +1091,6 @@ app.delete('/api/admin/appointments/:appointmentId', async (req, res) => {
     }
 });
 
-/*-----Get all appointments for admin----*/
-
-app.get('/api/admin/appointments', async (_req, res) => {
-    try {
-        const { rows } = await pool.query(
-            `SELECT id, client_id, full_name, email, phone, company, service_name, meeting_type,
-                    appointment_date, appointment_time, notes, booking_fee, booking_status, created_at
-             FROM appointments
-             ORDER BY created_at DESC`
-        );
-
-        res.json({
-            ok: true,
-            appointments: rows
-        });
-    } catch (err) {
-        console.error('Admin appointments fetch error:', err);
-        res.status(500).json({ error: 'Failed to fetch appointments' });
-    }
-});
 
 /*------Update appointment from admin portal----*/
 
