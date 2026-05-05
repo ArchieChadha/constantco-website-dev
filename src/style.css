@@ -1479,9 +1479,74 @@ footer a {
     border-color: #eef8fb !important;
 }
 
+/* ===== Minimal header (appointment / auth funnel) ===== */
+.auth-minimal-header {
+    background: #fff;
+    border-bottom: 1px solid rgba(35, 107, 125, 0.12);
+    box-shadow: var(--shadow-sm);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+
+.auth-minimal-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 76px;
+    padding: 8px 0;
+}
+
+.auth-minimal-logo-link {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.auth-minimal-logo-link img {
+    height: 56px;
+    width: auto;
+    max-width: 200px;
+    object-fit: contain;
+}
+
+.auth-minimal-logo-link:focus-visible {
+    outline: 3px solid var(--aqua);
+    outline-offset: 4px;
+    border-radius: 8px;
+}
+
+.auth-minimal-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 20px;
+    align-items: center;
+}
+
+.auth-minimal-back,
+.auth-minimal-link {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--teal);
+    text-decoration: none;
+}
+
+.auth-minimal-back:hover,
+.auth-minimal-link:hover {
+    text-decoration: underline;
+}
+
+.auth-minimal-back:focus-visible,
+.auth-minimal-link:focus-visible {
+    outline: 3px solid var(--aqua);
+    outline-offset: 3px;
+    border-radius: 8px;
+}
+
 /* ===== Appointment Access Page ===== */
 .appointment-access-page {
-    padding: 42px 20px 60px;
+    padding: 28px 20px 60px;
     background: linear-gradient(180deg, #f8fcfd 0%, #ffffff 100%);
 }
 
