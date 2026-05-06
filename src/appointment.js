@@ -95,9 +95,17 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         ]
     });
+    service.addEventListener("change", () => {
+    updateCost();
+    checkAvailableAgent();
+});
 
-    service.addEventListener("change", updateCost);
-    meetingType.addEventListener("change", updateCost);
+meetingType.addEventListener("change", () => {
+    updateCost();
+    checkAvailableAgent();
+});
+
+document.getElementById("appointmentTime").addEventListener("change", checkAvailableAgent);
 
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
@@ -217,6 +225,48 @@ document.addEventListener("DOMContentLoaded", () => {
             statusText.style.color = "#c62828";
         }
     });
+    async function checkAvailableAgent() {
+    const selectedService = service.value;
+    const selectedMeetingType = meetingType.value;
+    const selectedTime = document.getElementById("appointmentTime").value;
+    const agentBox = document.getElementById("availableAgent");
+
+    if (!agentBox) return;
+
+    if (!selectedService || !selectedMeetingType || !selectedTime) {
+        agentBox.innerHTML = "Please select service, meeting type and time.";
+        return;
+    }
+
+    const API_BASE =
+        (location.hostname === "localhost" || location.hostname === "127.0.0.1")
+            ? "http://localhost:3001"
+            : "";
+
+    const res = await fetch(
+        `${API_BASE}/api/available-agent?service=${encodeURIComponent(selectedService)}&meetingType=${encodeURIComponent(selectedMeetingType)}&time=${encodeURIComponent(selectedTime)}`
+    );
+
+    const data = await res.json();
+
+    if (!data.agents || data.agents.length === 0) {
+        agentBox.innerHTML = "No agent available for this selection.";
+        return;
+    }
+
+    agentBox.innerHTML = data.agents.map(agent => `
+        <label class="agent-card selectable-agent">
+            <input type="radio" name="selectedAgent" value="${agent.name}" required>
+            <img src="assets/${agent.image}" alt="${agent.name}">
+            <div>
+                <strong>${agent.name}</strong>
+                <p>${agent.role}</p>
+                <p>${agent.expertise}</p>
+            </div>
+        </label>
+    `).join("");
+}
 
     updateCost();
+    checkAvailableAgent();
 });

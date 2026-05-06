@@ -2309,19 +2309,24 @@ footer a {
     justify-content: center;
   }
 }
-/* ===== Available Agent Box ===== */
 .available-agent-box {
   margin-top: 20px;
-  padding: 15px;
+  padding: 18px;
   border: 1px solid #dceaea;
-  border-radius: 10px;
+  border-radius: 14px;
   background: #f8fcfd;
 }
 
 .agent-card {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
+  padding: 12px;
+  margin-top: 10px;
+  border: 1px solid #dceaea;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
 }
 
 .agent-card img {
