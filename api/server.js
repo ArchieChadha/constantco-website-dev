@@ -184,6 +184,7 @@ app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async
 /* ---------- Middleware ---------- */
 app.use(cors({ origin: true }));
 app.use(express.json());
+app.use(express.static(path.join(process.cwd(), '..', 'src')));
 
 /* ---------- AI Chatbot ---------- */
 app.post('/api/ai-chatbot', async (req, res) => {
@@ -232,7 +233,9 @@ const pool = new pg.Pool(
         }
 );
 
-app.use(express.static(path.join(process.cwd(), 'src')));
+app.get('/', (req, res) => {
+    res.sendFile(path.join(process.cwd(), '..', 'src', 'index.html'));
+});
 
 /* ---------- Tiny request log ---------- */
 app.use((req, _res, next) => {
@@ -1379,7 +1382,27 @@ app.use((err, req, res, next) => {
 
     next();
 });
+app.get('/api/available-agent', async (req, res) => {
+    try {
+        const { service, meetingType, time } = req.query;
 
+        const result = await pool.query(
+            `SELECT *
+             FROM agents
+             WHERE expertise = $1
+             AND meeting_type = $2
+             AND available_time = $3
+             ORDER BY name
+             LIMIT 3`,
+            [service, meetingType, time]
+        );
+
+        res.json({ agents: result.rows });
+    } catch (err) {
+        console.error('Available agent error:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
 
 /* ---------- Start ---------- */
 app.listen(PORT, () => {
