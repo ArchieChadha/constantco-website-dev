@@ -697,14 +697,23 @@ app.get('/api/services', async (req, res) => {
         }
 
         const { rows } = await pool.query(
-            `SELECT id, service, client_type, note
-             FROM portal_clients
-             WHERE id = $1
+            `SELECT 
+                pc.id,
+                pc.service,
+                pc.client_type,
+                pc.note,
+                s.full_name AS staff_name
+             FROM portal_clients pc
+             LEFT JOIN appointments a ON a.client_id = pc.id
+             LEFT JOIN staff_users s ON a.staff_id = s.id
+             WHERE pc.id = $1
+             ORDER BY a.created_at DESC
              LIMIT 1`,
             [clientId]
         );
 
         const client = rows[0];
+
         if (!client) {
             return res.status(404).json({ error: 'Client not found' });
         }
@@ -716,6 +725,7 @@ app.get('/api/services', async (req, res) => {
                     title: client.service || 'No service selected',
                     status: 'Active',
                     client_type: client.client_type || 'Not specified',
+                    staff_name: client.staff_name || 'Not assigned',
                     note: client.note || 'No additional notes available'
                 }
             ]
@@ -781,11 +791,66 @@ app.get('/api/records', async (req, res) => {
     }
 });
 
+/*-----Available Staff for Booking------*/
+app.get('/api/available-staff', async (req, res) => {
+    try {
+        const { date, time, service } = req.query;
+
+        if (!date || !time || !service) {
+            return res.status(400).json({ error: 'Date, time, and service are required' });
+        }
+
+        const { rows } = await pool.query(
+            `SELECT
+        s.id,
+        s.full_name,
+        s.email,
+        s.phone,
+        ss.service_name,
+        CASE 
+            WHEN a.id IS NOT NULL THEN 'booked'
+            ELSE 'available'
+        END AS availability_status
+     FROM staff_availability sa
+     JOIN staff_users s ON sa.staff_id = s.id
+     JOIN staff_services ss 
+       ON ss.staff_id = s.id 
+      AND ss.service_name = $3
+     LEFT JOIN appointments a
+        ON a.staff_id = s.id
+       AND a.appointment_date = $1
+       AND a.appointment_time = $2::time
+       AND a.booking_status IN ('Scheduled', 'Confirmed')
+     WHERE sa.available_date = $1
+       AND $2::time >= sa.start_time
+       AND $2::time < sa.end_time
+       AND sa.status = 'approved'
+     ORDER BY 
+       s.id,
+       CASE 
+         WHEN a.id IS NULL THEN 0 
+         ELSE 1 
+       END,
+       s.full_name`,
+            [date, time, service]
+        );
+        res.json({
+            ok: true,
+            staff: rows
+        });
+
+    } catch (err) {
+        console.error('Available staff error:', err);
+        res.status(500).json({ error: 'Failed to fetch staff availability' });
+    }
+});
+
 /*-------Client Appointment-------*/
 app.post('/api/appointments', async (req, res) => {
     try {
         const {
             clientId,
+            staffId,
             fullName = '',
             email = '',
             phone = '',
@@ -802,24 +867,39 @@ app.post('/api/appointments', async (req, res) => {
             return res.status(400).json({ error: 'Client ID required' });
         }
 
-        if (!fullName || !email || !phone || !serviceName || !meetingType || !appointmentDate || !appointmentTime) {
+        if (!staffId || !fullName || !email || !phone || !serviceName || !meetingType || !appointmentDate || !appointmentTime) {
             return res.status(400).json({ error: 'Missing required appointment fields' });
+        }
+
+        const serviceCheck = await pool.query(
+            `SELECT 1
+     FROM staff_services
+     WHERE staff_id = $1 AND service_name = $2
+     LIMIT 1`,
+            [staffId, serviceName.trim()]
+        );
+
+        if (!serviceCheck.rows.length) {
+            return res.status(400).json({
+                error: 'Selected staff does not provide this service.'
+            });
         }
 
         // Prevent double booking
         const existing = await pool.query(
             `SELECT id
-             FROM appointments
-             WHERE appointment_date = $1
-               AND appointment_time = $2
-               AND booking_status IN ('Scheduled', 'Confirmed')
-             LIMIT 1`,
-            [appointmentDate, appointmentTime]
+     FROM appointments
+     WHERE staff_id = $1
+       AND appointment_date = $2
+       AND appointment_time = $3::time
+       AND booking_status IN('Scheduled', 'Confirmed')
+     LIMIT 1`,
+            [staffId, appointmentDate, appointmentTime]
         );
 
         if (existing.rows.length > 0) {
             return res.status(409).json({
-                error: 'This time slot is already booked. Please select another.'
+                error: 'This staff member is already booked for this session.'
             });
         }
 
@@ -827,11 +907,12 @@ app.post('/api/appointments', async (req, res) => {
 
         const { rows } = await pool.query(
             `INSERT INTO appointments
-             (client_id, full_name, email, phone, company, service_name, meeting_type, appointment_date, appointment_time, notes, booking_fee, booking_status, created_at, updated_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'Scheduled', NOW(), NOW())
-             RETURNING *`,
+            (client_id, staff_id, full_name, email, phone, company, service_name, meeting_type, appointment_date, appointment_time, notes, booking_fee, booking_status, created_at, updated_at)
+     VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::time, $11, $12, 'Scheduled', NOW(), NOW())
+     RETURNING * `,
             [
                 clientId,
+                staffId,
                 fullName.trim(),
                 email.trim(),
                 phone.trim(),
@@ -844,10 +925,17 @@ app.post('/api/appointments', async (req, res) => {
                 fee
             ]
         );
+        const staffResult = await pool.query(
+            `SELECT full_name FROM staff_users WHERE id = $1 LIMIT 1`,
+            [staffId]
+        );
 
         res.json({
             ok: true,
-            appointment: rows[0]
+            appointment: {
+                ...rows[0],
+                staff_name: staffResult.rows[0]?.full_name || 'Not assigned'
+            }
         });
     } catch (err) {
         console.error('Create appointment error:', err);
@@ -890,9 +978,9 @@ app.post('/api/create-booking-billing', async (req, res) => {
 
         const result = await pool.query(
             `INSERT INTO appointment_billing
-             (appointment_id, client_id, service_name, booking_fee, service_charge, total_charge, amount_paid, amount_due, payment_status, created_at, updated_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
-             RETURNING *`,
+            (appointment_id, client_id, service_name, booking_fee, service_charge, total_charge, amount_paid, amount_due, payment_status, created_at, updated_at)
+             VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
+             RETURNING * `,
             [appointmentId, clientId, serviceName, booking, service, total, paid, due, status]
         );
 
@@ -903,67 +991,6 @@ app.post('/api/create-booking-billing', async (req, res) => {
     } catch (err) {
         console.error('Create booking billing error:', err);
         res.status(500).json({ error: 'Failed to create booking billing record' });
-    }
-});
-
-/*-----Admin Login-------*/
-
-app.post('/api/admin/login', async (req, res) => {
-    try {
-        const { email, password } = req.body || {};
-
-        if (!email || !password) {
-            return res.status(400).json({ error: 'Email and password are required' });
-        }
-
-        const { rows } = await pool.query(
-            `SELECT id, full_name, email, password, role, verified
-             FROM admins
-             WHERE email = $1
-             LIMIT 1`,
-            [email.trim()]
-        );
-
-        const admin = rows[0];
-
-        if (!admin) {
-            return res.status(401).json({ error: 'Invalid email or password' });
-        }
-
-        if (!admin.verified) {
-            return res.status(403).json({ error: 'Your admin account is pending verification' });
-        }
-
-        let ok = false;
-        const stored = admin.password || '';
-
-        if (
-            stored.startsWith('$2a$') ||
-            stored.startsWith('$2b$') ||
-            stored.startsWith('$2y$')
-        ) {
-            ok = await bcrypt.compare(password, stored);
-        } else {
-            ok = password === stored;
-        }
-
-        if (!ok) {
-            return res.status(401).json({ error: 'Invalid email or password' });
-        }
-
-        res.json({
-            ok: true,
-            admin: {
-                id: admin.id,
-                name: admin.full_name,
-                email: admin.email,
-                role: admin.role,
-                verified: admin.verified
-            }
-        });
-    } catch (err) {
-        console.error('Admin login error:', err);
-        res.status(500).json({ error: 'Server error' });
     }
 });
 
@@ -1049,15 +1076,47 @@ app.post('/api/internal-login', async (req, res) => {
     }
 });
 
+/*-----Staff-------*/
+app.get('/api/staff/me', async (req, res) => {
+    try {
+        const staffId = req.query.id;
+
+        if (!staffId || isNaN(staffId)) {
+            return res.status(400).json({ error: 'Invalid staff ID' });
+        }
+
+        const result = await pool.query(
+            'SELECT id, full_name, email, phone FROM staff_users WHERE id = $1',
+            [staffId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Staff not found' });
+        }
+
+        res.json(result.rows[0]);
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 /*------Admin Appointments-------*/
 
 app.get('/api/admin/appointments', async (_req, res) => {
     try {
         const { rows } = await pool.query(
-            `SELECT id, client_id, full_name, email, phone, company, service_name, meeting_type,
-                    appointment_date, appointment_time, notes, booking_fee, booking_status, created_at
-             FROM appointments
-             ORDER BY created_at DESC`
+            `SELECT 
+                a.id, a.client_id, a.staff_id,
+            a.full_name, a.email, a.phone, a.company,
+            a.service_name, a.meeting_type,
+            a.appointment_date, a.appointment_time,
+            a.notes, a.booking_fee, a.booking_status, a.created_at,
+            s.full_name AS staff_name
+             FROM appointments a
+             LEFT JOIN staff_users s ON a.staff_id = s.id
+             ORDER BY a.created_at DESC`
         );
 
         res.json({
@@ -1069,31 +1128,6 @@ app.get('/api/admin/appointments', async (_req, res) => {
         res.status(500).json({ error: 'Failed to fetch appointments' });
     }
 });
-
-
-/*------Delete Appointment--------*/
-
-app.delete('/api/admin/appointments/:appointmentId', async (req, res) => {
-    try {
-        const { appointmentId } = req.params;
-
-        const { rowCount } = await pool.query(
-            `DELETE FROM appointments
-             WHERE id = $1`,
-            [appointmentId]
-        );
-
-        if (!rowCount) {
-            return res.status(404).json({ error: 'Appointment not found' });
-        }
-
-        res.json({ ok: true });
-    } catch (err) {
-        console.error('Admin appointment delete error:', err);
-        res.status(500).json({ error: 'Failed to delete appointment' });
-    }
-});
-
 
 /*------Update appointment from admin portal----*/
 
@@ -1113,15 +1147,15 @@ app.put('/api/admin/appointments/:appointmentId', async (req, res) => {
         const { rows } = await pool.query(
             `UPDATE appointments
              SET full_name = $1,
-                 appointment_date = $2,
-                 appointment_time = $3,
-                 service_name = $4,
-                 meeting_type = $5,
-                 booking_status = $6,
-                 notes = $7,
-                 updated_at = NOW()
+            appointment_date = $2,
+            appointment_time = $3,
+            service_name = $4,
+            meeting_type = $5,
+            booking_status = $6,
+            notes = $7,
+            updated_at = NOW()
              WHERE id = $8
-             RETURNING *`,
+             RETURNING * `,
             [
                 fullName.trim(),
                 appointmentDate,
@@ -1210,24 +1244,24 @@ app.put('/api/admin/billing/:appointmentId', async (req, res) => {
             result = await pool.query(
                 `UPDATE appointment_billing
                  SET client_id = $1,
-                     service_name = $2,
-                     booking_fee = $3,
-                     service_charge = $4,
-                     total_charge = $5,
-                     amount_paid = $6,
-                     amount_due = $7,
-                     payment_status = $8,
-                     updated_at = NOW()
+            service_name = $2,
+            booking_fee = $3,
+            service_charge = $4,
+            total_charge = $5,
+            amount_paid = $6,
+            amount_due = $7,
+            payment_status = $8,
+            updated_at = NOW()
                  WHERE appointment_id = $9
-                 RETURNING *`,
+                 RETURNING * `,
                 [clientId, serviceName, booking, service, total, paid, due, status, appointmentId]
             );
         } else {
             result = await pool.query(
                 `INSERT INTO appointment_billing
-                 (appointment_id, client_id, service_name, booking_fee, service_charge, total_charge, amount_paid, amount_due, payment_status, created_at, updated_at)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
-                 RETURNING *`,
+            (appointment_id, client_id, service_name, booking_fee, service_charge, total_charge, amount_paid, amount_due, payment_status, created_at, updated_at)
+                 VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
+                 RETURNING * `,
                 [appointmentId, clientId, serviceName, booking, service, total, paid, due, status]
             );
         }
@@ -1335,7 +1369,7 @@ app.post('/api/create-payment-intent', async (req, res) => {
         await pool.query(
             `UPDATE appointment_billing
              SET stripe_payment_intent_id = $1,
-                 updated_at = NOW()
+            updated_at = NOW()
              WHERE id = $2`,
             [paymentIntent.id, billing.id]
         );
@@ -1355,11 +1389,11 @@ app.get('/api/dbinfo', async (_req, res) => {
     try {
         const { rows } = await pool.query(`
             SELECT current_database() AS db,
-                   current_user AS usr,
-                   inet_server_addr()::text AS host,
-                   inet_server_port() AS port,
-                   current_schema() AS schema
-        `);
+            current_user AS usr,
+            inet_server_addr():: text AS host,
+            inet_server_port() AS port,
+            current_schema() AS schema
+            `);
         res.json(rows[0]);
     } catch (e) {
         console.error(e);
@@ -1381,27 +1415,6 @@ app.use((err, req, res, next) => {
     }
 
     next();
-});
-app.get('/api/available-agent', async (req, res) => {
-    try {
-        const { service, meetingType, time } = req.query;
-
-        const result = await pool.query(
-            `SELECT *
-             FROM agents
-             WHERE expertise = $1
-             AND meeting_type = $2
-             AND available_time = $3
-             ORDER BY name
-             LIMIT 3`,
-            [service, meetingType, time]
-        );
-
-        res.json({ agents: result.rows });
-    } catch (err) {
-        console.error('Available agent error:', err);
-        res.status(500).json({ error: 'Server error' });
-    }
 });
 
 /* ---------- Start ---------- */

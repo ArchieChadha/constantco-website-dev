@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Portal</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <header class="portal-header">
+        <div class="portal-topbar">
+            <h2>Admin Portal</h2>
+            <button id="logoutBtn" class="btn-outline">Logout</button>
+        </div>
+    </header>
+
+    <div class="portal-container">
+
+        <aside class="sidebar">
+            <h3>Admin Panel</h3>
+            <ul>
+                <li>Dashboard</li>
+                <li>Staff</li>
+                <li>Appointments</li>
+                <li>Payments</li>
+                <li>Approvals</li>
+            </ul>
+        </aside>
+
+        <main class="main-content">
+
+            <div class="welcome-box">
+                <h1 id="userName">Welcome Admin</h1>
+                <p>Manage system operations.</p>
+            </div>
+
+            <div class="card-grid">
+
+                <div class="card">
+                    <h4>Total Staff</h4>
+                    <p id="statStaff">0</p>
+                </div>
+
+                <div class="card">
+                    <h4>Appointments</h4>
+                    <p id="statAppointments">0</p>
+                </div>
+
+                <div class="card">
+                    <h4>Payments</h4>
+                    <p id="statPayments">$0</p>
+                </div>
+
+            </div>
+
+            <div class="table-card">
+                <h3>All Appointments</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Client</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Service</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="appointmentsTable">
+                        <tr>
+                            <td colspan="5">No data</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </main>
+
+    </div>
+
+    <script src="super-admin.js"></script>
+
+</body>
+
+</html>
