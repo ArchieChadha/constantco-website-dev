@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Staff Portal</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <header class="portal-header">
+        <div class="portal-topbar">
+            <h2>Staff Portal</h2>
+            <button id="logoutBtn" class="btn-outline">Logout</button>
+        </div>
+    </header>
+
+    <div class="portal-container">
+
+        <aside class="sidebar">
+            <h3>Menu</h3>
+            <ul>
+                <li>Dashboard</li>
+                <li>My Appointments</li>
+                <li>Availability</li>
+                <li>Payments</li>
+                <li>Transfer Requests</li>
+            </ul>
+        </aside>
+
+        <main class="main-content">
+
+            <div class="welcome-box">
+                <h1 id="staffName">Welcome</h1>
+                <p>Manage your schedule and bookings.</p>
+            </div>
+
+            <div class="card-grid">
+
+                <div class="card">
+                    <h4>Appointments</h4>
+                    <p id="staffAppointments">0</p>
+                </div>
+
+                <div class="card">
+                    <h4>Payments</h4>
+                    <p id="staffPayments">$0</p>
+                </div>
+
+                <div class="card">
+                    <h4>Requests</h4>
+                    <p id="staffRequests">0</p>
+                </div>
+
+            </div>
+
+            <div class="table-card">
+                <h3>Upcoming Appointments</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Client</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Service</th>
+                        </tr>
+                    </thead>
+                    <tbody id="staffAppointmentsTable">
+                        <tr>
+                            <td colspan="4">No data</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </main>
+
+    </div>
+
+    <script src="staff-portal.js"></script>
+
+</body>
+
+</html>
