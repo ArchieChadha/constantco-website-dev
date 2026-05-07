@@ -95,11 +95,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!data || !Array.isArray(data.services) || data.services.length === 0) {
             servicesList.innerHTML = `
-                <div class="portal-service-item">
-                    <h4>No Service Selected</h4>
-                    <p>No services are currently linked to this client account.</p>
-                </div>
-            `;
+                 <div class="portal-service-item">
+                    <h4>${formatText(fallback)}</h4>
+                    <p><strong>Status:</strong> Active</p>
+                    <p><strong>Client Type:</strong> ${formatText(sessionStorage.getItem('clientType')) || 'Not specified'}</p>
+                    <p><strong>Staff:</strong> Not assigned</p>
+                    <p><strong>Notes:</strong> No additional notes available</p>
+                 </div>
+`;
             return;
         }
 
@@ -108,6 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <h4>${formatText(service.title || 'Service')}</h4>
                 <p><strong>Status:</strong> ${formatText(service.status || 'Active')}</p>
                 <p><strong>Client Type:</strong> ${formatText(service.client_type || 'Not specified')}</p>
+                <p><strong>Staff:</strong> ${formatText(service.staff_name) || 'Not assigned'}</p>
                 <p><strong>Notes:</strong> ${service.note || 'No additional notes available'}</p>
             </div>
         `).join('');
@@ -233,6 +237,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p><strong>Status:</strong> Active</p>
                     <p><strong>Client Type:</strong> ${formatText(sessionStorage.getItem('clientType')) || 'Not specified'}</p>
                     <p><strong>Notes:</strong> No additional notes available</p>
+                    <p><strong>Staff:</strong> ${service.staff_name || 'Not assigned'}</p>
                 </div>
             `;
         }

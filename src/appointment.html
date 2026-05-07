@@ -42,29 +42,34 @@
 
         <section class="appointment-section">
             <div class="container">
-                <form class="auth-card auth-form appointment-form appointment-form-clean" id="appointmentForm" novalidate>
+                <form class="auth-card auth-form appointment-form appointment-form-clean" id="appointmentForm"
+                    novalidate>
                     <h2 class="appointment-form-title">Appointment Request</h2>
                     <p class="appointment-form-sub">Fill in your details below.</p>
 
                     <div class="auth-row">
                         <div>
                             <label class="sr-only" for="fullName">Full Name</label>
-                            <input id="fullName" name="fullName" type="text" class="input-lg" placeholder="Full Name" required />
+                            <input id="fullName" name="fullName" type="text" class="input-lg" placeholder="Full Name"
+                                required />
                         </div>
                         <div>
                             <label class="sr-only" for="email">Email Address</label>
-                            <input id="email" name="email" type="email" class="input-lg" placeholder="Email Address" required />
+                            <input id="email" name="email" type="email" class="input-lg" placeholder="Email Address"
+                                required />
                         </div>
                     </div>
 
                     <div class="auth-row">
                         <div>
                             <label class="sr-only" for="phone">Phone Number</label>
-                            <input id="phone" name="phone" type="tel" class="input-lg" placeholder="Phone Number" required />
+                            <input id="phone" name="phone" type="tel" class="input-lg" placeholder="Phone Number"
+                                required />
                         </div>
                         <div>
                             <label class="sr-only" for="company">Business Name</label>
-                            <input id="company" name="company" type="text" class="input-lg" placeholder="Business Name (optional)" />
+                            <input id="company" name="company" type="text" class="input-lg"
+                                placeholder="Business Name (optional)" />
                         </div>
                     </div>
 
@@ -98,27 +103,28 @@
                     <div class="auth-row">
                         <div>
                             <label class="sr-only" for="appointmentDate">Preferred Date</label>
-                            <input id="appointmentDate" name="appointmentDate" type="text" class="input-lg" placeholder="Select Date" required />
+                            <input id="appointmentDate" name="appointmentDate" type="text" class="input-lg"
+                                placeholder="Select Date" required />
                         </div>
                         <div>
                             <label class="sr-only" for="appointmentTime">Preferred Time</label>
                             <select id="appointmentTime" name="appointmentTime" class="input-lg" required>
                                 <option value="">Select Time</option>
-                                <option value="09:00 AM">09:00 AM</option>
-                                <option value="10:00 AM">10:00 AM</option>
-                                <option value="11:00 AM">11:00 AM</option>
-                                <option value="12:00 PM">12:00 PM</option>
-                                <option value="02:00 PM">02:00 PM</option>
-                                <option value="03:00 PM">03:00 PM</option>
-                                <option value="04:00 PM">04:00 PM</option>
+                                <option value="09:00">09:00 AM</option>
+                                <option value="10:00">10:00 AM</option>
+                                <option value="11:00">11:00 AM</option>
+                                <option value="12:00">12:00 PM</option>
+                                <option value="14:00">02:00 PM</option>
+                                <option value="15:00">03:00 PM</option>
+                                <option value="16:00">04:00 PM</option>
                             </select>
                         </div>
                     </div>
                     <div class="available-agent-box">
-                     <label>Available Agent</label>
-                     <div id="availableAgent">
-                      Please select service, meeting type and time.
-                     </div>
+                        <label>Available Staff</label>
+                        <div id="availableAgent">
+                            Please select service, meeting type and time.
+                        </div>
                     </div>
 
                     <div class="auth-row auth-row--single">
