@@ -96,16 +96,14 @@ document.addEventListener("DOMContentLoaded", () => {
         ]
     });
     service.addEventListener("change", () => {
-    updateCost();
-    checkAvailableAgent();
-});
+        updateCost();
+        loadAvailableStaff();
+    });
 
-meetingType.addEventListener("change", () => {
-    updateCost();
-    checkAvailableAgent();
-});
+    meetingType.addEventListener("change", updateCost);
 
-document.getElementById("appointmentTime").addEventListener("change", checkAvailableAgent);
+    document.getElementById("appointmentTime").addEventListener("change", loadAvailableStaff);
+    appointmentDate.addEventListener("change", loadAvailableStaff);
 
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
@@ -150,6 +148,14 @@ document.getElementById("appointmentTime").addEventListener("change", checkAvail
             return;
         }
 
+        const selectedStaff = document.querySelector('input[name="selectedStaff"]:checked');
+
+        if (!selectedStaff) {
+            statusText.textContent = "Please select a staff member.";
+            statusText.style.color = "#c62828";
+            return;
+        }
+
         const bookingData = {
             fullName: fullName.value.trim(),
             email: email.value.trim(),
@@ -163,6 +169,7 @@ document.getElementById("appointmentTime").addEventListener("change", checkAvail
             bookingCost: bookingCost.textContent
         };
 
+
         localStorage.setItem("constantCoAppointment", JSON.stringify(bookingData));
 
         try {
@@ -175,6 +182,7 @@ document.getElementById("appointmentTime").addEventListener("change", checkAvail
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     clientId,
+                    staffId: selectedStaff.value,
                     fullName: bookingData.fullName,
                     email: bookingData.email,
                     phone: bookingData.phone,
@@ -205,6 +213,7 @@ document.getElementById("appointmentTime").addEventListener("change", checkAvail
                     clientId,
                     serviceName: bookingData.service,
                     bookingFee: feeNumber
+
                 })
             });
 
@@ -225,48 +234,44 @@ document.getElementById("appointmentTime").addEventListener("change", checkAvail
             statusText.style.color = "#c62828";
         }
     });
-    async function checkAvailableAgent() {
-    const selectedService = service.value;
-    const selectedMeetingType = meetingType.value;
-    const selectedTime = document.getElementById("appointmentTime").value;
-    const agentBox = document.getElementById("availableAgent");
 
-    if (!agentBox) return;
+    async function loadAvailableStaff() {
+        const selectedService = service.value;
+        const selectedDate = appointmentDate.value;
+        const selectedTime = document.getElementById("appointmentTime").value;
+        const staffBox = document.getElementById("availableAgent");
 
-    if (!selectedService || !selectedMeetingType || !selectedTime) {
-        agentBox.innerHTML = "Please select service, meeting type and time.";
-        return;
-    }
+        if (!staffBox) return;
 
-    const API_BASE =
-        (location.hostname === "localhost" || location.hostname === "127.0.0.1")
-            ? "http://localhost:3001"
-            : "";
+        if (!selectedService || !selectedDate || !selectedTime) {
+            staffBox.innerHTML = "Please select service, date and time.";
+            return;
+        }
 
-    const res = await fetch(
-        `${API_BASE}/api/available-agent?service=${encodeURIComponent(selectedService)}&meetingType=${encodeURIComponent(selectedMeetingType)}&time=${encodeURIComponent(selectedTime)}`
-    );
+        const API_BASE =
+            (location.hostname === "localhost" || location.hostname === "127.0.0.1")
+                ? "http://localhost:3001"
+                : "";
 
-    const data = await res.json();
+        const res = await fetch(
+            `${API_BASE}/api/available-staff?service=${encodeURIComponent(selectedService)}&date=${selectedDate}&time=${selectedTime}`
+        );
 
-    if (!data.agents || data.agents.length === 0) {
-        agentBox.innerHTML = "No agent available for this selection.";
-        return;
-    }
+        const data = await res.json();
 
-    agentBox.innerHTML = data.agents.map(agent => `
-        <label class="agent-card selectable-agent">
-            <input type="radio" name="selectedAgent" value="${agent.name}" required>
-            <img src="assets/${agent.image}" alt="${agent.name}">
-            <div>
-                <strong>${agent.name}</strong>
-                <p>${agent.role}</p>
-                <p>${agent.expertise}</p>
-            </div>
+        if (!data.staff || data.staff.length === 0) {
+            staffBox.innerHTML = "No staff available.";
+            return;
+        }
+
+        staffBox.innerHTML = data.staff.map(staff => `
+        <label class="agent-card">
+            <input type="radio" name="selectedStaff" value="${staff.id}" required>
+            <strong>${staff.full_name}</strong>
+            <p>${staff.availability_status === 'booked' ? 'Booked' : 'Available'}</p>
         </label>
     `).join("");
-}
+    }
 
     updateCost();
-    checkAvailableAgent();
 });
