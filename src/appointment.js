@@ -175,59 +175,25 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const clientId = sessionStorage.getItem("clientId");
             const feeNumber = Number(bookingData.bookingCost.replace('$', '')) * 100;
-
-            // 1. create appointment in DB
-            const appointmentRes = await fetch(`${API_BASE}/api/appointments`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    clientId,
-                    staffId: selectedStaff.value,
-                    fullName: bookingData.fullName,
-                    email: bookingData.email,
-                    phone: bookingData.phone,
-                    company: bookingData.company,
-                    serviceName: bookingData.service,
-                    meetingType: bookingData.meetingType,
-                    appointmentDate: bookingData.appointmentDate,
-                    appointmentTime: bookingData.appointmentTime,
-                    notes: bookingData.notes,
-                    bookingFee: feeNumber
-                })
-            });
-
-            const appointmentData = await appointmentRes.json();
-
-            if (!appointmentRes.ok) {
-                throw new Error(appointmentData.error || 'Failed to create appointment');
-            }
-
-            const appointmentId = appointmentData.appointment.id;
-
-            // 2. create initial billing row
-            const billingRes = await fetch(`${API_BASE}/api/create-booking-billing`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    appointmentId,
-                    clientId,
-                    serviceName: bookingData.service,
-                    bookingFee: feeNumber
-
-                })
-            });
-
-            const billingData = await billingRes.json();
-
-            if (!billingRes.ok) {
-                throw new Error(billingData.error || 'Failed to create booking billing record');
-            }
-
-            statusText.textContent = "Redirecting to payment...";
-            statusText.style.color = "#236B7D";
-
-            window.location.href = "./payment.html";
-
+            sessionStorage.setItem('pendingBooking', JSON.stringify({
+                clientId,
+                staffId: selectedStaff.value,
+                fullName: bookingData.fullName,
+                email: bookingData.email,
+                phone: bookingData.phone,
+                company: bookingData.company,
+                serviceName: bookingData.service,
+                meetingType: bookingData.meetingType,
+                appointmentDate: bookingData.appointmentDate,
+                appointmentTime: bookingData.appointmentTime,
+                notes: bookingData.notes,
+                bookingFee: feeNumber
+            }));
+            statusText.textContent = 'Redirecting to payment...';
+            statusText.style.color = '#1a7f37';
+            setTimeout(() => {
+                window.location.href = './payment.html';
+            }, 700);
         } catch (err) {
             console.error(err);
             statusText.textContent = err.message || "Something went wrong. Please try again.";
@@ -266,7 +232,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
         staffBox.innerHTML = data.staff.map(staff => `
         <label class="agent-card">
-            <input type="radio" name="selectedStaff" value="${staff.id}" required>
+            <input
+            type="radio"
+            name="selectedStaff"
+            value="${staff.id}"
+            ${staff.availability_status === 'booked' ? 'disabled' : 'required'}>
             <strong>${staff.full_name}</strong>
             <p>${staff.availability_status === 'booked' ? 'Booked' : 'Available'}</p>
         </label>
