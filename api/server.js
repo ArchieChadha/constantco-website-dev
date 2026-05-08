@@ -908,7 +908,7 @@ app.post('/api/appointments', async (req, res) => {
         const { rows } = await pool.query(
             `INSERT INTO appointments
             (client_id, staff_id, full_name, email, phone, company, service_name, meeting_type, appointment_date, appointment_time, notes, booking_fee, booking_status, created_at, updated_at)
-     VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::time, $11, $12, 'Scheduled', NOW(), NOW())
+     VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::time, $11, $12, 'Pending Payment', NOW(), NOW())
      RETURNING * `,
             [
                 clientId,
@@ -1380,6 +1380,35 @@ app.post('/api/create-payment-intent', async (req, res) => {
         });
     } catch (err) {
         console.error('Stripe error:', err);
+        res.status(500).json({ error: 'Payment initialization failed' });
+    }
+});
+
+app.post('/api/create-pending-booking-payment-intent', async (req, res) => {
+    try {
+        const { clientId, amount, serviceName = '' } = req.body || {};
+
+        if (!clientId || !amount || Number(amount) <= 0) {
+            return res.status(400).json({ error: 'Client ID and valid amount are required' });
+        }
+
+        const paymentIntent = await stripe.paymentIntents.create({
+            amount: Number(amount),
+            currency: 'aud',
+            automatic_payment_methods: { enabled: true },
+            metadata: {
+                clientId: String(clientId),
+                serviceName: serviceName || 'Appointment booking'
+            }
+        });
+
+        res.json({
+            clientSecret: paymentIntent.client_secret,
+            publishableKey: process.env.STRIPE_PUBLISHABLE_KEY
+        });
+
+    } catch (err) {
+        console.error('Pending booking payment intent error:', err);
         res.status(500).json({ error: 'Payment initialization failed' });
     }
 });
