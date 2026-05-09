@@ -192,7 +192,7 @@ document.addEventListener("DOMContentLoaded", () => {
             statusText.textContent = 'Redirecting to payment...';
             statusText.style.color = '#1a7f37';
             setTimeout(() => {
-                window.location.href = './payment.html';
+                window.location.href = './booking-payment.html';
             }, 700);
         } catch (err) {
             console.error(err);
