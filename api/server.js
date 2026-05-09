@@ -1356,7 +1356,29 @@ app.get('/api/available-agent', async (req, res) => {
         res.status(500).json({ error: 'Server error' });
     }
 });
+app.post('/api/chatbot', async (req, res) => {
+    try {
+        const { message = '' } = req.body || {};
+        const text = message.toLowerCase();
 
+        let reply = "Thanks for your message. Please book an appointment or contact our team for more help.";
+
+        if (text.includes("appointment") || text.includes("book")) {
+            reply = "You can book an appointment from the Book an Appointment page and choose an available agent.";
+        } else if (text.includes("service")) {
+            reply = "We offer Tax Return, Business Advisory, Payroll Support, Auditing, and General Consultation services.";
+        } else if (text.includes("agent")) {
+            reply = "Agents are shown based on service, meeting type, and available time during booking.";
+        } else if (text.includes("contact") || text.includes("phone")) {
+            reply = "You can contact Constant & Co at 03 9466 3688.";
+        }
+
+        res.json({ reply });
+    } catch (err) {
+        console.error("Chatbot error:", err);
+        res.status(500).json({ reply: "Sorry, something went wrong." });
+    }
+});
 /* ---------- Start ---------- */
 app.listen(PORT, () => {
     console.log(`✅ API running on http://localhost:${PORT}`);
