@@ -8,53 +8,53 @@
 </head>
 
 <body>
-
     <header class="portal-header">
         <div class="portal-topbar">
             <h2>Staff Portal</h2>
             <button id="logoutBtn" class="btn-outline">Logout</button>
         </div>
     </header>
-
     <div class="portal-container">
-
         <aside class="sidebar">
             <h3>Menu</h3>
             <ul>
                 <li>Dashboard</li>
                 <li>My Appointments</li>
                 <li>Availability</li>
-                <li>Payments</li>
+                <li>Client Messages</li>
+                <li>Document Requests</li>
                 <li>Transfer Requests</li>
+                <li>Payments</li>
             </ul>
         </aside>
-
         <main class="main-content">
-
             <div class="welcome-box">
                 <h1 id="staffName">Welcome</h1>
-                <p>Manage your schedule and bookings.</p>
+                <p id="staffEmail"></p>
+                <p>Manage your schedule, bookings, clients, and requests.</p>
             </div>
-
             <div class="card-grid">
-
                 <div class="card">
                     <h4>Appointments</h4>
                     <p id="staffAppointments">0</p>
                 </div>
-
+                <div class="card">
+                    <h4>Messages</h4>
+                    <p id="staffMessages">0</p>
+                </div>
+                <div class="card">
+                    <h4>Document Requests</h4>
+                    <p id="staffDocumentRequests">0</p>
+                </div>
                 <div class="card">
                     <h4>Payments</h4>
                     <p id="staffPayments">$0</p>
                 </div>
-
                 <div class="card">
-                    <h4>Requests</h4>
+                    <h4>Transfer Requests</h4>
                     <p id="staffRequests">0</p>
                 </div>
-
             </div>
-
             <div class="table-card">
                 <h3>Upcoming Appointments</h3>
                 <table>
@@ -64,22 +64,146 @@
                             <th>Date</th>
                             <th>Time</th>
                             <th>Service</th>
+                            <th>Status</th>
                         </tr>
                     </thead>
                     <tbody id="staffAppointmentsTable">
                         <tr>
-                            <td colspan="4">No data</td>
+                            <td colspan="5">No appointments found</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
-
+            <div class="table-card">
+                <h3>Availability / Block-off Requests</h3>
+                <form id="blockDateForm" class="portal-form">
+                    <div class="auth-row">
+                        <div>
+                            <label for="blockDate">Date</label>
+                            <input type="date" id="blockDate" class="input-lg" required>
+                        </div>
+                        <div>
+                            <label for="blockReason">Reason</label>
+                            <input type="text" id="blockReason" class="input-lg"
+                                placeholder="Reason for unavailable date" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Request Block-off</button>
+                    <p id="blockDateStatus" class="small"></p>
+                </form>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Reason</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="availabilityRequestsTable">
+                        <tr>
+                            <td colspan="3">No block-off requests found</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="table-card">
+                <h3>Client Messages</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Client</th>
+                            <th>Subject</th>
+                            <th>Message</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="clientMessagesTable">
+                        <tr>
+                            <td colspan="4">No messages found</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="table-card">
+                <h3>Document Requests</h3>
+                <form id="documentRequestForm" class="portal-form">
+                    <div class="auth-row">
+                        <div>
+                            <label for="documentClient">Client</label>
+                            <select id="documentClient" class="input-lg" required>
+                                <option value="">Select Client</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="documentTitle">Document Needed</label>
+                            <input type="text" id="documentTitle" class="input-lg"
+                                placeholder="Example: Tax file declaration" required>
+                        </div>
+                    </div>
+                    <div class="auth-row auth-row--single">
+                        <textarea id="documentMessage" class="input-lg appointment-textarea" rows="4"
+                            placeholder="Write a short message to the client"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Send Document Request</button>
+                    <p id="documentRequestStatus" class="small"></p>
+                </form>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Client</th>
+                            <th>Document</th>
+                            <th>Status</th>
+                            <th>Requested Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="documentRequestsTable">
+                        <tr>
+                            <td colspan="4">No document requests found</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="table-card">
+                <h3>Transfer Requests</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Client</th>
+                            <th>Current Staff</th>
+                            <th>Requested Staff</th>
+                            <th>Reason</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transferRequestsTable">
+                        <tr>
+                            <td colspan="5">No transfer requests found</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="table-card">
+                <h3>Payments / Charges</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Client</th>
+                            <th>Service</th>
+                            <th>Booking Fee</th>
+                            <th>Service Charge</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="staffPaymentsTable">
+                        <tr>
+                            <td colspan="5">No payment records found</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </main>
-
     </div>
-
     <script src="staff-portal.js"></script>
-
 </body>
 
 </html>

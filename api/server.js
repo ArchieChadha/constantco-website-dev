@@ -68,6 +68,109 @@ app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async
         if (event.type === 'payment_intent.succeeded') {
             const paymentIntent = event.data.object;
 
+            const pendingResult = await client.query(
+                `SELECT *
+     FROM pending_bookings
+     WHERE stripe_payment_intent_id = $1
+     LIMIT 1`,
+                [paymentIntent.id]
+            );
+
+            if (pendingResult.rows.length > 0) {
+                const pending = pendingResult.rows[0];
+                const finalCheck = await client.query(
+                    `SELECT id
+     FROM appointments
+     WHERE staff_id = $1
+       AND appointment_date = $2
+       AND appointment_time = $3::time
+       AND booking_status IN ('Scheduled', 'Confirmed', 'Pending Payment')
+     LIMIT 1`,
+                    [
+                        pending.staff_id,
+                        pending.appointment_date,
+                        pending.appointment_time
+                    ]
+                );
+
+                if (finalCheck.rows.length > 0) {
+                    await client.query(
+                        `UPDATE pending_bookings
+         SET status = 'Rejected - Slot Already Booked'
+         WHERE id = $1`,
+                        [pending.id]
+                    );
+
+                    await client.query('COMMIT');
+                    return res.json({ received: true, rejected: true });
+                }
+                const appointmentResult = await client.query(
+                    `INSERT INTO appointments
+         (client_id, staff_id, full_name, email, phone, company, service_name, meeting_type,
+          appointment_date, appointment_time, notes, booking_fee, booking_status, created_at, updated_at)
+         VALUES
+         ($1, $2, $3, $4, $5, $6, $7, $8,
+          $9, $10::time, $11, $12, 'Confirmed', NOW(), NOW())
+         RETURNING *`,
+                    [
+                        pending.client_id,
+                        pending.staff_id,
+                        pending.full_name,
+                        pending.email,
+                        pending.phone,
+                        pending.company,
+                        pending.service_name,
+                        pending.meeting_type,
+                        pending.appointment_date,
+                        pending.appointment_time,
+                        pending.notes,
+                        pending.booking_fee
+                    ]
+                );
+
+                const appointment = appointmentResult.rows[0];
+
+                const billingResult = await client.query(
+                    `INSERT INTO appointment_billing
+         (appointment_id, client_id, service_name, booking_fee, service_charge,
+          total_charge, amount_paid, amount_due, payment_status,
+          stripe_payment_intent_id, created_at, updated_at)
+         VALUES
+         ($1, $2, $3, $4, 0, $4, $4, 0, 'Paid', $5, NOW(), NOW())
+         RETURNING *`,
+                    [
+                        appointment.id,
+                        pending.client_id,
+                        pending.service_name,
+                        pending.booking_fee,
+                        paymentIntent.id
+                    ]
+                );
+
+                await client.query(
+                    `INSERT INTO client_payments
+         (billing_id, client_id, stripe_payment_intent_id, amount, currency, status, created_at)
+         VALUES ($1, $2, $3, $4, $5, 'succeeded', NOW())`,
+                    [
+                        billingResult.rows[0].id,
+                        pending.client_id,
+                        paymentIntent.id,
+                        paymentIntent.amount_received || paymentIntent.amount,
+                        paymentIntent.currency || 'aud'
+                    ]
+                );
+
+                await client.query(
+                    `UPDATE pending_bookings
+         SET status = 'Completed'
+         WHERE id = $1`,
+                    [pending.id]
+                );
+
+                await client.query('COMMIT');
+                return res.json({ received: true });
+            }
+
             console.log('✅ Payment success:', paymentIntent.id);
 
             const paidAmount = Number(paymentIntent.amount_received || paymentIntent.amount || 0);
@@ -801,26 +904,31 @@ app.get('/api/available-staff', async (req, res) => {
         }
 
         const { rows } = await pool.query(
-            `SELECT
+            `SELECT DISTINCT ON (s.id)
         s.id,
         s.full_name,
         s.email,
         s.phone,
         ss.service_name,
         CASE 
-            WHEN a.id IS NOT NULL THEN 'booked'
-            ELSE 'available'
-        END AS availability_status
+    WHEN a.id IS NOT NULL OR pb.id IS NOT NULL THEN 'booked'
+    ELSE 'available'
+END AS availability_status
      FROM staff_availability sa
      JOIN staff_users s ON sa.staff_id = s.id
      JOIN staff_services ss 
        ON ss.staff_id = s.id 
       AND ss.service_name = $3
      LEFT JOIN appointments a
-        ON a.staff_id = s.id
-       AND a.appointment_date = $1
-       AND a.appointment_time = $2::time
-       AND a.booking_status IN ('Scheduled', 'Confirmed')
+    ON a.staff_id = s.id
+   AND a.appointment_date = $1
+   AND a.appointment_time = $2::time
+   AND a.booking_status IN ('Scheduled', 'Confirmed', 'Pending Payment')
+LEFT JOIN pending_bookings pb
+    ON pb.staff_id = s.id
+   AND pb.appointment_date = $1
+   AND pb.appointment_time = $2::time
+   AND pb.status = 'Pending'
      WHERE sa.available_date = $1
        AND $2::time >= sa.start_time
        AND $2::time < sa.end_time
@@ -828,7 +936,7 @@ app.get('/api/available-staff', async (req, res) => {
      ORDER BY 
        s.id,
        CASE 
-         WHEN a.id IS NULL THEN 0 
+         WHEN a.id IS NULL AND pb.id is NULL THEN 0 
          ELSE 1 
        END,
        s.full_name`,
@@ -942,6 +1050,7 @@ app.post('/api/appointments', async (req, res) => {
         res.status(500).json({ error: 'Failed to create appointment' });
     }
 });
+
 
 /*----- Booking Billing -------*/
 app.post('/api/create-booking-billing', async (req, res) => {
@@ -1099,6 +1208,187 @@ app.get('/api/staff/me', async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Server error' });
+    }
+});
+
+/*-------Staff Portal Appointments------*/
+app.get('/api/staff/appointments', async (req, res) => {
+    try {
+        const { staffId } = req.query;
+
+        if (!staffId) {
+            return res.status(400).json({ error: 'Staff ID required' });
+        }
+
+        const { rows } = await pool.query(
+            `SELECT
+                a.id,
+                a.client_id,
+                a.staff_id,
+                a.full_name AS client_name,
+                a.email,
+                a.phone,
+                a.company,
+                a.service_name,
+                a.meeting_type,
+                a.appointment_date,
+                a.appointment_time,
+                a.notes,
+                a.booking_fee,
+                a.booking_status,
+                a.created_at,
+                pc.name AS registered_client_name,
+                pc.client_type,
+                pc.service AS client_registered_service
+             FROM appointments a
+             LEFT JOIN portal_clients pc ON pc.id = a.client_id
+             WHERE a.staff_id = $1
+             ORDER BY 
+                a.appointment_date DESC,
+                a.appointment_time DESC`,
+            [staffId]
+        );
+
+        res.json({
+            ok: true,
+            appointments: rows
+        });
+
+    } catch (err) {
+        console.error('Staff appointments error:', err);
+        res.status(500).json({ error: 'Failed to load staff appointments' });
+    }
+});
+
+/*-------Staff Portal Messages------*/
+app.get('/api/staff/messages', async (req, res) => {
+    try {
+        const { staffId } = req.query;
+        const { rows } = await pool.query(
+            `SELECT
+m.id, m.client_id, pc.name AS client_name,
+               m.appointment_id, m.sender_type,
+               m.subject, m.message, m.created_at
+            FROM portal_messages m
+            JOIN portal_clients pc ON pc.id = m.client_id
+            WHERE m.staff_id = $1
+            ORDER BY m.created_at DESC`,
+            [staffId]
+        );
+        res.json({ ok: true, messages: rows });
+    } catch (err) {
+        console.error('Staff messages error:', err);
+        res.status(500).json({ error: 'Failed to load messages' });
+    }
+});
+
+app.post('/api/staff/messages', async (req, res) => {
+    try {
+        const {
+            clientId,
+            staffId,
+            appointmentId,
+            subject = '',
+            message = ''
+        } = req.body || {};
+        if (!clientId || !staffId || !message.trim()) {
+            return res.status(400).json({ error: 'Missing message details' });
+        }
+        const { rows } = await pool.query(
+            `INSERT INTO portal_messages
+            (client_id, staff_id, appointment_id, sender_type, subject, message, created_at)
+            VALUES ($1, $2, $3, 'staff', $4, $5, NOW())
+            RETURNING *`,
+            [clientId, staffId, appointmentId || null, subject.trim(), message.trim()]
+        );
+        res.json({ ok: true, message: rows[0] });
+    } catch (err) {
+        console.error('Send staff message error:', err);
+        res.status(500).json({ error: 'Failed to send message' });
+    }
+});
+
+/*-------Staff Portal Document Requests------*/
+app.get('/api/staff/document-requests', async (req, res) => {
+    try {
+        const { staffId } = req.query;
+        const { rows } = await pool.query(
+            `SELECT
+dr.id, dr.client_id, pc.name AS client_name,
+               dr.appointment_id, dr.service_name,
+               dr.document_title, dr.message,
+               dr.status, dr.requested_at
+            FROM document_requests dr
+            JOIN portal_clients pc ON pc.id = dr.client_id
+            WHERE dr.staff_id = $1
+            ORDER BY dr.requested_at DESC`,
+            [staffId]
+        );
+        res.json({ ok: true, requests: rows });
+    } catch (err) {
+        console.error('Document requests error:', err);
+        res.status(500).json({ error: 'Failed to load document requests' });
+    }
+});
+
+app.post('/api/staff/document-requests', async (req, res) => {
+    try {
+        const {
+            clientId,
+            staffId,
+            appointmentId,
+            serviceName = '',
+            documentTitle = '',
+            message = ''
+        } = req.body || {};
+        if (!clientId || !staffId || !documentTitle.trim()) {
+            return res.status(400).json({ error: 'Missing document request details' });
+        }
+        const { rows } = await pool.query(
+            `INSERT INTO document_requests
+            (client_id, staff_id, appointment_id, service_name, document_title, message, status, requested_at)
+            VALUES ($1, $2, $3, $4, $5, $6, 'Requested', NOW())
+            RETURNING *`,
+            [
+                clientId,
+                staffId,
+                appointmentId || null,
+                serviceName,
+                documentTitle.trim(),
+                message.trim() || null
+            ]
+        );
+        res.json({ ok: true, request: rows[0] });
+    } catch (err) {
+        console.error('Create document request error:', err);
+        res.status(500).json({ error: 'Failed to create document request' });
+    }
+});
+
+/*-------Staff Portal Document Payments------*/
+app.get('/api/staff/payments', async (req, res) => {
+    try {
+        const { staffId } = req.query;
+        const { rows } = await pool.query(
+            `SELECT
+cp.id, pc.name AS client_name,
+               a.service_name,
+               cp.amount,
+               cp.currency,
+               cp.status,
+               cp.created_at AS payment_date
+            FROM client_payments cp
+            JOIN appointment_billing ab ON ab.id = cp.billing_id
+            JOIN appointments a ON a.id = ab.appointment_id
+            JOIN portal_clients pc ON pc.id = cp.client_id
+            WHERE a.staff_id = $1
+            ORDER BY cp.created_at DESC`,
+            [staffId]
+        );
+        res.json({ ok: true, payments: rows });
+    } catch (err) {
+        console.error('Staff payments error:', err);
+        res.status(500).json({ error: 'Failed to load staff payments' });
     }
 });
 
@@ -1384,23 +1674,131 @@ app.post('/api/create-payment-intent', async (req, res) => {
     }
 });
 
+/*-------- Other Payment Routes ---------*/
 app.post('/api/create-pending-booking-payment-intent', async (req, res) => {
-    try {
-        const { clientId, amount, serviceName = '' } = req.body || {};
 
-        if (!clientId || !amount || Number(amount) <= 0) {
-            return res.status(400).json({ error: 'Client ID and valid amount are required' });
+    try {
+
+        const {
+            clientId,
+            staffId,
+            fullName,
+            email,
+            phone,
+            company,
+            serviceName,
+            meetingType,
+            appointmentDate,
+            appointmentTime,
+            notes,
+            bookingFee
+        } = req.body || {};
+
+        if (
+            !clientId ||
+            !staffId ||
+            !fullName ||
+            !email ||
+            !phone ||
+            !serviceName ||
+            !meetingType ||
+            !appointmentDate ||
+            !appointmentTime ||
+            !bookingFee
+        ) {
+            return res.status(400).json({
+                error: 'Missing booking details'
+            });
         }
 
+        // Prevent double booking BEFORE payment
+        const existingAppointment = await pool.query(
+            `SELECT id
+     FROM appointments
+     WHERE staff_id = $1
+       AND appointment_date = $2
+       AND appointment_time = $3::time
+       AND booking_status IN ('Scheduled', 'Confirmed', 'Pending Payment')
+     LIMIT 1`,
+            [staffId, appointmentDate, appointmentTime]
+        );
+
+        if (existingAppointment.rows.length > 0) {
+            return res.status(409).json({
+                error: 'This staff member is already booked for this session.'
+            });
+        }
+
+        const existingPending = await pool.query(
+            `SELECT id
+     FROM pending_bookings
+     WHERE staff_id = $1
+       AND appointment_date = $2
+       AND appointment_time = $3::time
+       AND status = 'Pending'
+     LIMIT 1`,
+            [staffId, appointmentDate, appointmentTime]
+        );
+
+        if (existingPending.rows.length > 0) {
+            return res.status(409).json({
+                error: 'This staff member is already in the process of being booked for this session.'
+            });
+        }
+
+        // Create Stripe payment intent
         const paymentIntent = await stripe.paymentIntents.create({
-            amount: Number(amount),
+            amount: Number(bookingFee),
             currency: 'aud',
-            automatic_payment_methods: { enabled: true },
+            automatic_payment_methods: {
+                enabled: true
+            },
             metadata: {
                 clientId: String(clientId),
                 serviceName: serviceName || 'Appointment booking'
             }
         });
+
+        // Save temporary booking
+        await pool.query(
+            `INSERT INTO pending_bookings
+            (
+                stripe_payment_intent_id,
+                client_id,
+                staff_id,
+                full_name,
+                email,
+                phone,
+                company,
+                service_name,
+                meeting_type,
+                appointment_date,
+                appointment_time,
+                notes,
+                booking_fee,
+                status,
+                created_at
+            )
+            VALUES
+            (
+                $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'Pending',NOW()
+            )`,
+            [
+                paymentIntent.id,
+                clientId,
+                staffId,
+                fullName.trim(),
+                email.trim(),
+                phone.trim(),
+                company?.trim() || null,
+                serviceName,
+                meetingType,
+                appointmentDate,
+                appointmentTime,
+                notes?.trim() || null,
+                Number(bookingFee)
+            ]
+        );
 
         res.json({
             clientSecret: paymentIntent.client_secret,
@@ -1408,8 +1806,12 @@ app.post('/api/create-pending-booking-payment-intent', async (req, res) => {
         });
 
     } catch (err) {
+
         console.error('Pending booking payment intent error:', err);
-        res.status(500).json({ error: 'Payment initialization failed' });
+
+        res.status(500).json({
+            error: 'Payment initialization failed'
+        });
     }
 });
 
