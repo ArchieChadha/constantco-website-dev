@@ -8,13 +8,18 @@ import multer from 'multer';
 import path from 'path';
 import Stripe from 'stripe';
 import crypto from 'crypto';
+import OpenAI from "openai";
 
 dotenv.config();
+
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY
+});
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-
 /*------ Stripe Webhook ------*/
 app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
     const sig = req.headers['stripe-signature'];
@@ -1359,24 +1364,36 @@ app.get('/api/available-agent', async (req, res) => {
 app.post('/api/chatbot', async (req, res) => {
     try {
         const { message = '' } = req.body || {};
-        const text = message.toLowerCase();
 
-        let reply = "Thanks for your message. Please book an appointment or contact our team for more help.";
+        const response = await openai.responses.create({
+            model: "gpt-4.1-mini",
+            input: `
+You are the AI assistant for Constant & Co, an accounting and business advisory website.
 
-        if (text.includes("appointment") || text.includes("book")) {
-            reply = "You can book an appointment from the Book an Appointment page and choose an available agent.";
-        } else if (text.includes("service")) {
-            reply = "We offer Tax Return, Business Advisory, Payroll Support, Auditing, and General Consultation services.";
-        } else if (text.includes("agent")) {
-            reply = "Agents are shown based on service, meeting type, and available time during booking.";
-        } else if (text.includes("contact") || text.includes("phone")) {
-            reply = "You can contact Constant & Co at 03 9466 3688.";
-        }
+You can help users with:
+- tax return services
+- business advisory
+- payroll support
+- auditing
+- general consultation
+- booking appointments
+- choosing available agents
+- contacting the business
 
-        res.json({ reply });
+Business contact:
+Phone: 03 9466 3688
+
+User message:
+${message}
+            `
+        });
+
+        res.json({ reply: response.output_text });
     } catch (err) {
-        console.error("Chatbot error:", err);
-        res.status(500).json({ reply: "Sorry, something went wrong." });
+        console.error("AI chatbot error:", err);
+        res.status(500).json({
+            reply: "Sorry, I could not process that right now. Please try again later."
+        });
     }
 });
 /* ---------- Start ---------- */
