@@ -9,29 +9,6 @@
         content="Melbourne chartered accountants and business advisers: tax, BAS, payroll (STP), audit and advisory. Book a consultation, secure client portal, CPA-led team." />
     <link rel="stylesheet" href="style.css" />
 </head>
-<div class="chatbot-widget">
-  <button id="chatbotToggle">💬</button>
-
-  <div id="chatbotBox" class="chatbot-box hidden">
-    <div class="chatbot-header">
-      <strong>Constant & Co Assistant</strong>
-      <button id="chatbotClose">×</button>
-    </div>
-
-    <div id="chatbotMessages" class="chatbot-messages">
-      <div class="bot-message">
-        Hi, I am Constant & Co Assistant. How can I help you today?
-      </div>
-    </div>
-
-    <div class="chatbot-input-area">
-      <input id="chatbotInput" type="text" placeholder="Type your message...">
-      <button id="chatbotSend">Send</button>
-    </div>
-  </div>
-</div>
-
-<script src="chatbot.js"></script>
 
 <body class="home-page">
     <a href="#main" class="skip">Skip to content</a>
@@ -368,17 +345,6 @@
                                 href="mailto:info@constantco.au">info@constantco.au</a>
                         </p>
                     </div>
-                    <div class="home-bottom-news card">
-                        <h3 class="home-bottom-news-title">Insights in your inbox</h3>
-                        <p class="home-bottom-news-desc">ATO and payroll reminders for Australian businesses — one click
-                            to unsubscribe.</p>
-                        <form class="newsletter home-newsletter" action="#" method="post">
-                            <input class="input" id="email" type="email" placeholder="Work email" required
-                                autocomplete="email" />
-                            <button class="btn btn-home-solid" type="submit">Subscribe</button>
-                        </form>
-                        <p class="privacy-note">We respect your privacy.</p>
-                    </div>
                 </div>
             </div>
         </section>
@@ -485,7 +451,7 @@
             </form>
         </section>
     </div>
-    <script src="chatbot-widget.js"></script>
+    <script src="chatbot.js" defer></script>
     <script src="newsletter.js" defer></script>
     <script src="testimonial-carousel.js" defer></script>
 </body>
