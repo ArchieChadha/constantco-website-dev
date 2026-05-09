@@ -1,55 +1,77 @@
 const chatbotToggle = document.getElementById("chatbotToggle");
-const chatbotBox = document.getElementById("chatbotBox");
+const chatbotPanel = document.getElementById("chatbotPanel");
 const chatbotClose = document.getElementById("chatbotClose");
+
 const chatbotInput = document.getElementById("chatbotInput");
-const chatbotSend = document.getElementById("chatbotSend");
+const chatbotForm = document.getElementById("chatbotForm");
+
 const chatbotMessages = document.getElementById("chatbotMessages");
 
+/* =========================
+   OPEN / CLOSE
+========================= */
+
 chatbotToggle.addEventListener("click", () => {
-  chatbotBox.classList.toggle("hidden");
+    chatbotPanel.classList.toggle("hidden");
 });
 
 chatbotClose.addEventListener("click", () => {
-  chatbotBox.classList.add("hidden");
+    chatbotPanel.classList.add("hidden");
 });
 
-chatbotSend.addEventListener("click", sendMessage);
+/* =========================
+   FORM SUBMIT
+========================= */
 
-chatbotInput.addEventListener("keypress", (event) => {
-  if (event.key === "Enter") {
-    sendMessage();
-  }
+chatbotForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const message = chatbotInput.value.trim();
+
+    if (!message) return;
+
+    addMessage(message, "user");
+
+    chatbotInput.value = "";
+
+    try {
+        const res = await fetch("/api/chatbot", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ message })
+        });
+
+        const data = await res.json();
+
+        addMessage(data.reply || "No response received.", "bot");
+
+    } catch (error) {
+
+        console.error(error);
+
+        addMessage(
+            "Sorry, I could not connect to the chatbot server.",
+            "bot"
+        );
+    }
 });
 
-async function sendMessage() {
-  const message = chatbotInput.value.trim();
+/* =========================
+   ADD MESSAGE
+========================= */
 
-  if (!message) return;
+function addMessage(text, sender) {
 
-  addMessage(message, "user-message");
-  chatbotInput.value = "";
+    const div = document.createElement("div");
 
-  try {
-    const res = await fetch("/api/chatbot", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ message })
-    });
+    div.className = `chatbot-message ${sender}`;
 
-    const data = await res.json();
-    addMessage(data.reply, "bot-message");
-  } catch (err) {
-    console.error(err);
-    addMessage("Sorry, I could not connect to the chatbot server.", "bot-message");
-  }
-}
+    div.textContent = text;
 
-function addMessage(text, className) {
-  const div = document.createElement("div");
-  div.className = className;
-  div.textContent = text;
-  chatbotMessages.appendChild(div);
-  chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+    chatbotMessages.appendChild(div);
+
+    chatbotMessages.scrollTop =
+        chatbotMessages.scrollHeight;
 }

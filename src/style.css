@@ -515,129 +515,450 @@ footer a {
     white-space: nowrap;
 }
 
-/* ===== NEWSLETTER POPUP ===== */
+/* =========================================================
 
-/* Overlay */
+   NEWSLETTER OVERLAY
+
+========================================================= */
+
 .newsletter-overlay {
-    position: fixed !important;
-    inset: 0 !important;
-    background: rgba(0, 0, 0, 0.45) !important;
-    display: none;
+
+    position: fixed;
+
+    inset: 0;
+
+    background: rgba(0, 0, 0, 0.45);
+
+    backdrop-filter: blur(2px);
+
+    opacity: 0;
+
+    visibility: hidden;
+
+    pointer-events: none;
+
+    transition: opacity 0.3s ease,
+
+        visibility 0.3s ease;
+
     z-index: 9998;
-}
 
-/* Popup container */
-.newsletter-pop {
-    position: fixed !important;
-    left: 50% !important;
-    top: 50% !important;
-    transform: translate(-50%, -50%) scale(0.95) !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-
-    width: 420px !important;
-    max-width: 90vw !important;
-
-    background: #ffffff !important;
-    border-radius: 20px !important;
-    padding: 26px 24px !important;
-
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15) !important;
-    z-index: 9999 !important;
-
-    transition: all 0.25s ease !important;
-    box-sizing: border-box !important;
-}
-
-/* Visible state */
-.newsletter-pop.is-visible {
-    opacity: 1 !important;
-    transform: translate(-50%, -50%) scale(1) !important;
-    pointer-events: auto !important;
 }
 
 .newsletter-overlay.is-visible {
-    display: block !important;
+
+    opacity: 1;
+
+    visibility: visible;
+
+    pointer-events: auto;
+
 }
 
-/* Header */
+/* =========================================================
+
+   NEWSLETTER POPUP
+
+========================================================= */
+
+.newsletter-pop {
+
+    position: fixed;
+
+    top: 50%;
+
+    left: 50%;
+
+    transform: translate(-50%, -50%) scale(0.95);
+
+    width: min(100vw, 600px);
+
+    background: #ffffff;
+
+    border-radius: 26px;
+
+    padding: 42px 40px!important;
+
+    box-sizing: border-box;
+
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+
+    opacity: 0;
+
+    visibility: hidden;
+
+    pointer-events: none;
+
+    transition: all 0.3s ease;
+
+    z-index: 9999;
+
+    overflow: hidden;
+
+}
+
+.newsletter-pop.is-visible {
+
+    opacity: 1;
+
+    visibility: visible;
+
+    pointer-events: auto;
+
+    transform: translate(-50%, -50%) scale(1);
+
+}
+
+/* =========================================================
+
+   POPUP HEADER
+
+========================================================= */
+
 .news-pop-head {
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: flex-start !important;
-    margin-bottom: 10px !important;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    width: 100%;
+
+    box-sizing: border-box;
+
+    margin-bottom: 18px;
+
+    padding-right: 50px;
+
 }
 
 .news-pop-title {
-    margin: 0 !important;
-    font-size: 1.7rem !important;
-    color: #0f2e36 !important;
+
+    margin: 0;
+
+    font-size: 1.45rem;
+
+    font-weight: 700;
+
+    color: #0f172a;
+
 }
 
-/* Close button */
+/* =========================================================
+
+   CLOSE BUTTON
+
+========================================================= */
+
 .news-pop-close {
-    width: 36px !important;
-    height: 36px !important;
-    border-radius: 10px !important;
-    border: 2px solid #111 !important;
-    background: #fff !important;
-    cursor: pointer !important;
+
+    position: absolute;
+
+    top: 24px;
+
+    right: 24px;
+
+    width: 40px;
+
+    height: 40px;
+
+    border: 1px solid #d1d5db;
+
+    border-radius: 10px;
+
+    background: #ffffff;
+
+    color: #0f172a;
+
+    font-size: 1.2rem;
+
+    cursor: pointer;
+
+    transition: 0.2s ease;
+
 }
 
-/* Description */
-.news-pop-desc {
-    margin: 0 0 14px !important;
-    color: #5b6b70 !important;
+.news-pop-close:hover {
+
+    background: #f3f4f6;
+
 }
 
-/* ===== FORM FIX ===== */
-.newsletter-pop .newsletter,
-.newsletter-pop form {
-    display: flex !important;
-    align-items: center !important;
-    gap: 10px !important;
-    width: 100% !important;
-    margin-bottom: 14px !important;
+/* =========================================================
+
+   POPUP BODY
+
+========================================================= */
+
+.news-pop-body {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 16px;
+
+    width: 100%;
+
+    box-sizing: border-box;
+
 }
 
-/* Input */
-.newsletter-pop input,
-.newsletter-pop .input {
-    flex: 1 !important;
-    min-width: 0 !important;
-    height: 46px !important;
-    padding: 0 14px !important;
+.news-pop-body .section-title {
 
-    border-radius: 999px !important;
-    border: 1px solid #ccc !important;
-    box-sizing: border-box !important;
+    margin: 0;
+
+    font-size: 2rem;
+
+    line-height: 1.1;
+
+    color: #0f172a;
+
 }
 
-/* Button */
-.newsletter-pop button,
-.newsletter-pop .btn {
-    flex: 0 0 auto !important;
-    height: 46px !important;
-    padding: 0 16px !important;
+.news-pop-body .section-sub {
 
-    border-radius: 999px !important;
-    border: 2px solid #236B7D !important;
-    background: transparent !important;
-    color: #236B7D !important;
+    margin: 0;
 
-    cursor: pointer !important;
-    white-space: nowrap !important;
+    font-size: 0.95rem;
+
+    line-height: 1.5;
+
+    color: #475569;
+
 }
 
-.newsletter-pop button:hover {
-    background: #AEE6E6 !important;
+/* =========================================================
+
+   NEWSLETTER FORM
+
+========================================================= */
+
+.news-pop-form {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 14px;
+
+    width: 100%;
+
+    margin-top: 6px;
+
 }
 
-/* Privacy text */
+.news-pop-form input,
+
+.news-pop-form .input,
+
+.news-pop-form .input-lg {
+
+    width: 100%;
+
+    height: 54px;
+
+    padding: 0 18px;
+
+    border: 1px solid #d1d5db;
+
+    border-radius: 16px;
+
+    box-sizing: border-box;
+
+    font-size: 1rem;
+
+    outline: none;
+
+    transition: 0.2s ease;
+
+}
+
+.news-pop-form input:focus,
+
+.news-pop-form .input:focus,
+
+.news-pop-form .input-lg:focus {
+
+    border-color: #2f8db3;
+
+    box-shadow: 0 0 0 4px rgba(47, 141, 179, 0.15);
+
+}
+
+.news-pop-form button,
+
+.news-pop-form .btn-primary {
+
+    width: 100%;
+
+    height: 56px;
+
+    border: none;
+
+    border-radius: 999px;
+
+    background: #2f8db3;
+
+    color: #ffffff;
+
+    font-size: 1.05rem;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: 0.2s ease;
+
+}
+
+.news-pop-form button:hover,
+
+.news-pop-form .btn-primary:hover {
+
+    background: #277896;
+
+}
+
+/* =========================================================
+
+   PRIVACY NOTE
+
+========================================================= */
+
 .newsletter-pop .privacy-note {
-    margin: 0 !important;
-    font-size: 0.9rem !important;
-    color: #5b6b70 !important;
+
+    margin: 0;
+
+    font-size: 0.92rem;
+
+    line-height: 1.5;
+
+    color: #64748b;
+
+}
+
+/* =========================================================
+
+   NEWSLETTER DOCK
+
+========================================================= */
+
+.newsletter-dock {
+
+    position: fixed;
+
+    right: 20px;
+
+    bottom: 20px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 14px;
+
+    background: #ffffff;
+
+    padding: 12px 16px;
+
+    border-radius: 999px;
+
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+
+    z-index: 9997;
+
+}
+
+.news-dock-text {
+
+    font-size: 0.95rem;
+
+    font-weight: 500;
+
+    color: #0f172a;
+
+    white-space: nowrap;
+
+}
+
+.news-dock-actions {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+}
+
+/* =========================================================
+
+   DOCK BUTTON
+
+========================================================= */
+
+.newsletter-dock .btn-primary {
+
+    padding: 10px 22px;
+
+    border-radius: 999px;
+
+    background: #ffffff;
+
+    color: #0f172a;
+
+    border: 2px solid #2f8db3;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: 0.2s ease;
+
+}
+
+.newsletter-dock .btn-primary:hover {
+
+    background: #2f8db3;
+
+    color: #ffffff;
+
+}
+
+/* =========================================================
+
+   DISMISS BUTTON
+
+========================================================= */
+
+.news-dock-dismiss {
+
+    width: 32px;
+
+    height: 32px;
+
+    border: none;
+
+    border-radius: 50%;
+
+    background: transparent;
+
+    color: #334155;
+
+    font-size: 1rem;
+
+    cursor: pointer;
+
+    transition: 0.2s ease;
+
+}
+
+.news-dock-dismiss:hover {
+
+    background: #f1f5f9;
+
 }
 
 /* ===== CLIENT PORTAL DASHBOARD ===== */
@@ -1624,143 +1945,144 @@ footer a {
 /* ===== PORTAL LAYOUT ===== */
 
 .portal-header {
-  background: #fff;
-  border-bottom: 1px solid var(--gray);
-  box-shadow: var(--shadow-sm);
+    background: #fff;
+    border-bottom: 1px solid var(--gray);
+    box-shadow: var(--shadow-sm);
 }
 
 .portal-topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 14px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 24px;
 }
 
 .portal-container {
-  display: flex;
-  min-height: 90vh;
+    display: flex;
+    min-height: 90vh;
 }
 
 /* ===== SIDEBAR ===== */
 
 .sidebar {
-  width: 220px;
-  background: var(--teal);
-  color: #fff;
-  padding: 20px;
+    width: 220px;
+    background: var(--teal);
+    color: #fff;
+    padding: 20px;
 }
 
 .sidebar h3 {
-  margin-bottom: 20px;
-  color: var(--aqua);
+    margin-bottom: 20px;
+    color: var(--aqua);
 }
 
 .sidebar ul {
-  list-style: none;
-  padding: 0;
+    list-style: none;
+    padding: 0;
 }
 
 .sidebar li {
-  margin: 12px 0;
-  cursor: pointer;
-  color: #fff;
-  transition: 0.2s;
+    margin: 12px 0;
+    cursor: pointer;
+    color: #fff;
+    transition: 0.2s;
 }
 
 .sidebar li:hover {
-  color: var(--aqua);
+    color: var(--aqua);
 }
 
 /* ===== MAIN ===== */
 
 .main-content {
-  flex: 1;
-  padding: 30px;
-  background: #f8fcfd; /* matches your site gradient feel */
-  color: var(--charcoal);
+    flex: 1;
+    padding: 30px;
+    background: #f8fcfd;
+    /* matches your site gradient feel */
+    color: var(--charcoal);
 }
 
 .welcome-box h1 {
-  color: var(--teal);
+    color: var(--teal);
 }
 
 /* ===== CARDS ===== */
 
 .card-grid {
-  display: flex;
-  gap: 20px;
-  margin: 20px 0;
+    display: flex;
+    gap: 20px;
+    margin: 20px 0;
 }
 
 .card {
-  background: #fff;
-  padding: 20px;
-  flex: 1;
-  border-radius: var(--radius);
-  border: 1px solid var(--gray);
-  box-shadow: var(--shadow-sm);
+    background: #fff;
+    padding: 20px;
+    flex: 1;
+    border-radius: var(--radius);
+    border: 1px solid var(--gray);
+    box-shadow: var(--shadow-sm);
 }
 
 .card h4 {
-  margin-bottom: 10px;
-  color: var(--teal);
+    margin-bottom: 10px;
+    color: var(--teal);
 }
 
 .card p {
-  font-weight: 600;
+    font-weight: 600;
 }
 
 /* ===== TABLE ===== */
 
 .table-card {
-  background: #fff;
-  padding: 20px;
-  border-radius: var(--radius);
-  border: 1px solid var(--gray);
-  box-shadow: var(--shadow-sm);
+    background: #fff;
+    padding: 20px;
+    border-radius: var(--radius);
+    border: 1px solid var(--gray);
+    box-shadow: var(--shadow-sm);
 }
 
 table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 15px;
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
 }
 
 th {
-  background: var(--teal);
-  color: #fff;
-  padding: 12px;
+    background: var(--teal);
+    color: #fff;
+    padding: 12px;
 }
 
 td {
-  padding: 10px;
-  border-bottom: 1px solid var(--gray);
+    padding: 10px;
+    border-bottom: 1px solid var(--gray);
 }
 
 tr:hover {
-  background: #f2fbfc;
+    background: #f2fbfc;
 }
 
 /* ===== BUTTON ===== */
 
 .btn-outline {
-  border: 2px solid var(--teal);
-  padding: 8px 15px;
-  border-radius: 999px;
-  background: transparent;
-  cursor: pointer;
-  color: var(--teal);
-  font-weight: 600;
+    border: 2px solid var(--teal);
+    padding: 8px 15px;
+    border-radius: 999px;
+    background: transparent;
+    cursor: pointer;
+    color: var(--teal);
+    font-weight: 600;
 }
 
 .btn-outline:hover {
-  background: var(--aqua);
+    background: var(--aqua);
 }
 
 /* ===== EXTRA POLISH ===== */
 
 .portal-header h2 {
-  color: #0f2e36; 
+    color: #0f2e36;
 }
 
 /* ===== Floating AI Chatbot ===== */
@@ -2351,237 +2673,6 @@ section.chatbot-panel,
     }
 }
 
-.hidden {
-
-    display: none !important;
-
-}
-
-.chatbot-widget {
-
-    position: fixed;
-
-    right: 22px;
-
-    bottom: 105px;
-
-    z-index: 10000;
-
-}
-
-.chatbot-toggle {
-
-    width: 62px;
-
-    height: 62px;
-
-    border-radius: 50%;
-
-    border: 2px solid var(--teal);
-
-    background: var(--aqua);
-
-    color: #0f2e36;
-
-    font-size: 1.6rem;
-
-    cursor: pointer;
-
-    box-shadow: var(--shadow);
-
-}
-
-.chatbot-panel {
-
-    position: absolute;
-
-    right: 0;
-
-    bottom: 76px;
-
-    width: min(390px, calc(100vw - 32px));
-
-    height: 560px;
-
-    background: #ffffff;
-
-    border: 1px solid rgba(35, 107, 125, 0.12);
-
-    border-radius: 18px;
-
-    box-shadow: var(--shadow);
-
-    overflow: hidden;
-
-    display: flex;
-
-    flex-direction: column;
-
-}
-
-.chatbot-header {
-
-    background: #f2fbfc;
-
-    padding: 16px;
-
-    display: flex;
-
-    justify-content: space-between;
-
-    gap: 12px;
-
-    border-bottom: 1px solid rgba(35, 107, 125, 0.12);
-
-    flex-shrink: 0;
-
-}
-
-.chatbot-header strong {
-
-    display: block;
-
-    color: #0f2e36;
-
-    font-size: 1rem;
-
-}
-
-.chatbot-header p {
-
-    margin: 4px 0 0;
-
-    color: #5b6b70;
-
-    font-size: 0.9rem;
-
-}
-
-.chatbot-close {
-
-    border: 0;
-
-    background: transparent;
-
-    font-size: 1.8rem;
-
-    cursor: pointer;
-
-    color: #0f2e36;
-
-}
-
-.chatbot-messages {
-
-    flex: 1;
-
-    overflow-y: auto;
-
-    padding: 16px;
-
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 12px;
-
-    background: #ffffff;
-
-}
-
-/* Message bubbles */
-
-.chatbot-message {
-
-    max-width: 82%;
-
-    padding: 11px 14px;
-
-    border-radius: 16px;
-
-    font-size: 0.95rem;
-
-    line-height: 1.45;
-
-    word-wrap: break-word;
-
-}
-
-.chatbot-message.bot {
-
-    align-self: flex-start;
-
-    background: #eef8fb;
-
-    color: #0f2e36;
-
-    border-bottom-left-radius: 5px;
-
-}
-
-.chatbot-message.user {
-
-    align-self: flex-end;
-
-    background: var(--aqua);
-
-    color: #0f2e36;
-
-    border-bottom-right-radius: 5px;
-
-}
-
-/* Reply/input section */
-
-.chatbot-form {
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 10px;
-
-    padding: 12px;
-
-    border-top: 1px solid rgba(35, 107, 125, 0.12);
-
-    background: #ffffff;
-
-    flex-shrink: 0;
-
-}
-
-.chatbot-form input {
-    flex: 1;
-    min-width: 0;
-    height: 44px;
-    padding: 0 14px;
-    border: 1px solid var(--gray);
-    border-radius: 999px;
-    color: #0f2e36;
-    background: #ffffff;
-}
-
-.chatbot-form input:focus {
-    outline: 3px solid var(--aqua);
-    border-color: transparent;
-}
-
-.chatbot-form button {
-    height: 44px;
-    padding: 0 16px;
-    border-radius: 999px;
-    border: 2px solid var(--teal);
-    background: transparent;
-    color: var(--teal);
-    font-weight: 600;
-    cursor: pointer;
-    white-space: nowrap;
-}
-
-.chatbot-form button:hover {
-    background: var(--aqua);
-}
 
 @media (max-width: 520px) {
 
