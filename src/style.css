@@ -628,7 +628,7 @@ footer a {
 
 .newsletter-dock {
     position: fixed;
-    right: 20px;
+    left: 20px;
     bottom: 20px;
     width: min(420px, 92vw);
     background: #ffffff;
