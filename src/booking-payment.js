@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             ? 'http://localhost:3001'
             : '';
     const clientId = sessionStorage.getItem('clientId');
+    const pendingBooking = JSON.parse(sessionStorage.getItem('pendingBooking'));
     const messageEl = document.getElementById('payment-message');
     const form = document.getElementById('payment-form');
     const submitBtn = document.getElementById('submit-payment');
@@ -26,31 +27,40 @@ document.addEventListener('DOMContentLoaded', async () => {
         setMessage('Session expired. Please log in again.');
         return;
     }
+    if (!pendingBooking) {
+        setMessage('No pending booking found. Please book an appointment first.');
+        return;
+    }
+    const bookingFee = Number(pendingBooking.bookingFee || 0);
+    if (paymentServiceEl) paymentServiceEl.textContent = formatText(pendingBooking.serviceName || 'Not assigned');
+    if (paymentBookingFeeEl) paymentBookingFeeEl.textContent = `$${(bookingFee / 100).toFixed(2)} AUD`;
+    if (paymentServiceChargeEl) paymentServiceChargeEl.textContent = `$0.00 AUD`;
+    if (paymentStatusEl) paymentStatusEl.textContent = 'Pending';
+    if (paymentTotalDueEl) paymentTotalDueEl.textContent = `$${(bookingFee / 100).toFixed(2)} AUD`;
+    if (bookingFee <= 0) {
+        setMessage('No booking fee found.');
+        return;
+    }
     let stripe;
     let elements;
     try {
-        const chargeRes = await fetch(`${API_BASE}/api/charges?clientId=${encodeURIComponent(clientId)}`);
-        const chargeData = await chargeRes.json();
-        if (!chargeRes.ok) {
-            throw new Error(chargeData.error || 'Failed to load charge details.');
-        }
-        if (paymentServiceEl) paymentServiceEl.textContent = formatText(chargeData.serviceName || 'Not assigned');
-        if (paymentBookingFeeEl) paymentBookingFeeEl.textContent = `$${(Number(chargeData.bookingFee || 0) / 100).toFixed(2)} AUD`;
-        if (paymentServiceChargeEl) paymentServiceChargeEl.textContent = `$${(Number(chargeData.serviceCharge || 0) / 100).toFixed(2)} AUD`;
-        if (paymentStatusEl) paymentStatusEl.textContent = formatText(chargeData.status || 'Pending');
-        if (paymentTotalDueEl) paymentTotalDueEl.textContent = `$${(Number(chargeData.totalDue || 0) / 100).toFixed(2)} AUD`;
-        if (Number(chargeData.totalDue || 0) <= 0) {
-            setMessage('No outstanding balance to pay.', true);
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.textContent = 'No Payment Due';
-            }
-            return;
-        }
-        const res = await fetch(`${API_BASE}/api/create-payment-intent`, {
+        const res = await fetch(`${API_BASE}/api/create-pending-booking-payment-intent`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ clientId })
+            body: JSON.stringify({
+                clientId: pendingBooking.clientId,
+                staffId: pendingBooking.staffId,
+                fullName: pendingBooking.fullName,
+                email: pendingBooking.email,
+                phone: pendingBooking.phone,
+                company: pendingBooking.company,
+                serviceName: pendingBooking.serviceName,
+                meetingType: pendingBooking.meetingType,
+                appointmentDate: pendingBooking.appointmentDate,
+                appointmentTime: pendingBooking.appointmentTime,
+                notes: pendingBooking.notes,
+                bookingFee: pendingBooking.bookingFee
+            })
         });
         const data = await res.json();
         if (!res.ok) {
@@ -75,7 +85,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const { error } = await stripe.confirmPayment({
             elements,
             confirmParams: {
-                return_url: `http://127.0.0.1:5500/src/payment-success.html`
+                return_url: `http://127.0.0.1:5500/src/booking-payment-success.html`
             }
         });
         if (error) {
