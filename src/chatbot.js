@@ -29,14 +29,21 @@ async function sendMessage() {
   addMessage(message, "user-message");
   chatbotInput.value = "";
 
-const res = await fetch("/api/chatbot", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ message })
-});
+  try {
+    const res = await fetch("/api/chatbot", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ message })
+    });
 
-const data = await res.json();
-addMessage(data.reply, "bot-message");
+    const data = await res.json();
+    addMessage(data.reply, "bot-message");
+  } catch (err) {
+    console.error(err);
+    addMessage("Sorry, I could not connect to the chatbot server.", "bot-message");
+  }
 }
 
 function addMessage(text, className) {
@@ -45,26 +52,4 @@ function addMessage(text, className) {
   div.textContent = text;
   chatbotMessages.appendChild(div);
   chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
-}
-
-function getSimpleReply(message) {
-  const text = message.toLowerCase();
-
-  if (text.includes("appointment") || text.includes("book")) {
-    return "You can book an appointment from the Book an Appointment page.";
-  }
-
-  if (text.includes("service")) {
-    return "We provide tax return, business advisory, payroll support, auditing, and general consultation services.";
-  }
-
-  if (text.includes("contact") || text.includes("phone")) {
-    return "You can contact Constant & Co at 03 9466 3688.";
-  }
-
-  if (text.includes("agent")) {
-    return "You can select an available agent when booking an appointment.";
-  }
-
-  return "Thanks for your message. Please contact our team or book an appointment for detailed support.";
 }
