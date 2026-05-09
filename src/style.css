@@ -1624,145 +1624,143 @@ footer a {
 /* ===== PORTAL LAYOUT ===== */
 
 .portal-header {
-    background: #fff;
-    border-bottom: 1px solid var(--gray);
-    box-shadow: var(--shadow-sm);
+  background: #fff;
+  border-bottom: 1px solid var(--gray);
+  box-shadow: var(--shadow-sm);
 }
 
 .portal-topbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 14px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 24px;
 }
 
 .portal-container {
-    display: flex;
-    min-height: 90vh;
+  display: flex;
+  min-height: 90vh;
 }
 
 /* ===== SIDEBAR ===== */
 
 .sidebar {
-    width: 220px;
-    background: var(--teal);
-    color: #fff;
-    padding: 20px;
+  width: 220px;
+  background: var(--teal);
+  color: #fff;
+  padding: 20px;
 }
 
 .sidebar h3 {
-    margin-bottom: 20px;
-    color: var(--aqua);
+  margin-bottom: 20px;
+  color: var(--aqua);
 }
 
 .sidebar ul {
-    list-style: none;
-    padding: 0;
+  list-style: none;
+  padding: 0;
 }
 
 .sidebar li {
-    margin: 12px 0;
-    cursor: pointer;
-    color: #fff;
-    transition: 0.2s;
+  margin: 12px 0;
+  cursor: pointer;
+  color: #fff;
+  transition: 0.2s;
 }
 
 .sidebar li:hover {
-    color: var(--aqua);
+  color: var(--aqua);
 }
 
 /* ===== MAIN ===== */
 
 .main-content {
-    flex: 1;
-    padding: 30px;
-    background: #f8fcfd;
-    /* matches your site gradient feel */
-    color: var(--charcoal);
+  flex: 1;
+  padding: 30px;
+  background: #f8fcfd; /* matches your site gradient feel */
+  color: var(--charcoal);
 }
 
 .welcome-box h1 {
-    color: var(--teal);
+  color: var(--teal);
 }
 
 /* ===== CARDS ===== */
 
 .card-grid {
-    display: flex;
-    gap: 20px;
-    margin: 20px 0;
+  display: flex;
+  gap: 20px;
+  margin: 20px 0;
 }
 
 .card {
-    background: #fff;
-    padding: 20px;
-    flex: 1;
-    border-radius: var(--radius);
-    border: 1px solid var(--gray);
-    box-shadow: var(--shadow-sm);
+  background: #fff;
+  padding: 20px;
+  flex: 1;
+  border-radius: var(--radius);
+  border: 1px solid var(--gray);
+  box-shadow: var(--shadow-sm);
 }
 
 .card h4 {
-    margin-bottom: 10px;
-    color: var(--teal);
+  margin-bottom: 10px;
+  color: var(--teal);
 }
 
 .card p {
-    font-weight: 600;
+  font-weight: 600;
 }
 
 /* ===== TABLE ===== */
 
 .table-card {
-    background: #fff;
-    padding: 20px;
-    border-radius: var(--radius);
-    border: 1px solid var(--gray);
-    box-shadow: var(--shadow-sm);
+  background: #fff;
+  padding: 20px;
+  border-radius: var(--radius);
+  border: 1px solid var(--gray);
+  box-shadow: var(--shadow-sm);
 }
 
 table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 15px;
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
 }
 
 th {
-    background: var(--teal);
-    color: #fff;
-    padding: 12px;
+  background: var(--teal);
+  color: #fff;
+  padding: 12px;
 }
 
 td {
-    padding: 10px;
-    border-bottom: 1px solid var(--gray);
+  padding: 10px;
+  border-bottom: 1px solid var(--gray);
 }
 
 tr:hover {
-    background: #f2fbfc;
+  background: #f2fbfc;
 }
 
 /* ===== BUTTON ===== */
 
 .btn-outline {
-    border: 2px solid var(--teal);
-    padding: 8px 15px;
-    border-radius: 999px;
-    background: transparent;
-    cursor: pointer;
-    color: var(--teal);
-    font-weight: 600;
+  border: 2px solid var(--teal);
+  padding: 8px 15px;
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+  color: var(--teal);
+  font-weight: 600;
 }
 
 .btn-outline:hover {
-    background: var(--aqua);
+  background: var(--aqua);
 }
 
 /* ===== EXTRA POLISH ===== */
 
 .portal-header h2 {
-    color: #0f2e36;
-    /* matches headings in your file :contentReference[oaicite:0]{index=0} */
+  color: #0f2e36; 
 }
 
 /* ===== Floating AI Chatbot ===== */
