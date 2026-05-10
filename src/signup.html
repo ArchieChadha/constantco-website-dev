@@ -76,6 +76,7 @@
                 <!-- Contact -->
                 <a href="contact.html" class="top-link">Contact</a>
 
+                <a href="our-people.html" class="top-link">Our People</a>
                 <a class="btn btn-ghost" href="login.html">Sign Up / Login</a>
                 <!-- Primary CTA -->
                 <a class="btn btn-ghost cta" href="#contact">Book an Appointment</a>
@@ -87,7 +88,7 @@
         <section class="auth-hero">
             <div class="container">
                 <h1 class="auth-title">Create Your Account</h1>
-                <p class="auth-sub">Sign up to access your client portal and upload documents securely.</p>
+                <p class="auth-sub">Create an account to speed up appointment booking and save your details.</p>
 
                 <!-- Sign Up Form -->
                 <form id="signupForm" class="auth-card auth-form" action="#" method="post" novalidate>
@@ -160,7 +161,14 @@
                     <button type="submit" class="btn btn-primary auth-btn">Sign Up</button>
 
                     <!-- Alt action -->
-                    <p class="small auth-alt">Already have an account? <a href="login.html">Login here</a></p>
+                    <p class="small auth-alt">
+                        Already have an account?
+                        <a id="signupLoginLink" href="login.html">Login here</a>
+                    </p>
+                    <p class="small auth-alt">
+                        Booking an appointment as Guest?
+                        <a href="appointment.html">continue as guest</a>.
+                    </p>
 
                     <hr class="auth-divider" />
 
