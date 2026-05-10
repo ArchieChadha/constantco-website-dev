@@ -23,6 +23,7 @@
             <nav class="menu" aria-label="Main">
                 <a href="./index.html" class="top-link">Home</a>
                 <a href="./contact.html" class="top-link">Contact</a>
+                <a href="./our-people.html" class="top-link">Our People</a>
                 <a class="btn btn-ghost" href="./login.html">Sign Up / Login</a>
                 <a class="btn btn-ghost cta" href="./appointment.html" aria-current="page">Book an Appointment</a>
             </nav>
@@ -35,17 +36,24 @@
                 <div class="eyebrow">Online Booking</div>
                 <h1 class="appointment-title">Book an Appointment</h1>
                 <p class="appointment-sub">
-                    Select your service, meeting type, date and time to request a booking.
+                    Book as a guest or client: choose your service, consultation type, provider, and available time.
                 </p>
             </div>
         </section>
 
         <section class="appointment-section">
             <div class="container">
+                <p class="small auth-alt" style="text-align:center; margin: 0 0 14px;">
+                    Booking flow:
+                    <a href="./appointment-access.html">Login</a> |
+                    <a href="./signup.html?redirect=appointment-access">Create account</a> |
+                    <a href="./appointment.html" aria-current="page">Guest booking</a> |
+                    <a href="./index.html">Back to website</a>
+                </p>
                 <form class="auth-card auth-form appointment-form appointment-form-clean" id="appointmentForm"
                     novalidate>
                     <h2 class="appointment-form-title">Appointment Request</h2>
-                    <p class="appointment-form-sub">Fill in your details below.</p>
+                    <p class="appointment-form-sub">Guest booking is available. No login required.</p>
 
                     <div class="auth-row">
                         <div>
@@ -73,25 +81,18 @@
                         </div>
                     </div>
 
+                    <h3 class="appointment-step-title">1) Select Service and Consultation</h3>
                     <div class="auth-row">
                         <div>
                             <label class="sr-only" for="service">Service</label>
                             <select id="service" name="service" class="input-lg" required>
                                 <option value="">Select Service</option>
-                                <option value="Tax Return">Tax Return</option>
-                                <option value="Business Advisory">Business Advisory</option>
-                                <option value="Payroll Support">Payroll Support</option>
-                                <option value="Auditing">Auditing</option>
-                                <option value="General Consultation">General Consultation</option>
                             </select>
                         </div>
                         <div>
                             <label class="sr-only" for="meetingType">Meeting Type</label>
                             <select id="meetingType" name="meetingType" class="input-lg" required>
-                                <option value="">Select Meeting Type</option>
-                                <option value="In Person">In Person</option>
-                                <option value="Phone Call">Phone Call</option>
-                                <option value="Video Meeting">Video Meeting</option>
+                                <option value="">Select Consultation Type</option>
                             </select>
                         </div>
                     </div>
@@ -100,6 +101,14 @@
                         Consultation Fee: <strong id="bookingCost">$0</strong>
                     </p>
 
+                    <h3 class="appointment-step-title">2) Select Provider</h3>
+                    <div class="available-agent-box">
+                        <div id="availableAgent">
+                            Select a service to view available providers.
+                        </div>
+                    </div>
+
+                    <h3 class="appointment-step-title">3) Select Date and Time</h3>
                     <div class="auth-row">
                         <div>
                             <label class="sr-only" for="appointmentDate">Preferred Date</label>
@@ -108,25 +117,17 @@
                         </div>
                         <div>
                             <label class="sr-only" for="appointmentTime">Preferred Time</label>
-                            <select id="appointmentTime" name="appointmentTime" class="input-lg" required>
-                                <option value="">Select Time</option>
-                                <option value="09:00">09:00 AM</option>
-                                <option value="10:00">10:00 AM</option>
-                                <option value="11:00">11:00 AM</option>
-                                <option value="12:00">12:00 PM</option>
-                                <option value="14:00">02:00 PM</option>
-                                <option value="15:00">03:00 PM</option>
-                                <option value="16:00">04:00 PM</option>
-                            </select>
+                            <input id="appointmentTime" name="appointmentTime" type="text" class="input-lg"
+                                placeholder="Select a time from available options" readonly required />
                         </div>
                     </div>
                     <div class="available-agent-box">
-                        <label>Available Staff</label>
-                        <div id="availableAgent">
-                            Please select service, meeting type and time.
+                        <div id="slotPicker">
+                            Select service, provider and date to view available times.
                         </div>
                     </div>
 
+                    <h3 class="appointment-step-title">4) Your Details</h3>
                     <div class="auth-row auth-row--single">
                         <label class="sr-only" for="notes">Notes</label>
                         <textarea id="notes" name="notes" class="input-lg appointment-textarea" rows="5"
