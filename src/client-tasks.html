@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tasks - Constant & Co</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="client-portal-page">
+
+    <aside class="client-sidebar">
+        <div class="client-sidebar-logo">
+            <a href="index.html">
+                <img src="https://constantandco.com.au/wp-content/uploads/2022/09/Logo-New.png"
+                    alt="Constant & Co logo">
+            </a>
+            <p>Client Portal</p>
+        </div>
+
+        <nav class="client-sidebar-nav">
+            <a href="client-dashboard.html">Dashboard</a>
+            <a href="client-documents.html">Documents</a>
+            <a href="client-tasks.html" class="active">Tasks</a>
+            <a href="client-messages.html">Messages</a>
+            <a href="client-billing.html">Billing</a>
+            <a href="client-settings.html">Settings</a>
+        </nav>
+
+        <div class="client-sidebar-user">
+            <strong id="sidebarClientName">Client</strong>
+            <small id="sidebarClientEmail">Logged in</small>
+            <a href="login.html" class="client-logout-link">Logout</a>
+        </div>
+    </aside>
+
+    <div class="client-portal-content">
+
+        <header class="client-topbar">
+            <button class="client-menu-btn" type="button">☰</button>
+            <p>Tasks</p>
+        </header>
+
+        <main class="client-main">
+
+            <section class="client-page-heading">
+                <h1>Tasks</h1>
+                <p>Track items that need your attention, including document requests and follow-up actions.</p>
+            </section>
+
+            <section class="client-stat-grid client-stat-grid-3">
+                <article class="client-stat-card">
+                    <p>Pending Tasks</p>
+                    <h2 id="pendingTasksCount">0</h2>
+                    <small>Waiting for your action</small>
+                </article>
+
+                <article class="client-stat-card">
+                    <p>Document Requests</p>
+                    <h2 id="documentRequestsCount">0</h2>
+                    <small>Requested by your adviser</small>
+                </article>
+
+                <article class="client-stat-card">
+                    <p>Completed</p>
+                    <h2 id="completedTasksCount">0</h2>
+                    <small>Marked as completed</small>
+                </article>
+            </section>
+
+            <section class="client-panel">
+                <div class="client-panel-head">
+                    <div>
+                        <h2>Active Tasks</h2>
+                        <p>Items that require your attention.</p>
+                    </div>
+                </div>
+
+                <div id="clientDocumentRequestsList" class="client-list">
+                    <p>No active tasks found.</p>
+                </div>
+            </section>
+
+            <section class="client-panel">
+                <div class="client-panel-head">
+                    <div>
+                        <h2>Appointment Follow-ups</h2>
+                        <p>Recent services and appointments that may require further action.</p>
+                    </div>
+                </div>
+
+                <table class="client-table">
+                    <thead>
+                        <tr>
+                            <th>Service</th>
+                            <th>Staff</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="serviceHistoryTable">
+                        <tr>
+                            <td colspan="4">No service history found.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+        </main>
+    </div>
+
+    <script src="dashboard.js" defer></script>
+</body>
+
+</html>
