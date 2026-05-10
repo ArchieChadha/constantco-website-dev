@@ -29,6 +29,29 @@ document.addEventListener('DOMContentLoaded', () => {
             throw new Error(fallbackError);
         }
     }
+    function formatDate(value) {
+        if (!value) return '';
+        return new Date(value).toLocaleDateString('en-AU');
+    }
+
+    function formatTime(value) {
+        if (!value) return '';
+        return String(value).slice(0, 5);
+    }
+
+    function formatDateTime(value) {
+        if (!value) return '';
+        return new Date(value).toLocaleString('en-AU');
+    }
+
+    function escapeHTML(value) {
+        return String(value || '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+    }
 
     // ================================
     // ELEMENTS
@@ -384,11 +407,258 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    async function loadClientServiceHistory() {
+        try {
+            const res = await fetch(`${API_BASE}/api/client/service-history?clientId=${encodeURIComponent(clientId)}`);
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || 'Failed to load service history');
+            }
+
+            const services = data.services || [];
+
+            const serviceTable = document.getElementById('serviceHistoryTable');
+            const appointmentTable = document.getElementById('appointmentHistoryTable');
+
+            if (serviceTable) {
+                if (!services.length) {
+                    serviceTable.innerHTML = `<tr><td colspan="4">No service history found.</td></tr>`;
+                } else {
+                    serviceTable.innerHTML = services.map(service => `
+                    <tr>
+                        <td>${escapeHTML(service.service_name || '')}</td>
+                        <td>${escapeHTML(service.staff_name || 'Not assigned')}</td>
+                        <td>${formatDate(service.appointment_date)}</td>
+                        <td>${escapeHTML(service.booking_status || '')}</td>
+                    </tr>
+                `).join('');
+                }
+            }
+
+            if (appointmentTable) {
+                if (!services.length) {
+                    appointmentTable.innerHTML = `<tr><td colspan="5">No appointments found.</td></tr>`;
+                } else {
+                    appointmentTable.innerHTML = services.map(service => `
+                    <tr>
+                        <td>${escapeHTML(service.service_name || '')}</td>
+                        <td>${escapeHTML(service.staff_name || 'Not assigned')}</td>
+                        <td>${formatDate(service.appointment_date)}</td>
+                        <td>${formatTime(service.appointment_time)}</td>
+                        <td>${escapeHTML(service.booking_status || '')}</td>
+                    </tr>
+                `).join('');
+                }
+            }
+
+        } catch (err) {
+            console.error('Service history load error:', err);
+        }
+    }
+
+    async function loadClientPaymentHistory() {
+        try {
+            const res = await fetch(`${API_BASE}/api/client/payment-history?clientId=${encodeURIComponent(clientId)}`);
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || 'Failed to load payment history');
+            }
+
+            const payments = data.payments || [];
+            const table = document.getElementById('paymentHistoryTable');
+
+            if (!table) return;
+
+            if (!payments.length) {
+                table.innerHTML = `<tr><td colspan="5">No payment history found.</td></tr>`;
+                return;
+            }
+
+            table.innerHTML = payments.map(payment => `
+            <tr>
+                <td>${escapeHTML(payment.service_name || '')}</td>
+                <td>${formatMoney(payment.amount)}</td>
+                <td>${escapeHTML((payment.currency || 'AUD').toUpperCase())}</td>
+                <td>${escapeHTML(payment.status || '')}</td>
+                <td>${formatDateTime(payment.payment_date)}</td>
+            </tr>
+        `).join('');
+
+        } catch (err) {
+            console.error('Payment history load error:', err);
+        }
+    }
+
+    function setupClientMessageForm() {
+        const form = document.getElementById('clientMessageForm');
+
+        if (!form) return;
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const subject = document.getElementById('clientMessageSubject').value.trim();
+            const message = document.getElementById('clientMessageText').value.trim();
+            const statusEl = document.getElementById('clientMessageStatus');
+
+            if (!message) {
+                statusEl.textContent = 'Please write a message.';
+                statusEl.style.color = '#b00020';
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/api/client/messages`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        clientId,
+                        subject,
+                        message
+                    })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(data.error || 'Failed to send message');
+                }
+
+                form.reset();
+
+                statusEl.textContent = 'Message sent successfully.';
+                statusEl.style.color = '#1a7f37';
+
+                await loadClientMessages();
+
+            } catch (err) {
+                console.error(err);
+                statusEl.textContent = err.message;
+                statusEl.style.color = '#b00020';
+            }
+        });
+    }
+
+    async function loadClientMessages() {
+        try {
+            const clientId = sessionStorage.getItem('clientId');
+
+            const res = await fetch(`${API_BASE}/api/client/messages?clientId=${clientId}`);
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || 'Failed to load messages');
+            }
+
+            const messages = data.messages || [];
+            const clientMessagesList = document.getElementById('clientMessagesList');
+
+            if (!clientMessagesList) return;
+
+            if (!messages.length) {
+                clientMessagesList.innerHTML = '<p>No messages found.</p>';
+                return;
+            }
+
+            clientMessagesList.innerHTML = messages.map(msg => `
+            <div class="record-item">
+                <strong>${escapeHTML(msg.subject || 'No subject')}</strong><br>
+                <small>
+                    ${escapeHTML(msg.sender_type || '')} · 
+                    ${formatDateTime(msg.created_at)}
+                </small>
+                <p>${escapeHTML(msg.message || '')}</p>
+                <small>Agent: ${escapeHTML(msg.staff_name || 'Not assigned')}</small>
+            </div>
+        `).join('');
+
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    async function loadClientDocumentRequests() {
+        try {
+            const clientId =
+                sessionStorage.getItem('clientId');
+
+            const res = await fetch(
+                `${API_BASE}/api/client/document-requests?clientId=${clientId}`
+            );
+
+            const data = await res.json();
+
+            const requests = data.requests || [];
+
+            const container =
+                document.getElementById(
+                    'clientDocumentRequestsList'
+                );
+
+            if (!container) return;
+
+            if (!requests.length) {
+                container.innerHTML =
+                    '<p>No document requests found.</p>';
+                return;
+            }
+
+            container.innerHTML = requests.map(req => `
+            <div class="record-item">
+
+                <strong>
+                    ${escapeHTML(req.document_title)}
+                </strong>
+
+                <br>
+
+                <small>
+                    Requested by:
+                    ${escapeHTML(req.staff_name || '')}
+                </small>
+
+                <p>
+                    ${escapeHTML(req.message || '')}
+                </p>
+
+                <small>
+                    Status:
+                    ${escapeHTML(req.status || '')}
+                </small>
+
+            </div>
+        `).join('');
+
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
     // ================================
     // INITIAL LOAD
     // ================================
-    loadProfile();
-    loadServices();
-    loadRecords();
-    loadCharges();
+    (async function initialiseDashboard() {
+
+        await loadProfile();
+
+        await loadServices();
+
+        await loadRecords();
+
+        await loadCharges();
+
+        await loadClientServiceHistory();
+
+        await loadClientPaymentHistory();
+
+        await loadClientMessages();
+
+        setupClientMessageForm();
+        await loadClientDocumentRequests();
+
+    })();
 });
