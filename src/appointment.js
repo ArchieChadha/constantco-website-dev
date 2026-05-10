@@ -1,247 +1,317 @@
-document.addEventListener("DOMContentLoaded", () => {
-    // Login guard
-    const clientId = sessionStorage.getItem("clientId");
+document.addEventListener('DOMContentLoaded', () => {
+    const API_BASE =
+        (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+            ? 'http://localhost:3001'
+            : '';
 
-    if (!clientId) {
-        window.location.href = "./appointment-access.html";
-        return;
-    }
+    const form = document.getElementById('appointmentForm');
+    const service = document.getElementById('service');
+    const meetingType = document.getElementById('meetingType');
+    const appointmentDate = document.getElementById('appointmentDate');
+    const appointmentTime = document.getElementById('appointmentTime');
+    const availableAgent = document.getElementById('availableAgent');
+    const slotPicker = document.getElementById('slotPicker');
+    const statusText = document.getElementById('appointmentStatus');
+    const bookingCost = document.getElementById('bookingCost');
+    const bookingCostWrap = document.getElementById('bookingCostWrap');
 
-    const form = document.getElementById("appointmentForm");
-    const service = document.getElementById("service");
-    const meetingType = document.getElementById("meetingType");
-    const appointmentDate = document.getElementById("appointmentDate");
-    const statusText = document.getElementById("appointmentStatus");
-    const bookingCost = document.getElementById("bookingCost");
-    const bookingCostWrap = document.getElementById("bookingCostWrap");
+    const state = {
+        selectedProviderId: '',
+        selectedTime: '',
+        providers: []
+    };
 
     const feeTable = {
-        "Tax Return": {
-            "In Person": "$120",
-            "Phone Call": "$100",
-            "Video Meeting": "$110"
+        'Tax Return': {
+            'Individual Tax Return': '$120',
+            'Business Tax Return': '$150',
+            'Tax Planning': '$180'
         },
-        "Business Advisory": {
-            "In Person": "$180",
-            "Phone Call": "$150",
-            "Video Meeting": "$160"
+        'Business Advisory': {
+            'Strategy Session': '$180',
+            'Cashflow Advisory': '$170',
+            'Growth Planning': '$190'
         },
-        "Payroll Support": {
-            "In Person": "$140",
-            "Phone Call": "$120",
-            "Video Meeting": "$130"
+        'Payroll Support': {
+            'Payroll Setup': '$140',
+            'STP Support': '$130',
+            'Ongoing Payroll Help': '$150'
         },
-        "Auditing": {
-            "In Person": "$220",
-            "Phone Call": "$190",
-            "Video Meeting": "$200"
+        'Auditing': {
+            'Compliance Audit': '$220',
+            'Internal Audit Review': '$200',
+            'Risk Assessment': '$210'
         },
-        "General Consultation": {
-            "In Person": "$100",
-            "Phone Call": "$80",
-            "Video Meeting": "$90"
+        'General Consultation': {
+            'In Person': '$100',
+            'Phone Call': '$80',
+            'Video Meeting': '$90'
         }
     };
 
-    const victoriaMetroPublicHolidays = [
-        "2026-01-01",
-        "2026-01-26",
-        "2026-03-09",
-        "2026-04-03",
-        "2026-04-06",
-        "2026-06-08",
-        "2026-09-25",
-        "2026-11-03",
-        "2026-12-25",
-        "2026-12-28",
-        "2027-01-01",
-        "2027-01-26",
-        "2027-03-08",
-        "2027-03-26",
-        "2027-03-29",
-        "2027-06-14",
-        "2027-10-01",
-        "2027-11-02",
-        "2027-12-27",
-        "2027-12-28"
-    ];
+    const consultationByService = {
+        'Tax Return': ['Individual Tax Return', 'Business Tax Return', 'Tax Planning'],
+        'Business Advisory': ['Strategy Session', 'Cashflow Advisory', 'Growth Planning'],
+        'Payroll Support': ['Payroll Setup', 'STP Support', 'Ongoing Payroll Help'],
+        'Auditing': ['Compliance Audit', 'Internal Audit Review', 'Risk Assessment'],
+        'General Consultation': ['In Person', 'Phone Call', 'Video Meeting']
+    };
+
+    function setStatus(msg, ok = false) {
+        statusText.textContent = msg || '';
+        statusText.style.color = ok ? '#1a7f37' : '#c62828';
+    }
+
+    function setBusy(message = 'Loading...') {
+        setStatus(message, true);
+    }
+
+    function clearStatus() {
+        setStatus('');
+    }
 
     function updateCost() {
         const selectedService = service.value;
         const selectedMeetingType = meetingType.value;
+        const fee = feeTable[selectedService]?.[selectedMeetingType] || '$0';
+        bookingCost.textContent = fee;
+        bookingCostWrap.hidden = !(selectedService && selectedMeetingType);
+    }
 
-        if (selectedService && selectedMeetingType) {
-            bookingCost.textContent = feeTable[selectedService][selectedMeetingType];
-            bookingCostWrap.hidden = false;
-        } else {
-            bookingCost.textContent = "$0";
-            bookingCostWrap.hidden = true;
+    function rebuildConsultationTypes() {
+        const selectedService = service.value;
+        const options = consultationByService[selectedService] || ['In Person', 'Phone Call', 'Video Meeting'];
+        meetingType.innerHTML = `<option value="">Select Consultation Type</option>${options
+            .map((opt) => `<option value="${opt}">${opt}</option>`)
+            .join('')}`;
+    }
+
+    function formatDisplayDate(dateStr) {
+        const date = new Date(`${dateStr}T00:00:00`);
+        return date.toLocaleDateString('en-AU', {
+            weekday: 'short',
+            day: '2-digit',
+            month: 'short'
+        });
+    }
+
+    function renderProviders() {
+        if (!state.providers.length) {
+            availableAgent.innerHTML = '<p>No providers currently available for this service.</p>';
+            return;
+        }
+
+        availableAgent.innerHTML = state.providers.map((provider) => {
+            const checked = String(provider.id) === String(state.selectedProviderId) ? 'checked' : '';
+            const nextAvailability = provider.next_available_date && provider.next_available_time
+                ? `${formatDisplayDate(provider.next_available_date)} at ${provider.next_available_time.slice(0, 5)}`
+                : 'No open times in the next 30 days';
+
+            return `
+                <label class="agent-card booking-provider-card">
+                    <input type="radio" name="selectedStaff" value="${provider.id}" ${checked} required>
+                    <strong>${provider.full_name}</strong>
+                    <p>Next available: ${nextAvailability}</p>
+                </label>
+            `;
+        }).join('');
+    }
+
+    async function loadServices() {
+        const fallback = Object.keys(feeTable);
+        try {
+            const res = await fetch(`${API_BASE}/api/booking-services`);
+            const data = await res.json();
+            const services = Array.isArray(data.services) && data.services.length ? data.services : fallback;
+            service.innerHTML = `<option value="">Select Service</option>${services.map((item) =>
+                `<option value="${item}">${item}</option>`).join('')}`;
+        } catch (_err) {
+            service.innerHTML = `<option value="">Select Service</option>${fallback.map((item) =>
+                `<option value="${item}">${item}</option>`).join('')}`;
+        }
+    }
+
+    async function loadProviders() {
+        const selectedService = service.value;
+        state.selectedProviderId = '';
+        state.selectedTime = '';
+        appointmentTime.value = '';
+        slotPicker.innerHTML = '<p>Select a provider and date to view available times.</p>';
+
+        if (!selectedService) {
+            availableAgent.innerHTML = '<p>Select a service to view available providers.</p>';
+            return;
+        }
+
+        try {
+            setBusy('Loading providers...');
+            const res = await fetch(`${API_BASE}/api/booking-providers?service=${encodeURIComponent(selectedService)}`);
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to load providers');
+            state.providers = data.providers || [];
+            renderProviders();
+            clearStatus();
+        } catch (err) {
+            console.error(err);
+            availableAgent.innerHTML = '<p>Could not load providers right now.</p>';
+            setStatus(err.message || 'Failed to load providers');
+        }
+    }
+
+    async function loadSlots() {
+        const selectedService = service.value;
+        const selectedDate = appointmentDate.value;
+        if (!selectedService || !selectedDate || !state.selectedProviderId) {
+            slotPicker.innerHTML = '<p>Select service, provider and date to view available times.</p>';
+            return;
+        }
+
+        try {
+            setBusy('Loading times...');
+            const qs = new URLSearchParams({
+                service: selectedService,
+                providerId: String(state.selectedProviderId),
+                date: selectedDate
+            });
+            const res = await fetch(`${API_BASE}/api/booking-slots?${qs.toString()}`);
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to load time slots');
+
+            const slots = data.slots || [];
+            if (!slots.length) {
+                slotPicker.innerHTML = '<p>No available times for this date.</p>';
+                appointmentTime.value = '';
+                state.selectedTime = '';
+                clearStatus();
+                return;
+            }
+
+            slotPicker.innerHTML = slots.map((slot) => `
+                <button type="button" class="booking-slot-btn" data-slot="${slot}">${slot}</button>
+            `).join('');
+
+            slotPicker.querySelectorAll('.booking-slot-btn').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    slotPicker.querySelectorAll('.booking-slot-btn').forEach((item) =>
+                        item.classList.remove('active'));
+                    btn.classList.add('active');
+                    state.selectedTime = btn.dataset.slot || '';
+                    appointmentTime.value = state.selectedTime;
+                });
+            });
+            clearStatus();
+        } catch (err) {
+            console.error(err);
+            slotPicker.innerHTML = '<p>Could not load times right now.</p>';
+            setStatus(err.message || 'Failed to load time slots');
         }
     }
 
     flatpickr(appointmentDate, {
-        dateFormat: "Y-m-d",
-        minDate: "today",
+        dateFormat: 'Y-m-d',
+        minDate: 'today',
         disable: [
             function (date) {
                 const day = date.getDay();
-                const dateStr = date.toISOString().split("T")[0];
-
-                return (
-                    day === 0 ||
-                    day === 6 ||
-                    victoriaMetroPublicHolidays.includes(dateStr)
-                );
+                return day === 0 || day === 6;
             }
         ]
     });
-    service.addEventListener("change", () => {
+
+    service.addEventListener('change', async () => {
+        rebuildConsultationTypes();
         updateCost();
-        loadAvailableStaff();
+        await loadProviders();
     });
 
-    meetingType.addEventListener("change", updateCost);
+    meetingType.addEventListener('change', updateCost);
 
-    document.getElementById("appointmentTime").addEventListener("change", loadAvailableStaff);
-    appointmentDate.addEventListener("change", loadAvailableStaff);
+    availableAgent.addEventListener('change', async (event) => {
+        const selected = event.target.closest('input[name="selectedStaff"]');
+        if (!selected) return;
+        state.selectedProviderId = selected.value;
+        await loadSlots();
+    });
 
-    form.addEventListener("submit", async (event) => {
+    appointmentDate.addEventListener('change', loadSlots);
+
+    form.addEventListener('submit', async (event) => {
         event.preventDefault();
-
-        const API_BASE =
-            (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-                ? 'http://localhost:3001'
-                : '';
-
-        const fullName = document.getElementById("fullName");
-        const email = document.getElementById("email");
-        const phone = document.getElementById("phone");
-        const company = document.getElementById("company");
-        const appointmentTime = document.getElementById("appointmentTime");
-        const notes = document.getElementById("notes");
-        const consent = document.getElementById("consent");
-
-        const requiredFields = [
-            fullName,
-            email,
-            phone,
-            service,
-            meetingType,
-            appointmentDate,
-            appointmentTime
-        ];
-
-        requiredFields.forEach((field) => field.classList.remove("input-error"));
-
-        let hasError = false;
-
-        requiredFields.forEach((field) => {
-            if (!field.value.trim()) {
-                field.classList.add("input-error");
-                hasError = true;
-            }
-        });
-
-        if (!consent.checked || hasError) {
-            statusText.textContent = "Please complete all required fields correctly.";
-            statusText.style.color = "#c62828";
-            return;
-        }
+        clearStatus();
 
         const selectedStaff = document.querySelector('input[name="selectedStaff"]:checked');
+        const consent = document.getElementById('consent');
+        const fullName = document.getElementById('fullName').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const phone = document.getElementById('phone').value.trim();
+        const company = document.getElementById('company').value.trim();
+        const notes = document.getElementById('notes').value.trim();
 
-        if (!selectedStaff) {
-            statusText.textContent = "Please select a staff member.";
-            statusText.style.color = "#c62828";
+        if (!service.value || !meetingType.value || !appointmentDate.value || !appointmentTime.value) {
+            setStatus('Please select service, consultation type, provider, date and time.');
             return;
         }
 
-        const bookingData = {
-            fullName: fullName.value.trim(),
-            email: email.value.trim(),
-            phone: phone.value.trim(),
-            company: company.value.trim(),
-            service: service.value,
-            meetingType: meetingType.value,
-            appointmentDate: appointmentDate.value,
-            appointmentTime: appointmentTime.value,
-            notes: notes.value.trim(),
-            bookingCost: bookingCost.textContent
-        };
+        if (!selectedStaff) {
+            setStatus('Please select a provider.');
+            return;
+        }
 
-
-        localStorage.setItem("constantCoAppointment", JSON.stringify(bookingData));
+        if (!fullName || !email || !phone || !consent.checked) {
+            setStatus('Please complete your details and consent.');
+            return;
+        }
 
         try {
-            const clientId = sessionStorage.getItem("clientId");
-            const feeNumber = Number(bookingData.bookingCost.replace('$', '')) * 100;
-            sessionStorage.setItem('pendingBooking', JSON.stringify({
-                clientId,
+            setBusy('Submitting your booking...');
+            const feeNumber = Number((bookingCost.textContent || '$0').replace('$', '')) * 100;
+            const payload = {
+                clientId: sessionStorage.getItem('clientId') || null,
                 staffId: selectedStaff.value,
-                fullName: bookingData.fullName,
-                email: bookingData.email,
-                phone: bookingData.phone,
-                company: bookingData.company,
-                serviceName: bookingData.service,
-                meetingType: bookingData.meetingType,
-                appointmentDate: bookingData.appointmentDate,
-                appointmentTime: bookingData.appointmentTime,
-                notes: bookingData.notes,
+                fullName,
+                email,
+                phone,
+                company,
+                serviceName: service.value,
+                meetingType: meetingType.value,
+                appointmentDate: appointmentDate.value,
+                appointmentTime: appointmentTime.value,
+                notes,
                 bookingFee: feeNumber
+            };
+
+            const res = await fetch(`${API_BASE}/api/bookings`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Booking failed');
+
+            localStorage.setItem('constantCoAppointment', JSON.stringify({
+                ...payload,
+                bookingCost: bookingCost.textContent,
+                appointmentId: data.appointment?.id || null
             }));
-            statusText.textContent = 'Redirecting to payment...';
-            statusText.style.color = '#1a7f37';
-            setTimeout(() => {
-                window.location.href = './booking-payment.html';
-            }, 700);
+
+            setStatus('Booking confirmed. We have saved your appointment.', true);
+            form.reset();
+            meetingType.innerHTML = '<option value="">Select Consultation Type</option>';
+            availableAgent.innerHTML = '<p>Select a service to view available providers.</p>';
+            slotPicker.innerHTML = '<p>Select service, provider and date to view available times.</p>';
+            bookingCostWrap.hidden = true;
+            state.providers = [];
+            state.selectedProviderId = '';
+            state.selectedTime = '';
         } catch (err) {
             console.error(err);
-            statusText.textContent = err.message || "Something went wrong. Please try again.";
-            statusText.style.color = "#c62828";
+            setStatus(err.message || 'Booking failed');
         }
     });
 
-    async function loadAvailableStaff() {
-        const selectedService = service.value;
-        const selectedDate = appointmentDate.value;
-        const selectedTime = document.getElementById("appointmentTime").value;
-        const staffBox = document.getElementById("availableAgent");
-
-        if (!staffBox) return;
-
-        if (!selectedService || !selectedDate || !selectedTime) {
-            staffBox.innerHTML = "Please select service, date and time.";
-            return;
-        }
-
-        const API_BASE =
-            (location.hostname === "localhost" || location.hostname === "127.0.0.1")
-                ? "http://localhost:3001"
-                : "";
-
-        const res = await fetch(
-            `${API_BASE}/api/available-staff?service=${encodeURIComponent(selectedService)}&date=${selectedDate}&time=${selectedTime}`
-        );
-
-        const data = await res.json();
-
-        if (!data.staff || data.staff.length === 0) {
-            staffBox.innerHTML = "No staff available.";
-            return;
-        }
-
-        staffBox.innerHTML = data.staff.map(staff => `
-        <label class="agent-card">
-            <input
-            type="radio"
-            name="selectedStaff"
-            value="${staff.id}"
-            ${staff.availability_status === 'booked' ? 'disabled' : 'required'}>
-            <strong>${staff.full_name}</strong>
-            <p>${staff.availability_status === 'booked' ? 'Booked' : 'Available'}</p>
-        </label>
-    `).join("");
-    }
-
+    loadServices();
+    rebuildConsultationTypes();
     updateCost();
+    availableAgent.innerHTML = '<p>Select a service to view available providers.</p>';
+    slotPicker.innerHTML = '<p>Select service, provider and date to view available times.</p>';
 });

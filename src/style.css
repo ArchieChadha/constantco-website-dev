@@ -4956,3 +4956,39 @@ section.chatbot-panel,
         grid-template-columns: 1fr;
     }
 }
+
+.appointment-step-title {
+    margin: 14px 0 10px;
+    font-size: 1.05rem;
+    color: #1f2a44;
+}
+
+.booking-provider-card {
+    margin-bottom: 10px;
+}
+
+#slotPicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.booking-slot-btn {
+    border: 1px solid #d9dfe8;
+    background: #fff;
+    color: #17223b;
+    padding: 10px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.booking-slot-btn:hover {
+    border-color: #f47b20;
+}
+
+.booking-slot-btn.active {
+    border-color: #f47b20;
+    background: #fff4ec;
+    color: #c15a12;
+}
