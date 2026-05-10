@@ -5,284 +5,314 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Client Dashboard - Constant & Co</title>
+
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body class="client-portal-page">
 
-    <!-- SIDEBAR -->
-    <aside class="client-sidebar">
+    <!-- ===================================================== -->
+    <!-- CLIENT LAYOUT -->
+    <!-- ===================================================== -->
 
-        <div class="client-sidebar-logo">
-            <a href="index.html">
-                <img src="https://constantandco.com.au/wp-content/uploads/2022/09/Logo-New.png"
-                    alt="Constant & Co logo">
-            </a>
-            <p>Client Portal</p>
-        </div>
+    <div class="client-layout">
 
-        <nav class="client-sidebar-nav">
-            <a href="client-dashboard.html" class="active">Dashboard</a>
-            <a href="client-appointments.html">Appointments &amp; Services</a>
-            <a href="client-documents.html">Documents</a>
-            <a href="client-messages.html">Messages</a>
-            <a href="client-billing.html">Billing</a>
-            <a href="client-settings.html">Settings</a>
-        </nav>
+        <!-- ===================================================== -->
+        <!-- SIDEBAR -->
+        <!-- ===================================================== -->
 
-        <div class="client-sidebar-user">
-            <strong id="sidebarClientName">Client</strong>
-            <small id="sidebarClientEmail">Logged in</small>
-            <a href="login.html" class="client-logout-link">Logout</a>
-        </div>
+        <aside class="client-sidebar" id="clientSidebar">
 
-    </aside>
+            <!-- LOGO -->
+            <div class="client-sidebar-logo">
 
-    <!-- PAGE CONTENT -->
-    <div class="client-portal-content">
+                <a href="index.html">
+                    <img src="https://constantandco.com.au/wp-content/uploads/2022/09/Logo-New.png"
+                        alt="Constant & Co logo">
+                </a>
 
-        <!-- TOP BAR -->
-        <header class="client-topbar">
+                <p>Client Portal</p>
 
-            <button id="sidebarToggleBtn" class="client-menu-btn" type="button" aria-label="Toggle sidebar">
-                ☰
-            </button>
+            </div>
 
-            <p>
-                Client Portal Dashboard
-            </p>
+            <!-- NAVIGATION -->
+            <nav class="client-sidebar-nav">
 
-        </header>
+                <a href="client-dashboard.html" class="active">
+                    Dashboard
+                </a>
 
-        <!-- MAIN -->
-        <main class="client-main">
+                <a href="client-appointments.html">
+                    Appointments &amp; Services
+                </a>
 
-            <!-- PAGE HEADING -->
-            <section class="client-page-heading">
-                <h1>
-                    Welcome back,
-                    <span id="dashName">Client</span>
-                </h1>
+                <a href="client-documents.html">
+                    Documents
+                </a>
+
+                <a href="client-messages.html">
+                    Messages
+                </a>
+
+                <a href="client-billing.html">
+                    Billing
+                </a>
+
+                <a href="client-settings.html">
+                    Settings
+                </a>
+
+            </nav>
+
+            <!-- USER -->
+            <div class="client-sidebar-user">
+
+                <strong id="sidebarClientName">
+                    Client
+                </strong>
+
+                <small id="sidebarClientEmail">
+                    Logged in
+                </small>
+
+                <a href="login.html" class="client-logout-link">
+                    Logout
+                </a>
+
+            </div>
+
+        </aside>
+
+        <!-- ===================================================== -->
+        <!-- CONTENT -->
+        <!-- ===================================================== -->
+
+        <div class="client-portal-content" id="clientPortalContent">
+
+            <!-- ===================================================== -->
+            <!-- TOPBAR -->
+            <!-- ===================================================== -->
+
+            <header class="client-topbar">
+
+                <button id="sidebarToggleBtn" class="client-menu-btn" type="button" aria-label="Toggle Sidebar">
+
+                    ☰
+
+                </button>
 
                 <p>
-                    Here is a clear overview of your appointments, document requests,
-                    recent communication, and current payment status.
+                    Client Portal Dashboard
                 </p>
-            </section>
 
-            <!-- SUMMARY CARDS -->
-            <section class="client-stat-grid">
+            </header>
 
-                <article class="client-stat-card">
-                    <p>Upcoming Appointments</p>
-                    <h2 id="upcomingAppointmentsCount">0</h2>
-                    <small>Scheduled with Constant &amp; Co</small>
-                </article>
+            <!-- ===================================================== -->
+            <!-- MAIN -->
+            <!-- ===================================================== -->
 
-                <article class="client-stat-card">
-                    <p>Document Requests</p>
-                    <h2 id="documentRequestsCount">0</h2>
-                    <small>Items requested by your adviser</small>
-                </article>
+            <main class="client-main" id="clientMain">
 
-                <article class="client-stat-card">
-                    <p>Recent Messages</p>
-                    <h2 id="unreadMessagesCount">0</h2>
-                    <small>Latest communication updates</small>
-                </article>
+                <!-- ===================================================== -->
+                <!-- HERO -->
+                <!-- ===================================================== -->
 
-                <article class="client-stat-card">
-                    <p>Amount Due</p>
-                    <h2 id="chargeValue">$0.00</h2>
-                    <small id="chargeStatus">—</small>
-                </article>
+                <section class="client-page-hero">
 
-            </section>
+                    <h1>
+                        Welcome back,
+                        <span id="dashName">Client</span>
+                    </h1>
 
-            <!-- MAIN DASHBOARD GRID -->
-            <section class="client-dashboard-grid">
-
-                <!-- APPOINTMENTS PREVIEW -->
-                <section class="client-panel">
-
-                    <div class="client-panel-head">
-                        <div>
-                            <h2>Upcoming Appointments</h2>
-                            <p>
-                                A quick view of your latest booked appointments and services.
-                            </p>
-                        </div>
-
-                        <a href="client-appointments.html" class="btn btn-ghost">
-                            View All
-                        </a>
-                    </div>
-
-                    <table class="client-table">
-                        <thead>
-                            <tr>
-                                <th>Service</th>
-                                <th>Staff</th>
-                                <th>Date</th>
-                                <th>Time</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-
-                        <tbody id="appointmentHistoryTable">
-                            <tr>
-                                <td colspan="5">
-                                    No appointments found.
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <p>
+                        Access your appointments, billing information,
+                        requested documents, and communication history
+                        in one professional client workspace.
+                    </p>
 
                 </section>
 
-                <!-- PAYMENT SUMMARY -->
+                <!-- ===================================================== -->
+                <!-- QUICK STATS -->
+                <!-- ===================================================== -->
+
+                <section class="client-stat-grid">
+
+                    <!-- APPOINTMENTS -->
+                    <article class="client-stat-card">
+
+                        <p>
+                            Upcoming Appointments
+                        </p>
+
+                        <h2 id="upcomingAppointmentsCount">
+                            0
+                        </h2>
+
+                        <small>
+                            Scheduled with Constant &amp; Co
+                        </small>
+
+                    </article>
+
+                    <!-- DOCUMENT REQUESTS -->
+                    <article class="client-stat-card">
+
+                        <p>
+                            Document Requests
+                        </p>
+
+                        <h2 id="documentRequestsCount">
+                            0
+                        </h2>
+
+                        <small>
+                            Requested by your adviser
+                        </small>
+
+                    </article>
+
+                    <!-- MESSAGES -->
+                    <article class="client-stat-card">
+
+                        <p>
+                            Recent Messages
+                        </p>
+
+                        <h2 id="unreadMessagesCount">
+                            0
+                        </h2>
+
+                        <small>
+                            Communication updates
+                        </small>
+
+                    </article>
+
+                    <!-- AMOUNT DUE -->
+                    <article class="client-stat-card">
+
+                        <p>
+                            Amount Due
+                        </p>
+
+                        <h2 id="chargeValue">
+                            $0.00
+                        </h2>
+
+                        <small id="chargeStatus">
+                            No payment due
+                        </small>
+
+                    </article>
+
+                </section>
+
+                <!-- ===================================================== -->
+                <!-- QUICK ACTIONS -->
+                <!-- ===================================================== -->
+
                 <section class="client-panel">
 
                     <div class="client-panel-head">
+
                         <div>
-                            <h2>Payment Summary</h2>
+
+                            <h2>
+                                Quick Actions
+                            </h2>
+
                             <p>
-                                Your current account balance and payment position.
+                                Access commonly used client portal features.
                             </p>
+
                         </div>
 
-                        <a href="client-billing.html" class="btn btn-ghost">
-                            View Billing
-                        </a>
                     </div>
 
                     <div class="client-mini-grid">
 
+                        <!-- ACTION -->
                         <div class="client-mini-card">
-                            <h4>Booking Fee</h4>
-                            <p id="bookingFeeValue">$0.00</p>
+
+                            <h4>
+                                Book Appointment
+                            </h4>
+
+                            <p>
+
+                                <a href="appointment-access.html">
+                                    Schedule consultation
+                                </a>
+
+                            </p>
+
                         </div>
 
+                        <!-- ACTION -->
                         <div class="client-mini-card">
-                            <h4>Service Charge</h4>
-                            <p id="serviceChargeValue">$0.00</p>
+
+                            <h4>
+                                Upload Documents
+                            </h4>
+
+                            <p>
+
+                                <a href="client-documents.html">
+                                    Manage records
+                                </a>
+
+                            </p>
+
                         </div>
 
+                        <!-- ACTION -->
                         <div class="client-mini-card">
-                            <h4>Total Charge</h4>
-                            <p id="totalChargeValue">$0.00</p>
+
+                            <h4>
+                                Contact Adviser
+                            </h4>
+
+                            <p>
+
+                                <a href="client-messages.html">
+                                    Send message
+                                </a>
+
+                            </p>
+
                         </div>
 
+                        <!-- ACTION -->
                         <div class="client-mini-card">
-                            <h4>Amount Paid</h4>
-                            <p id="amountPaidValue">$0.00</p>
+
+                            <h4>
+                                Review Billing
+                            </h4>
+
+                            <p>
+
+                                <a href="client-billing.html">
+                                    Check payments
+                                </a>
+
+                            </p>
+
                         </div>
 
-                    </div>
-
-                    <div class="client-action-row">
-                        <a href="payment.html" class="btn btn-primary payment-action-btn">
-                            Pay Now
-                        </a>
                     </div>
 
                 </section>
 
-            </section>
+            </main>
 
-            <!-- RECENT DOCUMENT REQUESTS -->
-            <section class="client-panel">
-
-                <div class="client-panel-head">
-                    <div>
-                        <h2>Recent Document Requests</h2>
-                        <p>
-                            Documents your adviser has requested from you.
-                        </p>
-                    </div>
-
-                    <a href="client-documents.html" class="btn btn-ghost">
-                        View Documents
-                    </a>
-                </div>
-
-                <div id="clientDocumentRequestsList" class="client-list">
-                    <p>No document requests found.</p>
-                </div>
-
-            </section>
-
-            <!-- RECENT MESSAGES -->
-            <section class="client-panel">
-
-                <div class="client-panel-head">
-                    <div>
-                        <h2>Recent Messages</h2>
-                        <p>
-                            Latest messages between you and Constant &amp; Co staff.
-                        </p>
-                    </div>
-
-                    <a href="client-messages.html" class="btn btn-ghost">
-                        Open Messages
-                    </a>
-                </div>
-
-                <div id="clientMessagesList" class="client-list">
-                    <p>No messages found.</p>
-                </div>
-
-            </section>
-
-            <!-- PROFESSIONAL SUPPORT SECTION -->
-            <section class="client-panel">
-
-                <div class="client-panel-head">
-                    <div>
-                        <h2>Your Client Portal</h2>
-                        <p>
-                            Use the portal to keep your documents, appointments, messages, and payments organised.
-                        </p>
-                    </div>
-                </div>
-
-                <div class="client-mini-grid">
-
-                    <div class="client-mini-card">
-                        <h4>Book appointments</h4>
-                        <p>
-                            <a href="appointment-access.html">Schedule a consultation</a>
-                        </p>
-                    </div>
-
-                    <div class="client-mini-card">
-                        <h4>Upload records</h4>
-                        <p>
-                            <a href="client-documents.html">Manage documents</a>
-                        </p>
-                    </div>
-
-                    <div class="client-mini-card">
-                        <h4>Contact adviser</h4>
-                        <p>
-                            <a href="client-messages.html">Send a message</a>
-                        </p>
-                    </div>
-
-                    <div class="client-mini-card">
-                        <h4>Review billing</h4>
-                        <p>
-                            <a href="client-billing.html">Check payments</a>
-                        </p>
-                    </div>
-
-                </div>
-
-            </section>
-
-        </main>
+        </div>
 
     </div>
+
+    <!-- ===================================================== -->
+    <!-- DASHBOARD SCRIPT -->
+    <!-- ===================================================== -->
 
     <script src="dashboard.js" defer></script>
 

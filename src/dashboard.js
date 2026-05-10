@@ -436,6 +436,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const services = data.services || [];
+            const upcomingCount =
+                services.filter(service =>
+                    service.booking_status !== 'Cancelled'
+                ).length;
+
+            document.getElementById('upcomingAppointmentsCount').textContent =
+                upcomingCount;
 
             const serviceTable = document.getElementById('serviceHistoryTable');
             const appointmentTable = document.getElementById('appointmentHistoryTable');
@@ -574,6 +581,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const messages = data.messages || [];
+            document.getElementById('unreadMessagesCount').textContent =
+                messages.length;
             const clientMessagesList = document.getElementById('clientMessagesList');
 
             if (!clientMessagesList) return;
@@ -612,6 +621,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
 
             const requests = data.requests || [];
+            document.getElementById('documentRequestsCount').textContent =
+                requests.length;
 
             const container =
                 document.getElementById(
