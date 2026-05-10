@@ -577,7 +577,7 @@ footer a {
 
     border-radius: 26px;
 
-    padding: 42px 40px!important;
+    padding: 42px 40px !important;
 
     box-sizing: border-box;
 
@@ -1990,6 +1990,16 @@ footer a {
 
 .sidebar li:hover {
     color: var(--aqua);
+}
+
+.sidebar a {
+    color: #fff;
+    text-decoration: none;
+    display: block;
+}
+
+.sidebar a:hover {
+    text-decoration: underline;
 }
 
 /* ===== MAIN ===== */
