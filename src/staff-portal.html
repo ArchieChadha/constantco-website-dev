@@ -8,18 +8,22 @@
 </head>
 
 <body>
+
     <header class="portal-header">
         <div class="portal-topbar">
             <h2>Staff Portal</h2>
             <button id="logoutBtn" class="btn-outline">Logout</button>
         </div>
     </header>
+
     <div class="portal-container">
+
         <aside class="sidebar">
             <h3>Menu</h3>
             <ul>
                 <li>Dashboard</li>
                 <li>My Appointments</li>
+                <li>My Clients</li>
                 <li>Availability</li>
                 <li>Client Messages</li>
                 <li>Document Requests</li>
@@ -27,36 +31,56 @@
                 <li>Payments</li>
             </ul>
         </aside>
+
         <main class="main-content">
+
             <div class="welcome-box">
                 <h1 id="staffName">Welcome</h1>
                 <p id="staffEmail"></p>
-                <p>Manage your schedule, bookings, clients, and requests.</p>
+                <p>Manage your schedule, bookings, clients, document requests, transfers, and payments.</p>
             </div>
+
             <div class="card-grid">
+
                 <div class="card">
                     <h4>Appointments</h4>
                     <p id="staffAppointments">0</p>
                 </div>
+
+                <div class="card">
+                    <h4>Clients</h4>
+                    <p id="staffClientsCount">0</p>
+                </div>
+
                 <div class="card">
                     <h4>Messages</h4>
                     <p id="staffMessages">0</p>
                 </div>
+
                 <div class="card">
                     <h4>Document Requests</h4>
                     <p id="staffDocumentRequests">0</p>
                 </div>
+
                 <div class="card">
                     <h4>Payments</h4>
                     <p id="staffPayments">$0</p>
                 </div>
+
                 <div class="card">
                     <h4>Transfer Requests</h4>
                     <p id="staffRequests">0</p>
                 </div>
+
             </div>
+
+            <!-- =========================
+                 APPOINTMENTS
+            ========================== -->
+
             <div class="table-card">
                 <h3>Upcoming Appointments</h3>
+
                 <table>
                     <thead>
                         <tr>
@@ -67,86 +91,176 @@
                             <th>Status</th>
                         </tr>
                     </thead>
+
                     <tbody id="staffAppointmentsTable">
                         <tr>
-                            <td colspan="5">No appointments found</td>
+                            <td colspan="5">Loading appointments...</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
+
+            <!-- =========================
+                 MY CLIENTS
+            ========================== -->
+
             <div class="table-card">
-                <h3>Availability / Block-off Requests</h3>
-                <form id="blockDateForm" class="portal-form">
-                    <div class="auth-row">
-                        <div>
-                            <label for="blockDate">Date</label>
-                            <input type="date" id="blockDate" class="input-lg" required>
-                        </div>
-                        <div>
-                            <label for="blockReason">Reason</label>
-                            <input type="text" id="blockReason" class="input-lg"
-                                placeholder="Reason for unavailable date" required>
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Request Block-off</button>
-                    <p id="blockDateStatus" class="small"></p>
-                </form>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Reason</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="availabilityRequestsTable">
-                        <tr>
-                            <td colspan="3">No block-off requests found</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="table-card">
-                <h3>Client Messages</h3>
+                <h3>My Clients</h3>
+
                 <table>
                     <thead>
                         <tr>
                             <th>Client</th>
-                            <th>Subject</th>
-                            <th>Message</th>
-                            <th>Date</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Client Type</th>
+                            <th>Service</th>
                         </tr>
                     </thead>
-                    <tbody id="clientMessagesTable">
+
+                    <tbody id="staffClientsTable">
                         <tr>
-                            <td colspan="4">No messages found</td>
+                            <td colspan="5">Loading clients...</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
+
+            <!-- =========================
+                 AVAILABILITY REQUEST
+            ========================== -->
+
             <div class="table-card">
-                <h3>Document Requests</h3>
-                <form id="documentRequestForm" class="portal-form">
+                <h3>Availability / Block-off Requests</h3>
+
+                <form id="availabilityRequestForm" class="staff-form portal-form">
+
                     <div class="auth-row">
                         <div>
-                            <label for="documentClient">Client</label>
-                            <select id="documentClient" class="input-lg" required>
-                                <option value="">Select Client</option>
+                            <label for="availabilityStartDate">Start Date</label>
+                            <input type="date" id="availabilityStartDate" class="input-lg" required>
+                        </div>
+
+                        <div>
+                            <label for="availabilityEndDate">End Date</label>
+                            <input type="date" id="availabilityEndDate" class="input-lg" required>
+                        </div>
+                    </div>
+
+                    <div class="auth-row auth-row--single">
+                        <div>
+                            <label for="availabilityReason">Reason</label>
+                            <textarea id="availabilityReason" class="input-lg appointment-textarea"
+                                placeholder="Reason for unavailable date range"></textarea>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Submit Availability Request</button>
+
+                    <p id="availabilityRequestStatus" class="small"></p>
+                </form>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th>Reason</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="availabilityRequestsTable">
+                        <tr>
+                            <td colspan="4">No availability requests found</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- =========================
+                 CLIENT MESSAGES
+            ========================== -->
+
+            <div class="table-card">
+                <h3>Client Messages</h3>
+                <form id="staffReplyForm" class="staff-form">
+
+                    <label>Client</label>
+
+                    <select id="replyClientId" required>
+                        <option value="">Select Client</option>
+                    </select>
+
+                    <label>Subject</label>
+
+                    <input type="text" id="replySubject" placeholder="Subject">
+
+                    <label>Message</label>
+
+                    <textarea id="replyMessage" placeholder="Write your message" required></textarea>
+
+                    <button type="submit" class="btn-outline">
+
+                        Send Message
+
+                    </button>
+
+                </form>
+
+                <div id="staffMessagesList" class="records-list">
+                    <p>No messages found.</p>
+                </div>
+            </div>
+
+            <!-- =========================
+                 DOCUMENT REQUEST
+            ========================== -->
+
+            <div class="table-card">
+                <h3>Request Document</h3>
+
+                <form id="documentRequestForm" class="staff-form portal-form">
+
+                    <div class="auth-row">
+                        <div>
+                            <label for="documentClientSelect">Client</label>
+                            <select id="documentClientSelect" class="input-lg" required>
+                                <option value="">Select client</option>
                             </select>
                         </div>
+
                         <div>
-                            <label for="documentTitle">Document Needed</label>
-                            <input type="text" id="documentTitle" class="input-lg"
-                                placeholder="Example: Tax file declaration" required>
+                            <label for="documentAppointmentSelect">Appointment</label>
+                            <select id="documentAppointmentSelect" class="input-lg">
+                                <option value="">Select appointment</option>
+                            </select>
                         </div>
                     </div>
-                    <div class="auth-row auth-row--single">
-                        <textarea id="documentMessage" class="input-lg appointment-textarea" rows="4"
-                            placeholder="Write a short message to the client"></textarea>
+
+                    <div class="auth-row">
+                        <div>
+                            <label for="documentTitle">Document Needed</label>
+                            <input type="text" id="documentTitle" class="input-lg" placeholder="Example: Bank statement"
+                                required>
+                        </div>
+
+                        <div>
+                            <label for="documentMessage">Message</label>
+                            <input type="text" id="documentMessage" class="input-lg"
+                                placeholder="Short message to the client">
+                        </div>
                     </div>
+
                     <button type="submit" class="btn btn-primary">Send Document Request</button>
+
                     <p id="documentRequestStatus" class="small"></p>
                 </form>
+            </div>
+
+            <div class="table-card">
+                <h3>Document Request History</h3>
+
                 <table>
                     <thead>
                         <tr>
@@ -156,6 +270,7 @@
                             <th>Requested Date</th>
                         </tr>
                     </thead>
+
                     <tbody id="documentRequestsTable">
                         <tr>
                             <td colspan="4">No document requests found</td>
@@ -163,8 +278,42 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- =========================
+                 TRANSFER REQUEST
+            ========================== -->
+
             <div class="table-card">
-                <h3>Transfer Requests</h3>
+                <h3>Request Client Transfer</h3>
+
+                <form id="transferRequestForm" class="staff-form portal-form">
+
+                    <div class="auth-row auth-row--single">
+                        <div>
+                            <label for="transferAppointmentSelect">Appointment</label>
+                            <select id="transferAppointmentSelect" class="input-lg" required>
+                                <option value="">Select appointment</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="auth-row auth-row--single">
+                        <div>
+                            <label for="transferReason">Reason</label>
+                            <textarea id="transferReason" class="input-lg appointment-textarea"
+                                placeholder="Explain why you want to transfer this client" required></textarea>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Submit Transfer Request</button>
+
+                    <p id="transferRequestStatus" class="small"></p>
+                </form>
+            </div>
+
+            <div class="table-card">
+                <h3>Transfer Request History</h3>
+
                 <table>
                     <thead>
                         <tr>
@@ -175,6 +324,7 @@
                             <th>Status</th>
                         </tr>
                     </thead>
+
                     <tbody id="transferRequestsTable">
                         <tr>
                             <td colspan="5">No transfer requests found</td>
@@ -182,28 +332,38 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- =========================
+                 PAYMENT HISTORY
+            ========================== -->
+
             <div class="table-card">
-                <h3>Payments / Charges</h3>
+                <h3>Client Payment History</h3>
+
                 <table>
                     <thead>
                         <tr>
                             <th>Client</th>
                             <th>Service</th>
-                            <th>Booking Fee</th>
-                            <th>Service Charge</th>
+                            <th>Amount</th>
                             <th>Status</th>
+                            <th>Payment Date</th>
                         </tr>
                     </thead>
-                    <tbody id="staffPaymentsTable">
+
+                    <tbody id="paymentHistoryTable">
                         <tr>
-                            <td colspan="5">No payment records found</td>
+                            <td colspan="5">Loading payment history...</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
+
         </main>
     </div>
-    <script src="staff-portal.js"></script>
+
+    <script src="staff-portal.js" defer></script>
+
 </body>
 
 </html>
