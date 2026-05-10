@@ -4828,7 +4828,7 @@ section.chatbot-panel,
 }
 
 /* =========================================================
-   CLIENT PORTAL FINAL UI FIXES
+   CLIENT PORTAL UI FIXES
 ========================================================= */
 
 /* Main content should not be squeezed */
@@ -4871,7 +4871,7 @@ section.chatbot-panel,
     font-size: 0.95rem;
 }
 
-/* Payment summary cards should not look cramped */
+/* Payment summary cards */
 .client-mini-grid {
     grid-template-columns: repeat(2, minmax(140px, 1fr));
     gap: 16px;
