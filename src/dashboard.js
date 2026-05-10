@@ -79,6 +79,27 @@ document.addEventListener('DOMContentLoaded', () => {
     const chargeService = document.getElementById('chargeService');
 
     const payBtn = document.querySelector('.payment-action-btn');
+    // ================================
+    // SIDEBAR TOGGLE
+    // ================================
+    const sidebarToggleBtn =
+        document.getElementById('sidebarToggleBtn');
+
+    const sidebar =
+        document.querySelector('.client-sidebar');
+
+    const portalContent =
+        document.querySelector('.client-portal-content');
+
+    if (sidebarToggleBtn && sidebar && portalContent) {
+
+        sidebarToggleBtn.addEventListener('click', () => {
+
+            sidebar.classList.toggle('sidebar-hidden');
+
+            portalContent.classList.toggle('content-expanded');
+        });
+    }
 
     // ================================
     // GUARD
@@ -121,7 +142,6 @@ document.addEventListener('DOMContentLoaded', () => {
                  <div class="portal-service-item">
                     <h4>${formatText(fallback)}</h4>
                     <p><strong>Status:</strong> Active</p>
-                    <p><strong>Client Type:</strong> ${formatText(sessionStorage.getItem('clientType')) || 'Not specified'}</p>
                     <p><strong>Staff:</strong> Not assigned</p>
                     <p><strong>Notes:</strong> No additional notes available</p>
                  </div>
@@ -258,7 +278,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="portal-service-item">
                     <h4>${formatText(fallback)}</h4>
                     <p><strong>Status:</strong> Active</p>
-                    <p><strong>Client Type:</strong> ${formatText(sessionStorage.getItem('clientType')) || 'Not specified'}</p>
                     <p><strong>Notes:</strong> No additional notes available</p>
                     <p><strong>Staff:</strong> ${service.staff_name || 'Not assigned'}</p>
                 </div>
