@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Constant & Co</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="client-portal-page">
+
+    <aside class="client-sidebar">
+        <div class="client-sidebar-logo">
+            <a href="index.html">
+                <img src="https://constantandco.com.au/wp-content/uploads/2022/09/Logo-New.png"
+                    alt="Constant & Co logo">
+            </a>
+            <p>Client Portal</p>
+        </div>
+
+        <nav class="client-sidebar-nav">
+            <a href="client-dashboard.html">Dashboard</a>
+            <a href="client-documents.html">Documents</a>
+            <a href="client-tasks.html">Tasks</a>
+            <a href="client-messages.html">Messages</a>
+            <a href="client-billing.html">Billing</a>
+            <a href="client-settings.html" class="active">Settings</a>
+        </nav>
+
+        <div class="client-sidebar-user">
+            <strong id="sidebarClientName">Client</strong>
+            <small id="sidebarClientEmail">Logged in</small>
+            <a href="login.html" class="client-logout-link">Logout</a>
+        </div>
+    </aside>
+
+    <div class="client-portal-content">
+
+        <header class="client-topbar">
+            <button class="client-menu-btn" type="button">☰</button>
+            <p>Settings</p>
+        </header>
+
+        <main class="client-main">
+
+            <section class="client-page-heading">
+                <h1>Settings</h1>
+                <p>View and manage your account information and portal preferences.</p>
+            </section>
+
+            <section class="client-panel">
+                <div class="client-panel-head">
+                    <div>
+                        <h2>Profile Information</h2>
+                        <p>Your account details stored in the client portal.</p>
+                    </div>
+                </div>
+
+                <div class="portal-info-grid">
+                    <div class="portal-info-card">
+                        <h4>Full Name</h4>
+                        <p id="profileName">—</p>
+                    </div>
+
+                    <div class="portal-info-card">
+                        <h4>Email</h4>
+                        <p id="profileEmail">—</p>
+                    </div>
+
+                    <div class="portal-info-card">
+                        <h4>Phone</h4>
+                        <p id="profilePhone">—</p>
+                    </div>
+
+                    <div class="portal-info-card">
+                        <h4>Client Type</h4>
+                        <p id="profileType">—</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="client-panel">
+                <div class="client-panel-head">
+                    <div>
+                        <h2>Services Overview</h2>
+                        <p>Services linked to your Constant & Co account.</p>
+                    </div>
+                </div>
+
+                <div id="servicesList" class="portal-services-list">
+                    <p>No services found.</p>
+                </div>
+            </section>
+
+            <section class="client-panel">
+                <div class="client-panel-head">
+                    <div>
+                        <h2>Account Actions</h2>
+                    </div>
+                </div>
+
+                <div class="client-action-row">
+                    <a href="appointment-access.html" class="btn btn-primary">Book Appointment</a>
+                    <a href="client-messages.html" class="btn btn-ghost">Message Adviser</a>
+                    <a href="login.html" class="btn btn-ghost">Logout</a>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script src="dashboard.js" defer></script>
+</body>
+
+</html>

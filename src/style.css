@@ -961,169 +961,414 @@ footer a {
 
 }
 
-/* ===== CLIENT PORTAL DASHBOARD ===== */
-.portal-header {
-    background: #fff;
-    box-shadow: var(--shadow-sm);
-    position: sticky;
-    top: 0;
-    z-index: 20;
-}
+/* =========================================================
+   CLIENT PORTAL - NEW SIDEBAR LAYOUT
+========================================================= */
 
-.portal-topbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    min-height: 100px;
-}
-
-.portal-nav {
-    display: flex;
-    align-items: center;
-    gap: 24px;
-}
-
-.portal-nav a {
-    font-weight: 600;
-    color: #0f2e36;
-}
-
-.portal-shell {
-    padding-top: 28px;
-    padding-bottom: 30px;
-}
-
-.portal-banner {
-    background: linear-gradient(135deg, rgba(174, 230, 230, 0.45), rgba(61, 169, 252, 0.18));
-    border: 1px solid rgba(35, 107, 125, 0.12);
-    border-radius: 24px;
-    padding: 36px 32px;
-    margin-bottom: 26px;
-    box-shadow: var(--shadow-sm);
-}
-
-.portal-banner h1 {
-    margin: 0 0 10px;
-    font-size: 2.8rem;
-    color: #0f2e36;
-}
-
-.portal-banner p {
+body {
     margin: 0;
-    max-width: 70ch;
+    background: #eef3f3;
+    overflow-x: hidden;
 }
 
-.portal-eyebrow {
-    font-size: 0.95rem;
-    font-weight: 700;
+.client-layout {
+    display: flex;
+    min-height: 100vh;
+}
+
+.client-portal-page {
+    margin: 0;
+    min-height: 100vh;
+    background: #f8fcfd;
+    color: var(--charcoal);
+}
+
+/* ===== Sidebar ===== */
+
+.client-sidebar {
+    width: 260px;
+    min-width: 260px;
+    background: #ffffff;
+    border-right: 1px solid #dfe7e7;
+
+    display: flex;
+    flex-direction: column;
+
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+
+    overflow-y: auto;
+}
+
+.client-sidebar-logo {
+    padding: 22px 20px;
+    border-bottom: 1px solid rgba(35, 107, 125, 0.12);
+}
+
+.client-sidebar-logo img {
+    max-width: 170px;
+    height: auto;
+}
+
+.client-sidebar-logo p {
+    margin: 8px 0 0;
     color: var(--teal);
-    margin-bottom: 8px !important;
+    font-weight: 700;
+    font-size: 0.9rem;
 }
 
-.portal-grid {
-    display: grid;
-    grid-template-columns: 240px 1fr 280px;
-    gap: 22px;
-    align-items: start;
+.client-sidebar-top {
+    padding: 28px 22px 18px;
 }
 
-.portal-sidebar {
-    padding: 22px;
-}
-
-.portal-sidebar h3 {
-    margin-top: 0;
-    color: #0f2e36;
-}
-
-.portal-menu {
-    list-style: none;
-    padding: 0;
-    margin: 16px 0 0;
-    display: grid;
+.client-sidebar-nav {
+    padding: 10px 12px 18px;
+    display: flex;
+    flex-direction: column;
     gap: 10px;
 }
 
-.portal-link,
-.portal-anchor {
-    width: 100%;
+.client-sidebar-bottom {
+    margin-top: auto;
+    padding: 18px 20px 24px;
+    border-top: 1px solid #e6ecec;
+}
+
+.client-sidebar-nav a {
     display: block;
-    text-align: left;
     padding: 12px 14px;
     border-radius: 12px;
-    border: 1px solid rgba(35, 107, 125, 0.12);
-    background: #fff;
     color: #0f2e36;
-    font: inherit;
     font-weight: 600;
-    cursor: pointer;
+    text-decoration: none;
+    transition: 0.2s ease;
+}
+
+.client-sidebar-nav a:hover,
+.client-sidebar-nav a.active {
+    background: var(--teal);
+    color: #ffffff;
     text-decoration: none;
 }
 
-.portal-link:hover,
-.portal-anchor:hover,
-.portal-link.active {
-    background: #f2fbfc;
-    border-color: rgba(35, 107, 125, 0.22);
-    text-decoration: none;
-}
-
-.portal-main {
+.client-sidebar-user {
+    padding: 16px 20px 24px;
+    border-top: 1px solid rgba(35, 107, 125, 0.12);
     display: grid;
-    gap: 20px;
+    gap: 4px;
 }
 
-.portal-cards {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 18px;
-}
-
-.portal-card {
-    background: #fff;
-    border: 1px solid rgba(35, 107, 125, 0.12);
-    border-radius: 18px;
-    padding: 20px;
-    box-shadow: var(--shadow-sm);
-}
-
-.portal-card h4 {
-    margin: 0 0 8px;
+.client-sidebar-user strong {
     color: #0f2e36;
+    font-size: 0.95rem;
+}
+
+.client-sidebar-user small {
+    color: #5b6b70;
+    font-size: 0.85rem;
+}
+
+.client-logout-link {
+    margin-top: 10px;
+    color: var(--teal);
+    font-weight: 600;
+}
+
+/* =========================
+   SIDEBAR TOGGLE
+========================= */
+
+.sidebar-hidden {
+    transform: translateX(-100%);
+    transition: 0.3s ease;
+}
+
+.client-sidebar {
+    transition: 0.3s ease;
+}
+
+.content-expanded {
+    margin-left: 0 !important;
+    width: 100% !important;
+    transition: 0.3s ease;
+}
+
+.sidebar-toggle {
+    width: 46px;
+    height: 46px;
+
+    border-radius: 14px;
+    border: 1px solid #dfe7e7;
+
+    background: white;
+    cursor: pointer;
+}
+
+/* ===== Main Layout ===== */
+
+.client-topbar {
+    height: 72px;
+    background: #ffffff;
+    border-bottom: 1px solid #dfe7e7;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 28px;
+}
+
+.client-topbar p {
+    margin: 0;
+    color: #5b6b70;
+    font-weight: 600;
+}
+
+.client-menu-btn {
+    border: 1px solid rgba(35, 107, 125, 0.18);
+    background: #ffffff;
+    color: var(--teal);
+    border-radius: 10px;
+    padding: 8px 12px;
+    cursor: pointer;
     font-size: 1.1rem;
 }
 
-.portal-card p {
-    margin: 0;
-    color: #5b6b70;
+.client-main {
+    margin-left: 260px;
+    width: calc(100% - 260px);
+    min-height: 100vh;
+    transition: 0.3s ease;
 }
 
-.portal-sidepanel {
-    display: grid;
-    gap: 18px;
+/* ===== Page Heading ===== */
+
+.client-page-content {
+    width: 100%;
+    max-width: 1450px;
+
+    padding: 28px 32px 32px;
+    margin: 0 auto;
+    box-sizing: border-box;
 }
 
-.portal-sidepanel .card h3 {
-    margin-top: 0;
+.client-page-heading {
+    margin-bottom: 22px;
+}
+
+.client-page-heading h1 {
+    margin: 0 0 8px;
     color: #0f2e36;
+    font-size: 2.2rem;
+    line-height: 1.2;
 }
 
-.portal-sidepanel .card p {
-    margin: 10px 0;
+.client-page-heading p {
+    margin: 0;
+    max-width: 75ch;
+    color: #5b6b70;
+    font-size: 1rem;
 }
 
-.portal-section {
-    padding: 24px;
+.client-page-hero {
+    margin-bottom: 22px;
+}
+
+.client-page-hero h1 {
+    margin: 0 0 10px;
+    font-size: 3rem;
+    line-height: 1.1;
+}
+
+.client-page-hero p {
+    margin: 0;
+    max-width: 700px;
+    line-height: 1.7;
+}
+
+/* ===== Statistic Cards ===== */
+
+.client-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+    margin-bottom: 26px;
+}
+
+.client-stat-grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.client-stat-card {
+    background: #ffffff;
+    border: 1px solid rgba(35, 107, 125, 0.12);
+
     border-radius: 18px;
+
+    padding: 20px;
+
+    min-height: 145px;
+
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+
+    transition: 0.2s ease;
 }
 
-.portal-section-head {
+.client-stat-card:hover {
+    transform: translateY(-2px);
+}
+
+.client-stat-card p {
+    margin: 0 0 12px;
+    color: #5b6b70;
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
+.client-stat-card h2 {
+    margin: 0;
+    color: #0f2e36;
+    font-size: 2rem;
+    line-height: 1.1;
+}
+
+.client-stat-card small {
+    display: block;
+    margin-top: 10px;
+    color: #6b7c80;
+}
+
+/* ===== Dashboard / Panels ===== */
+
+.client-dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(220px, 1fr));
+    gap: 18px;
+    align-items: stretch;
+}
+
+.client-panel {
+    background: #ffffff;
+    border: 1px solid rgba(35, 107, 125, 0.12);
+    border-radius: 18px;
+    padding: 24px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 24px;
+}
+
+.client-panel-head {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 18px;
-    margin-bottom: 8px;
+    margin-bottom: 18px;
 }
+
+.client-panel-head h2 {
+    margin: 0 0 6px;
+    color: #0f2e36;
+    font-size: 1.35rem;
+}
+
+.client-panel-head p {
+    margin: 0;
+    color: #5b6b70;
+}
+
+/* ===== Mini Cards ===== */
+
+.client-mini-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+}
+
+.client-mini-card {
+    background: #fbfdfd;
+    border: 1px solid rgba(35, 107, 125, 0.12);
+    border-radius: 14px;
+    padding: 16px;
+}
+
+.client-mini-card h4 {
+    margin: 0 0 8px;
+    color: var(--teal);
+    font-size: 0.95rem;
+}
+
+.client-mini-card p {
+    margin: 0;
+    color: #0f2e36;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+/* ===== Tables ===== */
+
+.client-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.client-table th {
+    text-align: left;
+    padding: 14px 12px;
+    background: #f2fbfc;
+    color: #0f2e36;
+    font-weight: 700;
+    border-bottom: 1px solid rgba(35, 107, 125, 0.12);
+}
+
+.client-table td {
+    padding: 14px 12px;
+    border-bottom: 1px solid rgba(35, 107, 125, 0.08);
+    color: #33474d;
+}
+
+.client-table tr:hover {
+    background: #fbfdfd;
+}
+
+/* ===== Lists / Records ===== */
+
+.client-list,
+.records-list {
+    display: grid;
+    gap: 12px;
+}
+
+.record-item,
+.client-list .record-item {
+    background: #fbfdfd;
+    border: 1px solid rgba(35, 107, 125, 0.12);
+    border-radius: 14px;
+    padding: 16px;
+}
+
+.record-item strong {
+    color: #0f2e36;
+}
+
+.record-item small {
+    color: #5b6b70;
+}
+
+.record-item p {
+    margin: 8px 0 0;
+    color: #33474d;
+}
+
+/* ===== Messages Page ===== */
+
+.client-message-layout {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 24px;
+
+    align-items: start;
+}
+
+/* ===== Existing Info Cards Compatibility ===== */
 
 .portal-info-grid {
     display: grid;
@@ -1175,35 +1420,44 @@ footer a {
     color: #0f2e36;
 }
 
-.portal-charges-grid {
+/* ===== Forms ===== */
+
+.portal-form {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
     gap: 16px;
-    margin-top: 12px;
 }
 
-.portal-charge-card {
-    background: #fbfdfd;
-    border: 1px solid rgba(35, 107, 125, 0.12);
+.portal-form label {
+    display: block;
+    margin-bottom: 6px;
+    color: #0f2e36;
+    font-weight: 600;
+}
+
+.dash-upload-form {
+    display: grid;
+    gap: 14px;
+    margin-top: 14px;
+}
+
+.dash-upload-form input[type="file"] {
+    width: 100%;
+    padding: 14px;
+    border: 2px dashed rgba(35, 107, 125, 0.25);
     border-radius: 14px;
-    padding: 18px;
+    background: #fbfdfd;
 }
 
-.portal-charge-card h4 {
-    margin: 0 0 8px;
-    color: var(--teal);
-    font-size: 1rem;
+/* ===== Actions ===== */
+
+.client-action-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
 }
 
-.portal-charge-card p {
-    margin: 0;
-    color: #0f2e36;
-}
-
-.charge-value {
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: #0f2e36;
+.client-billing-grid {
+    margin-top: 12px;
 }
 
 /* ===== Upload / Records ===== */
@@ -1266,6 +1520,10 @@ footer a {
     border-radius: 12px;
     padding: 14px 16px;
     box-shadow: var(--shadow-sm);
+}
+
+.client-message-layout .record-item {
+    padding: 18px;
 }
 
 .record-item strong {
@@ -1749,13 +2007,15 @@ footer a {
 
 /* ===== Summary Card ===== */
 .summary-card {
-    max-width: 760px;
-    margin: 30px auto 0;
-    padding: 26px;
-    border-radius: 20px;
     background: #ffffff;
-    border: 1px solid rgba(35, 107, 125, 0.12);
-    box-shadow: 0 10px 28px rgba(15, 46, 54, 0.08);
+    border-radius: 22px;
+    padding: 28px;
+
+    border: 1px solid #dde7e7;
+
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+
+    min-height: 150px;
 }
 
 .summary-grid {
@@ -4321,6 +4581,53 @@ section.chatbot-panel,
     }
 }
 
+/* ===== Mobile ===== */
+
+@media (max-width: 1200px) {
+
+    .client-dashboard-grid,
+    .client-stat-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .client-message-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+
+    .client-sidebar {
+        transform: translateX(-100%);
+        z-index: 999;
+    }
+
+    .client-sidebar.active {
+        transform: translateX(0);
+    }
+
+    .client-main,
+    .client-portal-content {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .client-dashboard-grid,
+    .client-stat-grid,
+    .portal-info-grid,
+    .client-mini-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .client-page-content {
+        padding: 22px 18px 28px;
+    }
+
+    .client-page-hero h1 {
+        font-size: 2.2rem;
+    }
+}
+
 @media (max-width: 640px) {
     .appointment-title {
         font-size: 2.2rem;
@@ -4518,4 +4825,134 @@ section.chatbot-panel,
     height: 60px;
     border-radius: 50%;
     object-fit: cover;
+}
+
+/* =========================================================
+   CLIENT PORTAL FINAL UI FIXES
+========================================================= */
+
+/* Main content should not be squeezed */
+.client-main {
+    margin-left: 260px;
+    width: calc(100% - 260px);
+    padding: 28px 36px 40px;
+    box-sizing: border-box;
+}
+
+/* Dashboard grid should only be 2 columns for panels */
+.client-dashboard-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(340px, 0.8fr);
+    gap: 24px;
+    align-items: start;
+}
+
+/* Cards need proper internal spacing */
+.client-panel {
+    overflow: hidden;
+}
+
+/* Header button alignment */
+.client-panel-head {
+    align-items: flex-start;
+}
+
+.client-panel-head .btn {
+    white-space: nowrap;
+    min-width: 96px;
+    text-align: center;
+}
+
+/* Fix huge round buttons */
+.client-panel-head .btn-ghost,
+.client-action-row .btn {
+    border-radius: 999px;
+    padding: 10px 20px;
+    font-size: 0.95rem;
+}
+
+/* Payment summary cards should not look cramped */
+.client-mini-grid {
+    grid-template-columns: repeat(2, minmax(140px, 1fr));
+    gap: 16px;
+}
+
+.client-mini-card {
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.client-table {
+    table-layout: fixed;
+    width: 100%;
+}
+
+.client-table th,
+.client-table td {
+    vertical-align: middle;
+    word-break: normal;
+    overflow-wrap: break-word;
+}
+
+/* Appointment preview columns */
+.client-table th:nth-child(1),
+.client-table td:nth-child(1) {
+    width: 32%;
+}
+
+.client-table th:nth-child(2),
+.client-table td:nth-child(2) {
+    width: 34%;
+}
+
+.client-table th:nth-child(3),
+.client-table td:nth-child(3) {
+    width: 22%;
+}
+
+/* Hide extra appointment columns only on dashboard preview */
+.client-dashboard-grid .client-table th:nth-child(4),
+.client-dashboard-grid .client-table td:nth-child(4),
+.client-dashboard-grid .client-table th:nth-child(5),
+.client-dashboard-grid .client-table td:nth-child(5) {
+    display: none;
+}
+
+/* Better payment button spacing */
+.client-action-row {
+    margin-top: 18px;
+}
+
+/* Reduce massive whitespace on dashboard */
+.client-page-heading {
+    margin-bottom: 24px;
+}
+
+.client-stat-grid {
+    margin-bottom: 24px;
+}
+
+/* Responsive */
+@media (max-width: 1150px) {
+    .client-dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .client-mini-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 760px) {
+    .client-main {
+        margin-left: 0;
+        width: 100%;
+        padding: 22px 16px;
+    }
+
+    .client-mini-grid {
+        grid-template-columns: 1fr;
+    }
 }
