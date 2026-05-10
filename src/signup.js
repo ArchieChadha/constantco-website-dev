@@ -8,6 +8,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const form = document.getElementById('signupForm');
     if (!form) return;
+    const params = new URLSearchParams(window.location.search);
+    const redirect = params.get('redirect');
+    const signupLoginLink = document.getElementById('signupLoginLink');
+
+    if (signupLoginLink && redirect === 'appointment-access') {
+        signupLoginLink.href = 'appointment-access.html';
+        signupLoginLink.textContent = 'Go back to appointment login';
+    }
 
     let status = document.getElementById('signupStatus');
     if (!status) {
@@ -143,9 +151,6 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 sessionStorage.setItem('clientName', fullName);
             } catch { }
-
-            const params = new URLSearchParams(window.location.search);
-            const redirect = params.get('redirect');
 
             let targetPage = 'login.html';
 

@@ -445,6 +445,146 @@ const upload = multer({
 
 /* ---------- Helpers ---------- */
 const isEmail = (s = '') => /^\S+@\S+\.\S+$/.test(s);
+const DEFAULT_SLOT_MINUTES = 60;
+const SLOT_PAD = (value) => String(value).padStart(2, '0');
+
+function toIsoDate(date) {
+    const year = date.getFullYear();
+    const month = SLOT_PAD(date.getMonth() + 1);
+    const day = SLOT_PAD(date.getDate());
+    return `${year}-${month}-${day}`;
+}
+
+function slotLabelFromMinutes(totalMinutes) {
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return `${SLOT_PAD(hours)}:${SLOT_PAD(minutes)}`;
+}
+
+function slotMinutesFromTimeString(time = '') {
+    const [hour, minute] = String(time).split(':').map((part) => Number(part));
+    if (!Number.isFinite(hour) || !Number.isFinite(minute)) return null;
+    return (hour * 60) + minute;
+}
+
+function slotKey(date, time) {
+    return `${date}|${String(time).slice(0, 5)}`;
+}
+
+async function resolveClientIdForBooking({
+    clientId,
+    fullName,
+    email,
+    phone,
+    serviceName
+}) {
+    if (clientId) {
+        const byId = await pool.query(
+            `SELECT id
+             FROM portal_clients
+             WHERE id = $1
+             LIMIT 1`,
+            [clientId]
+        );
+        if (byId.rows.length) return byId.rows[0].id;
+    }
+
+    const cleanEmail = String(email || '').trim().toLowerCase();
+    if (!isEmail(cleanEmail)) {
+        throw new Error('A valid email address is required.');
+    }
+
+    const existing = await pool.query(
+        `SELECT id
+         FROM portal_clients
+         WHERE lower(email) = $1
+         LIMIT 1`,
+        [cleanEmail]
+    );
+
+    if (existing.rows.length) {
+        return existing.rows[0].id;
+    }
+
+    const randomPassword = `${crypto.randomBytes(12).toString('hex')}!1`;
+    const hash = await bcrypt.hash(randomPassword, 10);
+    const inserted = await pool.query(
+        `INSERT INTO portal_clients
+            (name, email, password, phone, client_type, service, note, created_at, updated_at)
+         VALUES
+            ($1, $2, $3, $4, 'Guest', $5, 'Guest booking created from website.', NOW(), NOW())
+         RETURNING id`,
+        [
+            String(fullName || 'Guest User').trim() || 'Guest User',
+            cleanEmail,
+            hash,
+            String(phone || '').trim() || null,
+            String(serviceName || '').trim() || null
+        ]
+    );
+
+    return inserted.rows[0].id;
+}
+
+async function getProviderSlotsForDate(staffId, date) {
+    const availabilityRes = await pool.query(
+        `SELECT start_time, end_time
+         FROM staff_availability
+         WHERE staff_id = $1
+           AND available_date = $2
+           AND status = 'approved'`,
+        [staffId, date]
+    );
+
+    if (!availabilityRes.rows.length) return [];
+
+    const leaveRes = await pool.query(
+        `SELECT 1
+         FROM availability_change_requests
+         WHERE staff_id = $1
+           AND $2::date BETWEEN start_date AND end_date
+           AND status = 'Approved'
+         LIMIT 1`,
+        [staffId, date]
+    );
+
+    if (leaveRes.rows.length) return [];
+
+    const bookedRes = await pool.query(
+        `SELECT appointment_time::text AS time_value
+         FROM appointments
+         WHERE staff_id = $1
+           AND appointment_date = $2
+           AND booking_status IN ('Scheduled', 'Confirmed', 'Pending Payment')
+         UNION
+         SELECT appointment_time::text AS time_value
+         FROM pending_bookings
+         WHERE staff_id = $1
+           AND appointment_date = $2
+           AND status = 'Pending'`,
+        [staffId, date]
+    );
+
+    const booked = new Set(
+        bookedRes.rows.map((row) => String(row.time_value).slice(0, 5))
+    );
+
+    const slots = [];
+    for (const row of availabilityRes.rows) {
+        const startMin = slotMinutesFromTimeString(row.start_time);
+        const endMin = slotMinutesFromTimeString(row.end_time);
+        if (startMin === null || endMin === null || endMin <= startMin) continue;
+
+        for (let timeMin = startMin; timeMin + DEFAULT_SLOT_MINUTES <= endMin; timeMin += DEFAULT_SLOT_MINUTES) {
+            const slot = slotLabelFromMinutes(timeMin);
+            if (!booked.has(slot)) {
+                slots.push(slot);
+            }
+        }
+    }
+
+    return [...new Set(slots)].sort();
+}
 
 const PASSWORD_RULE =
     /^(?=.*[0-9])(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
@@ -1205,6 +1345,209 @@ app.get('/api/client/document-requests', async (req, res) => {
 });
 
 /*-----Available Staff for Booking------*/
+app.get('/api/booking-services', async (_req, res) => {
+    try {
+        const { rows } = await pool.query(
+            `SELECT DISTINCT service_name
+             FROM staff_services
+             WHERE service_name IS NOT NULL
+               AND trim(service_name) <> ''
+             ORDER BY service_name`
+        );
+        res.json({
+            ok: true,
+            services: rows.map((row) => row.service_name)
+        });
+    } catch (err) {
+        console.error('Booking services error:', err);
+        res.status(500).json({ error: 'Failed to load booking services' });
+    }
+});
+
+app.get('/api/booking-providers', async (req, res) => {
+    try {
+        const service = String(req.query.service || '').trim();
+        if (!service) {
+            return res.status(400).json({ error: 'Service is required' });
+        }
+
+        const providerRes = await pool.query(
+            `SELECT DISTINCT s.id, s.full_name, s.email, s.phone
+             FROM staff_users s
+             JOIN staff_services ss ON ss.staff_id = s.id
+             WHERE ss.service_name = $1
+             ORDER BY s.full_name`,
+            [service]
+        );
+
+        const today = new Date();
+        const providers = [];
+        for (const provider of providerRes.rows) {
+            let nextDate = null;
+            let nextTime = null;
+            for (let i = 0; i < 30; i += 1) {
+                const probe = new Date(today);
+                probe.setDate(today.getDate() + i);
+                const isoDate = toIsoDate(probe);
+                const slots = await getProviderSlotsForDate(provider.id, isoDate);
+                if (slots.length) {
+                    nextDate = isoDate;
+                    nextTime = slots[0];
+                    break;
+                }
+            }
+
+            providers.push({
+                ...provider,
+                next_available_date: nextDate,
+                next_available_time: nextTime
+            });
+        }
+
+        res.json({
+            ok: true,
+            providers
+        });
+    } catch (err) {
+        console.error('Booking providers error:', err);
+        res.status(500).json({ error: 'Failed to load providers' });
+    }
+});
+
+app.get('/api/booking-slots', async (req, res) => {
+    try {
+        const service = String(req.query.service || '').trim();
+        const providerId = Number(req.query.providerId || 0);
+        const date = String(req.query.date || '').trim();
+
+        if (!service || !providerId || !date) {
+            return res.status(400).json({
+                error: 'Service, provider and date are required'
+            });
+        }
+
+        const serviceCheck = await pool.query(
+            `SELECT 1
+             FROM staff_services
+             WHERE staff_id = $1
+               AND service_name = $2
+             LIMIT 1`,
+            [providerId, service]
+        );
+        if (!serviceCheck.rows.length) {
+            return res.status(400).json({
+                error: 'Selected provider does not offer this service.'
+            });
+        }
+
+        const slots = await getProviderSlotsForDate(providerId, date);
+        res.json({ ok: true, slots });
+    } catch (err) {
+        console.error('Booking slots error:', err);
+        res.status(500).json({ error: 'Failed to load slots' });
+    }
+});
+
+app.post('/api/bookings', async (req, res) => {
+    try {
+        const {
+            clientId = null,
+            staffId,
+            fullName = '',
+            email = '',
+            phone = '',
+            company = '',
+            serviceName = '',
+            meetingType = '',
+            appointmentDate = '',
+            appointmentTime = '',
+            notes = '',
+            bookingFee = 0
+        } = req.body || {};
+
+        if (!staffId || !fullName || !isEmail(email) || !phone || !serviceName || !meetingType || !appointmentDate || !appointmentTime) {
+            return res.status(400).json({ error: 'Missing required booking fields' });
+        }
+
+        const serviceCheck = await pool.query(
+            `SELECT 1
+             FROM staff_services
+             WHERE staff_id = $1 AND service_name = $2
+             LIMIT 1`,
+            [staffId, serviceName.trim()]
+        );
+        if (!serviceCheck.rows.length) {
+            return res.status(400).json({
+                error: 'Selected provider does not provide this service.'
+            });
+        }
+
+        const validSlots = await getProviderSlotsForDate(staffId, appointmentDate);
+        if (!validSlots.includes(String(appointmentTime).slice(0, 5))) {
+            return res.status(409).json({
+                error: 'This slot is no longer available. Please choose another time.'
+            });
+        }
+
+        const resolvedClientId = await resolveClientIdForBooking({
+            clientId,
+            fullName,
+            email,
+            phone,
+            serviceName
+        });
+
+        const fee = Number(bookingFee) || 0;
+        const { rows } = await pool.query(
+            `INSERT INTO appointments
+            (
+                client_id,
+                staff_id,
+                full_name,
+                email,
+                phone,
+                company,
+                service_name,
+                meeting_type,
+                appointment_date,
+                appointment_time,
+                notes,
+                booking_fee,
+                booking_status,
+                created_at,
+                updated_at
+            )
+            VALUES
+            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::time, $11, $12, 'Scheduled', NOW(), NOW())
+            RETURNING *`,
+            [
+                resolvedClientId,
+                staffId,
+                String(fullName).trim(),
+                String(email).trim().toLowerCase(),
+                String(phone).trim(),
+                String(company || '').trim() || null,
+                serviceName,
+                meetingType,
+                appointmentDate,
+                appointmentTime,
+                String(notes || '').trim() || null,
+                fee
+            ]
+        );
+
+        try {
+            await sendAppointmentConfirmationEmail(rows[0]);
+        } catch (mailErr) {
+            console.error('Booking email send failed:', mailErr);
+        }
+        return res.status(201).json({ ok: true, appointment: rows[0] });
+    } catch (err) {
+        console.error('Create booking error:', err);
+        return res.status(500).json({ error: 'Failed to create booking' });
+    }
+});
+
 app.get('/api/available-staff', async (req, res) => {
 
     try {
