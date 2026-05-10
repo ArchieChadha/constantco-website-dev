@@ -263,49 +263,58 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            setBusy('Submitting your booking...');
-            const feeNumber = Number((bookingCost.textContent || '$0').replace('$', '')) * 100;
+
+            const feeNumber =
+                Number(
+                    (bookingCost.textContent || '$0')
+                        .replace('$', '')
+                ) * 100;
+
             const payload = {
-                clientId: sessionStorage.getItem('clientId') || null,
-                staffId: selectedStaff.value,
+                clientId:
+                    sessionStorage.getItem('clientId') || null,
+
+                staffId:
+                    selectedStaff.value,
+
                 fullName,
                 email,
                 phone,
                 company,
-                serviceName: service.value,
-                meetingType: meetingType.value,
-                appointmentDate: appointmentDate.value,
-                appointmentTime: appointmentTime.value,
+
+                serviceName:
+                    service.value,
+
+                meetingType:
+                    meetingType.value,
+
+                appointmentDate:
+                    appointmentDate.value,
+
+                appointmentTime:
+                    appointmentTime.value,
+
                 notes,
-                bookingFee: feeNumber
+
+                bookingFee:
+                    feeNumber
             };
 
-            const res = await fetch(`${API_BASE}/api/bookings`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Booking failed');
+            sessionStorage.setItem(
+                'pendingBooking',
+                JSON.stringify(payload)
+            );
 
-            localStorage.setItem('constantCoAppointment', JSON.stringify({
-                ...payload,
-                bookingCost: bookingCost.textContent,
-                appointmentId: data.appointment?.id || null
-            }));
+            window.location.href =
+                './booking-payment.html';
 
-            setStatus('Booking confirmed. We have saved your appointment.', true);
-            form.reset();
-            meetingType.innerHTML = '<option value="">Select Consultation Type</option>';
-            availableAgent.innerHTML = '<p>Select a service to view available providers.</p>';
-            slotPicker.innerHTML = '<p>Select service, provider and date to view available times.</p>';
-            bookingCostWrap.hidden = true;
-            state.providers = [];
-            state.selectedProviderId = '';
-            state.selectedTime = '';
         } catch (err) {
+
             console.error(err);
-            setStatus(err.message || 'Booking failed');
+
+            setStatus(
+                err.message || 'Failed to continue to payment'
+            );
         }
     });
 
