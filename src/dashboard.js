@@ -1037,6 +1037,22 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function setupChatDocumentUploadPanel() {
+        const openBtn = document.getElementById('openDocumentPanel');
+        const closeBtn = document.getElementById('closeDocumentPanel');
+        const panel = document.getElementById('documentUploadPanel');
+
+        if (!openBtn || !panel) return;
+
+        openBtn.addEventListener('click', () => {
+            panel.classList.toggle('is-hidden');
+        });
+
+        closeBtn?.addEventListener('click', () => {
+            panel.classList.add('is-hidden');
+        });
+    }
+
     // ================================
     // INITIAL LOAD
     // ================================
