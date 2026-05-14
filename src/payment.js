@@ -26,6 +26,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         setMessage('Session expired. Please log in again.');
         return;
     }
+
+    function stripePortalPaymentSuccessReturnUrl() {
+        const { origin, pathname } = window.location;
+        const dir = pathname.endsWith('/') ? pathname : pathname.replace(/[^/]+$/, '');
+        return `${origin}${dir}payment-success.html`;
+    }
+
     let stripe;
     let elements;
     try {
@@ -75,7 +82,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const { error } = await stripe.confirmPayment({
             elements,
             confirmParams: {
-                return_url: `http://127.0.0.1:5500/src/payment-success.html`
+                return_url: stripePortalPaymentSuccessReturnUrl()
             }
         });
         if (error) {

@@ -732,7 +732,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!services.length) {
                 table.innerHTML = `
                     <tr>
-                        <td colspan="4">No services found.</td>
+                        <td colspan="6">No services found.</td>
                     </tr>
                 `;
                 return;
@@ -762,7 +762,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         appointmentStatus: isUpcoming ? 'Scheduled' : 'Completed',
                         upcomingDateTime: isUpcoming
                             ? `${formatDate(item.appointment_date)} at ${formatTime(item.appointment_time)}`
-                            : 'No upcoming appointment'
+                            : 'No upcoming appointment',
+                        appointmentId: null,
+                        managementToken: null,
+                        pastStamp: null,
+                        pastDisplayDateTime: null,
+                        pastAppointmentId: null,
+                        pastManagementToken: null,
+                        pastBookingStatus: null
                     };
                 }
 
@@ -770,18 +777,51 @@ document.addEventListener('DOMContentLoaded', () => {
                     grouped[serviceName].appointmentStatus = 'Scheduled';
                     grouped[serviceName].upcomingDateTime =
                         `${formatDate(item.appointment_date)} at ${formatTime(item.appointment_time)}`;
+                    grouped[serviceName].appointmentId = item.appointment_id;
+                    grouped[serviceName].managementToken = item.management_token || null;
+                }
+
+                if (!isUpcoming) {
+                    const dRaw = item.appointment_date;
+                    const tRaw = item.appointment_time;
+                    const stamp = `${String(dRaw).slice(0, 10)}T${String(tRaw ?? '').trim().slice(0, 5)}`;
+                    const g = grouped[serviceName];
+                    if (!g.pastStamp || stamp > g.pastStamp) {
+                        g.pastStamp = stamp;
+                        g.pastDisplayDateTime =
+                            `${formatDate(item.appointment_date)} at ${formatTime(item.appointment_time)}`;
+                        g.pastAppointmentId = item.appointment_id;
+                        g.pastManagementToken = item.management_token || null;
+                        g.pastBookingStatus = item.booking_status || 'Completed';
+                    }
                 }
             });
 
-            table.innerHTML = Object.values(grouped).map(item => `
+            table.innerHTML = Object.values(grouped).map((item) => {
+                const hasUpcoming =
+                    item.appointmentId != null && String(item.appointmentId).trim() !== '';
+                const dateTimeCell = hasUpcoming
+                    ? item.upcomingDateTime
+                    : item.pastDisplayDateTime || '—';
+                const statusCell = hasUpcoming
+                    ? item.appointmentStatus
+                    : item.pastBookingStatus || item.appointmentStatus || '—';
+
+                const summaryTok = hasUpcoming ? item.managementToken : item.pastManagementToken;
+                const summaryLink =
+                    summaryTok && String(summaryTok).trim()
+                        ? `<a href="booking-summary.html?token=${encodeURIComponent(String(summaryTok).trim())}">View booking summary</a>`
+                        : '<span class="small">—</span>';
+
+                return `
     <tr>
         <td>${escapeHTML(item.serviceName)}</td>
 
         <td>${escapeHTML(item.staffName)}</td>
 
-        <td>${escapeHTML(item.appointmentStatus)}</td>
+        <td>${escapeHTML(statusCell)}</td>
 
-        <td>${escapeHTML(item.upcomingDateTime)}</td>
+        <td>${escapeHTML(dateTimeCell)}</td>
 
         <td>
             <a href="client-messages.html?service=${encodeURIComponent(item.serviceName)}">
@@ -789,25 +829,10 @@ document.addEventListener('DOMContentLoaded', () => {
             </a>
         </td>
 
-        <td>
-            <div class="client-action-row">
-                <button 
-                    type="button" 
-                    class="btn btn-ghost cancel-appointment-btn"
-                    data-service="${escapeHTML(item.serviceName)}">
-                    Cancel
-                </button>
-
-                <button 
-                    type="button" 
-                    class="btn btn-primary reschedule-appointment-btn"
-                    data-service="${escapeHTML(item.serviceName)}">
-                    Reschedule
-                </button>
-            </div>
-        </td>
+        <td>${summaryLink}</td>
     </tr>
-`).join('');
+`;
+            }).join('');
         } catch (err) {
             console.error(err);
         }
