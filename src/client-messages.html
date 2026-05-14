@@ -22,7 +22,7 @@
         <nav class="client-sidebar-nav">
             <a href="client-dashboard.html">Dashboard</a>
             <a href="client-appointments.html">Services</a>
-            <a href="client-messages.html" class="active">Messages</a>
+            <a href="client-messages.html" class="active">Conversations</a>
             <a href="client-billing.html">Billing</a>
             <a href="client-settings.html">Settings</a>
         </nav>
@@ -47,42 +47,60 @@
 
             <section class="client-chat-shell">
 
-                <!-- LEFT ADVISER PANEL -->
                 <aside class="client-chat-people">
-
                     <div class="chat-people-header">
                         <h2>Conversations</h2>
-                        <p>Your assigned Constant &amp; Co adviser</p>
+                        <p>Your service conversations with Constant &amp; Co advisers.</p>
                     </div>
 
                     <div id="chatPeopleList">
                         <p>Loading conversations...</p>
                     </div>
-
                 </aside>
 
-                <!-- MAIN CHAT AREA -->
                 <section class="client-chat-main">
 
                     <div class="chat-header">
-                        <div>
+                        <div class="chat-title-row">
+                            <div class="chat-avatar" id="chatHeaderAvatar">CO</div>
+
                             <h1 id="chatStaffName">Assigned Adviser</h1>
-                            <p id="chatServiceName">Service conversation</p>
+                        </div>
+
+                        <p id="chatServiceName">Service conversation</p>
+
+                        <div class="chat-tabs">
+                            <button type="button" class="chat-tab active" data-chat-tab="chat">
+                                Chat
+                            </button>
+
+                            <button type="button" class="chat-tab" data-chat-tab="shared">
+                                Shared
+                            </button>
                         </div>
                     </div>
 
-                    <div id="clientMessagesList" class="chat-message-list">
-                        <p>No messages found.</p>
+                    <div id="chatTabPanel" class="chat-tab-panel">
+                        <div id="clientMessagesList" class="chat-message-list">
+                            <p>No messages found.</p>
+                        </div>
                     </div>
 
-                    <!-- DOCUMENT POPUP -->
+                    <div id="sharedTabPanel" class="chat-tab-panel is-hidden">
+                        <div class="shared-documents-head">
+                            <h2>Shared Documents</h2>
+                            <p>Documents shared for this service.</p>
+                        </div>
+
+                        <div id="sharedDocumentsList" class="shared-documents-list">
+                            <p>No shared documents found.</p>
+                        </div>
+                    </div>
+
                     <div id="documentUploadPanel" class="chat-upload-panel is-hidden">
 
                         <div class="chat-upload-head">
-                            <div>
-                                <h3>Add Documents</h3>
-                                <p>Upload one or more files for this service.</p>
-                            </div>
+                            <h3>Upload Documents</h3>
 
                             <button type="button" id="closeDocumentPanel" class="chat-icon-btn">
                                 ×
@@ -90,18 +108,6 @@
                         </div>
 
                         <form id="chatDocumentUploadForm" enctype="multipart/form-data">
-
-                            <label for="chatDocumentService">
-                                Service
-                            </label>
-
-                            <select id="chatDocumentService" class="input-lg" required>
-                                <option value="">Select service</option>
-                            </select>
-
-                            <label for="chatDocumentFiles">
-                                Documents
-                            </label>
 
                             <input id="chatDocumentFiles" type="file" name="files" multiple required>
 
@@ -115,10 +121,8 @@
 
                     </div>
 
-                    <!-- MESSAGE COMPOSER -->
                     <form id="clientMessageForm" class="chat-composer">
-
-                        <button id="openDocumentPanel" type="button" class="chat-plus-btn" aria-label="Add documents">
+                        <button id="openDocumentPanel" type="button" class="chat-plus-btn">
                             +
                         </button>
 
@@ -127,7 +131,6 @@
                         <button type="submit" class="btn btn-primary chat-send-btn">
                             Send
                         </button>
-
                     </form>
 
                     <p id="clientMessageStatus" class="small"></p>
