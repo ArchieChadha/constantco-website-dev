@@ -962,584 +962,1054 @@ footer a {
 }
 
 /* =========================================================
-   CLIENT PORTAL - NEW SIDEBAR LAYOUT
+
+  CLIENT PORTAL
+
 ========================================================= */
 
 body {
-    margin: 0;
-    background: #eef3f3;
-    overflow-x: hidden;
-}
 
-.client-layout {
-    display: flex;
-    min-height: 100vh;
+    margin: 0;
+
+    background: #eef3f3;
+
+    overflow-x: hidden;
+
 }
 
 .client-portal-page {
-    margin: 0;
+
     min-height: 100vh;
+
     background: #f8fcfd;
+
     color: var(--charcoal);
+
 }
 
-/* ===== Sidebar ===== */
+/* =========================================================
+
+   SIDEBAR
+
+========================================================= */
 
 .client-sidebar {
+
     width: 260px;
+
     min-width: 260px;
+
+    height: 100vh;
+
+    position: fixed;
+
+    top: 0;
+
+    left: 0;
+
     background: #ffffff;
+
     border-right: 1px solid #dfe7e7;
 
     display: flex;
+
     flex-direction: column;
 
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-
     overflow-y: auto;
+
+    overflow-x: hidden;
+
+    z-index: 1000;
+
+    transition: 0.3s ease;
+
 }
 
 .client-sidebar-logo {
+
     padding: 22px 20px;
+
     border-bottom: 1px solid rgba(35, 107, 125, 0.12);
+
 }
 
 .client-sidebar-logo img {
+
     max-width: 170px;
+
     height: auto;
+
 }
 
 .client-sidebar-logo p {
-    margin: 8px 0 0;
-    color: var(--teal);
-    font-weight: 700;
-    font-size: 0.9rem;
-}
 
-.client-sidebar-top {
-    padding: 28px 22px 18px;
+    margin: 8px 0 0;
+
+    color: var(--teal);
+
+    font-weight: 700;
+
+    font-size: 0.9rem;
+
 }
 
 .client-sidebar-nav {
-    padding: 10px 12px 18px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
 
-.client-sidebar-bottom {
-    margin-top: auto;
-    padding: 18px 20px 24px;
-    border-top: 1px solid #e6ecec;
+    padding: 14px 12px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 10px;
+
 }
 
 .client-sidebar-nav a {
-    display: block;
-    padding: 12px 14px;
+
+    display: flex;
+
+    align-items: center;
+
+    padding: 13px 14px;
+
     border-radius: 12px;
+
     color: #0f2e36;
+
     font-weight: 600;
+
     text-decoration: none;
+
     transition: 0.2s ease;
+
 }
 
 .client-sidebar-nav a:hover,
+
 .client-sidebar-nav a.active {
+
     background: var(--teal);
+
     color: #ffffff;
-    text-decoration: none;
+
 }
 
 .client-sidebar-user {
-    padding: 16px 20px 24px;
+
+    margin-top: auto;
+
+    padding: 18px 20px 24px;
+
     border-top: 1px solid rgba(35, 107, 125, 0.12);
+
     display: grid;
+
     gap: 4px;
+
 }
 
 .client-sidebar-user strong {
+
     color: #0f2e36;
+
     font-size: 0.95rem;
+
 }
 
 .client-sidebar-user small {
+
     color: #5b6b70;
+
     font-size: 0.85rem;
+
 }
 
 .client-logout-link {
+
     margin-top: 10px;
+
     color: var(--teal);
+
     font-weight: 600;
+
+    text-decoration: none;
+
 }
 
-/* =========================
+/* =========================================================
+
    SIDEBAR TOGGLE
-========================= */
+
+========================================================= */
 
 .sidebar-hidden {
-    transform: translateX(-100%);
-    transition: 0.3s ease;
-}
 
-.client-sidebar {
-    transition: 0.3s ease;
+    transform: translateX(-100%);
+
 }
 
 .content-expanded {
+
     margin-left: 0 !important;
+
     width: 100% !important;
-    transition: 0.3s ease;
+
 }
 
-.sidebar-toggle {
+.sidebar-toggle,
+
+.client-menu-btn {
+
     width: 46px;
+
     height: 46px;
 
-    border-radius: 14px;
+    border-radius: 12px;
+
     border: 1px solid #dfe7e7;
 
-    background: white;
+    background: #ffffff;
+
+    color: var(--teal);
+
     cursor: pointer;
+
+    font-size: 1.1rem;
+
+    transition: 0.2s ease;
+
 }
 
-/* ===== Main Layout ===== */
+.client-menu-btn:hover {
+
+    background: #f2fbfc;
+
+}
+
+/* =========================================================
+
+   MAIN CONTENT
+
+========================================================= */
+
+.client-portal-content {
+
+    margin-left: 260px;
+
+    width: calc(100% - 260px);
+
+    min-height: 100vh;
+
+    transition: 0.3s ease;
+
+}
 
 .client-topbar {
+
     height: 72px;
+
     background: #ffffff;
+
     border-bottom: 1px solid #dfe7e7;
+
     display: flex;
+
     align-items: center;
+
     justify-content: space-between;
+
     padding: 0 28px;
+
+    position: sticky;
+
+    top: 0;
+
+    z-index: 50;
+
 }
 
 .client-topbar p {
-    margin: 0;
-    color: #5b6b70;
-    font-weight: 600;
-}
 
-.client-menu-btn {
-    border: 1px solid rgba(35, 107, 125, 0.18);
-    background: #ffffff;
-    color: var(--teal);
-    border-radius: 10px;
-    padding: 8px 12px;
-    cursor: pointer;
-    font-size: 1.1rem;
+    margin: 0;
+
+    color: #5b6b70;
+
+    font-weight: 600;
+
 }
 
 .client-main {
-    margin-left: 260px;
-    width: calc(100% - 260px);
-    min-height: 100vh;
-    transition: 0.3s ease;
-}
 
-/* ===== Page Heading ===== */
-
-.client-page-content {
     width: 100%;
-    max-width: 1450px;
 
-    padding: 28px 32px 32px;
-    margin: 0 auto;
+    min-height: 100vh;
+
+    padding: 28px 36px 40px;
+
     box-sizing: border-box;
+
 }
+
+/* =========================================================
+
+   PAGE HEADING
+
+========================================================= */
 
 .client-page-heading {
-    margin-bottom: 22px;
+
+    margin-bottom: 24px;
+
 }
 
 .client-page-heading h1 {
-    margin: 0 0 8px;
+
+    margin: 0 0 10px;
+
     color: #0f2e36;
+
     font-size: 2.2rem;
+
     line-height: 1.2;
+
 }
 
 .client-page-heading p {
+
     margin: 0;
+
     max-width: 75ch;
+
     color: #5b6b70;
-    font-size: 1rem;
+
+    line-height: 1.6;
+
 }
 
-.client-page-hero {
-    margin-bottom: 22px;
-}
+/* =========================================================
 
-.client-page-hero h1 {
-    margin: 0 0 10px;
-    font-size: 3rem;
-    line-height: 1.1;
-}
+   STAT CARDS
 
-.client-page-hero p {
-    margin: 0;
-    max-width: 700px;
-    line-height: 1.7;
-}
-
-/* ===== Statistic Cards ===== */
+========================================================= */
 
 .client-stat-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 18px;
-    margin-bottom: 26px;
-}
 
-.client-stat-grid-3 {
-    grid-template-columns: repeat(3, 1fr);
+    display: grid;
+
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+
+    gap: 18px;
+
+    margin-bottom: 24px;
+
 }
 
 .client-stat-card {
+
     background: #ffffff;
+
     border: 1px solid rgba(35, 107, 125, 0.12);
 
     border-radius: 18px;
 
     padding: 20px;
 
-    min-height: 145px;
+    min-height: 140px;
 
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
 
     transition: 0.2s ease;
+
 }
 
 .client-stat-card:hover {
+
     transform: translateY(-2px);
+
 }
 
 .client-stat-card p {
+
     margin: 0 0 12px;
+
     color: #5b6b70;
+
     font-weight: 700;
+
     font-size: 0.95rem;
+
 }
 
 .client-stat-card h2 {
+
     margin: 0;
+
     color: #0f2e36;
+
     font-size: 2rem;
+
     line-height: 1.1;
+
 }
 
 .client-stat-card small {
+
     display: block;
+
     margin-top: 10px;
+
     color: #6b7c80;
+
 }
 
-/* ===== Dashboard / Panels ===== */
+/* =========================================================
+
+   DASHBOARD GRID
+
+========================================================= */
 
 .client-dashboard-grid {
+
     display: grid;
-    grid-template-columns: repeat(4, minmax(220px, 1fr));
-    gap: 18px;
-    align-items: stretch;
+
+    grid-template-columns:
+
+        minmax(0, 1.4fr) minmax(340px, 0.8fr);
+
+    gap: 24px;
+
+    align-items: start;
+
 }
 
+/* =========================================================
+
+   PANELS
+
+========================================================= */
+
 .client-panel {
+
     background: #ffffff;
+
     border: 1px solid rgba(35, 107, 125, 0.12);
+
     border-radius: 18px;
+
     padding: 24px;
+
+    overflow: hidden;
+
     box-shadow: var(--shadow-sm);
+
     margin-bottom: 24px;
+
 }
 
 .client-panel-head {
+
     display: flex;
+
     align-items: flex-start;
+
     justify-content: space-between;
+
     gap: 18px;
+
     margin-bottom: 18px;
+
 }
 
 .client-panel-head h2 {
+
+    margin: 0 0 6px;
+
+    color: #0f2e36;
+
+    font-size: 1.35rem;
+
+}
+
+.client-panel-head p {
+
+    margin: 0;
+
+    color: #5b6b70;
+
+}
+
+.client-panel-head .btn {
+
+    min-width: 96px;
+
+    white-space: nowrap;
+
+    text-align: center;
+
+}
+
+/* =========================================================
+
+   MINI CARDS
+
+========================================================= */
+
+.client-mini-grid {
+
+    display: grid;
+
+    grid-template-columns: repeat(2, minmax(140px, 1fr));
+
+    gap: 16px;
+
+}
+
+.client-mini-card {
+
+    background: #fbfdfd;
+
+    border: 1px solid rgba(35, 107, 125, 0.12);
+
+    border-radius: 14px;
+
+    padding: 18px;
+
+    min-height: 120px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    justify-content: center;
+
+}
+
+.client-mini-card h4 {
+
+    margin: 0 0 8px;
+
+    color: var(--teal);
+
+    font-size: 0.95rem;
+
+}
+
+.client-mini-card p {
+
+    margin: 0;
+
+    color: #0f2e36;
+
+    font-size: 1.2rem;
+
+    font-weight: 700;
+
+}
+
+/* =========================================================
+
+   TABLES
+
+========================================================= */
+
+.client-table {
+    width: 100%;
+    border-collapse: collapse;
+    overflow: hidden;
+    border-radius: 14px;
+}
+
+.client-table th {
+    background: #f4f8f9;
+    color: #0f2e36;
+    font-weight: 700;
+}
+
+.client-table th,
+.client-table td {
+    padding: 14px 16px;
+    border-right: 1px solid rgba(35, 107, 125, 0.10);
+    border-bottom: 1px solid rgba(35, 107, 125, 0.08);
+}
+
+.client-table th:last-child,
+.client-table td:last-child {
+    border-right: none;
+}
+
+.client-table tr:hover {
+
+    background: #fbfdfd;
+
+}
+
+/* =========================================================
+   CLIENT CHAT / TEAMS STYLE MESSAGES
+========================================================= */
+
+.client-chat-shell {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+
+    min-height: 680px;
+    height: calc(100vh - 150px) !important;
+
+    background: #ffffff;
+    border: 1px solid rgba(35, 107, 125, 0.12);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+/* LEFT CONVERSATION LIST */
+
+.client-chat-people {
+    height: 100%;
+    background: #f8fcfd;
+    border-right: 1px solid rgba(35, 107, 125, 0.12);
+    overflow-y: auto;
+}
+
+.chat-people-header {
+    padding: 22px;
+    border-bottom: 1px solid rgba(35, 107, 125, 0.12);
+}
+
+.chat-people-header h2 {
     margin: 0 0 6px;
     color: #0f2e36;
     font-size: 1.35rem;
 }
 
-.client-panel-head p {
+.chat-people-header p {
     margin: 0;
     color: #5b6b70;
-}
-
-/* ===== Mini Cards ===== */
-
-.client-mini-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 14px;
-}
-
-.client-mini-card {
-    background: #fbfdfd;
-    border: 1px solid rgba(35, 107, 125, 0.12);
-    border-radius: 14px;
-    padding: 16px;
-}
-
-.client-mini-card h4 {
-    margin: 0 0 8px;
-    color: var(--teal);
     font-size: 0.95rem;
+    line-height: 1.5;
 }
 
-.client-mini-card p {
-    margin: 0;
-    color: #0f2e36;
-    font-size: 1.25rem;
-    font-weight: 700;
+#chatPeopleList {
+    display: grid;
 }
 
-/* ===== Tables ===== */
-
-.client-table {
+.chat-person {
     width: 100%;
-    border-collapse: collapse;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 18px;
+    border: none;
+    border-left: 4px solid transparent;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+    transition: 0.2s ease;
 }
 
-.client-table th {
-    text-align: left;
-    padding: 14px 12px;
-    background: #f2fbfc;
-    color: #0f2e36;
+.chat-person:hover,
+.chat-person.active {
+    background: #eaf7f8;
+    border-left-color: var(--teal);
+}
+
+.chat-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--teal);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-weight: 700;
+    flex-shrink: 0;
+}
+
+.chat-person strong {
+    display: block;
+    color: #0f2e36;
+    font-size: 0.98rem;
+    line-height: 1.3;
+}
+
+.chat-person small {
+    display: block;
+    margin-top: 3px;
+    color: #5b6b70;
+    font-size: 0.85rem;
+}
+
+/* MAIN CHAT AREA */
+
+.client-chat-main {
+    min-width: 0;
+    height: 100%;
+    min-height: 0;
+
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+
+    position: relative;
+    background: #ffffff;
+    overflow: hidden;
+}
+
+.chat-header {
+    padding: 18px 24px;
+    background: #ffffff;
     border-bottom: 1px solid rgba(35, 107, 125, 0.12);
 }
 
-.client-table td {
-    padding: 14px 12px;
-    border-bottom: 1px solid rgba(35, 107, 125, 0.08);
-    color: #33474d;
+.chat-header h1 {
+    margin: 0 0 4px;
+    color: #0f2e36;
+    font-size: 1.35rem;
+    line-height: 1.25;
 }
 
-.client-table tr:hover {
-    background: #fbfdfd;
+.chat-header p {
+    margin: 0;
+    color: #5b6b70;
+    font-size: 0.95rem;
 }
 
-/* ===== Lists / Records ===== */
+/* MESSAGE LIST */
 
-.client-list,
-.records-list {
+.chat-message-list {
+    min-height: 0;
+    height: 100%;
+
+    padding: 18px 24px;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+
+    background: #f8fcfd;
+}
+
+/* Chat bubble base */
+
+.chat-bubble {
+    max-width: 72%;
+    width: fit-content;
+    padding: 14px 16px;
+    border: 1px solid rgba(35, 107, 125, 0.12);
+    border-radius: 16px;
+    box-shadow: 0 3px 10px rgba(15, 46, 54, 0.04);
+}
+
+.chat-bubble small {
+    display: block;
+    margin-bottom: 6px;
+    color: #5b6b70;
+    font-size: 0.82rem;
+}
+
+.chat-bubble p {
+    margin: 0;
+    color: #0f2e36;
+    line-height: 1.55;
+}
+
+.chat-bubble-client {
+    align-self: flex-end;
+    background: #eaf7f8;
+    border-bottom-right-radius: 6px;
+}
+
+.chat-bubble-agent {
+    align-self: flex-start;
+    background: #ffffff;
+    border-bottom-left-radius: 6px;
+}
+
+/* MESSAGE COMPOSER */
+
+.chat-composer {
+    display: grid;
+    grid-template-columns: 46px minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+
+    padding: 14px 16px;
+
+    background: #ffffff;
+    border-top: 1px solid rgba(35, 107, 125, 0.12);
+}
+
+.chat-plus-btn,
+.chat-icon-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid rgba(35, 107, 125, 0.18);
+    background: #ffffff;
+    color: var(--teal);
+    font-size: 1.4rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.chat-plus-btn:hover,
+.chat-icon-btn:hover {
+    background: #eaf7f8;
+}
+
+.chat-composer textarea {
+    width: 100%;
+    height: 46px;
+    min-height: 46px;
+    max-height: 90px;
+    padding: 12px 14px;
+    border: 1px solid rgba(35, 107, 125, 0.18);
+    border-radius: 14px;
+    background: #ffffff;
+    color: #0f2e36;
+    font: inherit;
+    resize: vertical;
+}
+
+.chat-composer textarea:focus {
+    outline: none;
+    border-color: var(--teal);
+    box-shadow: 0 0 0 3px rgba(35, 107, 125, 0.10);
+}
+
+.chat-send-btn {
+    height: 46px;
+    white-space: nowrap;
+}
+
+.chat-subject-input {
+    display: none;
+}
+
+/* DOCUMENT UPLOAD POPUP */
+
+.chat-upload-panel {
+    position: absolute;
+    left: 24px;
+    bottom: 78px;
+    width: 430px;
+    max-width: calc(100% - 48px);
+    background: #ffffff;
+    border: 1px solid rgba(35, 107, 125, 0.14);
+    border-radius: 18px;
+    padding: 20px;
+    box-shadow: 0 16px 38px rgba(15, 46, 54, 0.18);
+    z-index: 20;
+}
+
+.chat-upload-panel.is-hidden {
+    display: none;
+}
+
+.chat-upload-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.chat-upload-head h3 {
+    margin: 0 0 6px;
+    color: #0f2e36;
+    font-size: 1.15rem;
+}
+
+.chat-upload-head p {
+    margin: 0;
+    color: #5b6b70;
+    font-size: 0.92rem;
+    line-height: 1.5;
+}
+
+#chatDocumentUploadForm {
     display: grid;
     gap: 12px;
 }
 
-.record-item,
-.client-list .record-item {
-    background: #fbfdfd;
-    border: 1px solid rgba(35, 107, 125, 0.12);
-    border-radius: 14px;
-    padding: 16px;
-}
-
-.record-item strong {
-    color: #0f2e36;
-}
-
-.record-item small {
-    color: #5b6b70;
-}
-
-.record-item p {
-    margin: 8px 0 0;
-    color: #33474d;
-}
-
-/* ===== Messages Page ===== */
-
-.client-message-layout {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 24px;
-
-    align-items: start;
-}
-
-/* ===== Existing Info Cards Compatibility ===== */
-
-.portal-info-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
-    margin-top: 12px;
-}
-
-.portal-info-card {
-    background: #fbfdfd;
-    border: 1px solid rgba(35, 107, 125, 0.12);
-    border-radius: 14px;
-    padding: 16px;
-}
-
-.portal-info-card h4 {
-    margin: 0 0 6px;
-    font-size: 0.95rem;
-    color: var(--teal);
-}
-
-.portal-info-card p {
-    margin: 0;
-    color: #0f2e36;
-    font-weight: 500;
-}
-
-.portal-services-list {
-    display: grid;
-    gap: 14px;
-    margin-top: 12px;
-}
-
-.portal-service-item {
-    background: #fbfdfd;
-    border: 1px solid rgba(35, 107, 125, 0.12);
-    border-radius: 14px;
-    padding: 16px;
-}
-
-.portal-service-item h4 {
-    margin: 0 0 6px;
-    color: var(--teal);
-    font-size: 1rem;
-}
-
-.portal-service-item p {
-    margin: 0;
-    color: #0f2e36;
-}
-
-/* ===== Forms ===== */
-
-.portal-form {
-    display: grid;
-    gap: 16px;
-}
-
-.portal-form label {
-    display: block;
-    margin-bottom: 6px;
+#chatDocumentUploadForm label {
     color: #0f2e36;
     font-weight: 600;
 }
 
-.dash-upload-form {
-    display: grid;
-    gap: 14px;
-    margin-top: 14px;
+#chatDocumentService,
+#chatDocumentFiles {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid rgba(35, 107, 125, 0.18);
+    border-radius: 12px;
+    background: #ffffff;
+    font: inherit;
 }
 
-.dash-upload-form input[type="file"] {
-    width: 100%;
-    padding: 14px;
-    border: 2px dashed rgba(35, 107, 125, 0.25);
-    border-radius: 14px;
+#chatDocumentFiles {
+    border-style: dashed;
     background: #fbfdfd;
 }
 
-/* ===== Actions ===== */
-
-.client-action-row {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
+#chatDocumentUploadStatus {
+    min-height: 20px;
+    margin: 0;
 }
 
-.client-billing-grid {
-    margin-top: 12px;
-}
+/* =========================================================
 
-/* ===== Upload / Records ===== */
-.dash-section {
-    margin-top: 0;
-    text-align: left;
-    max-width: 100%;
-    background: #fff;
-    border-radius: 16px;
-    border: 1px solid rgba(35, 107, 125, 0.12);
-    box-shadow: 0 8px 22px rgba(15, 46, 54, 0.08);
-    padding: 24px;
-}
+   LISTS / RECORDS
 
-.dash-section p {
-    margin-top: 0;
-}
+========================================================= */
 
-.dash-section h2 {
-    margin: 0 0 10px;
-    font-size: 1.4rem;
-    color: var(--teal);
-}
-
-.dash-upload-form {
-    display: grid;
-    gap: 12px;
-    margin-top: 12px;
-}
-
-.dash-upload-form input[type="file"] {
-    width: 100%;
-    font: inherit;
-    color: var(--charcoal);
-    border: 1px solid var(--gray);
-    border-radius: 10px;
-    padding: 10px;
-    background: #fff;
-}
-
-.dash-upload-form .btn-primary {
-    align-self: start;
-}
-
-#uploadStatus {
-    min-height: 22px;
-    margin-top: 10px;
-    font-weight: 500;
-}
+.client-list,
 
 .records-list {
-    margin-top: 14px;
+
     display: grid;
-    gap: 10px;
+
+    gap: 12px;
+
 }
 
 .record-item {
-    background: #fbfdfd;
-    border: 1px solid rgba(35, 107, 125, 0.12);
-    border-radius: 12px;
-    padding: 14px 16px;
-    box-shadow: var(--shadow-sm);
-}
 
-.client-message-layout .record-item {
-    padding: 18px;
+    background: #fbfdfd;
+
+    border: 1px solid rgba(35, 107, 125, 0.12);
+
+    border-radius: 14px;
+
+    padding: 16px;
+
+    box-shadow: var(--shadow-sm);
+
 }
 
 .record-item strong {
+
     display: inline-block;
-    color: #0f2e36;
+
     margin-bottom: 4px;
+
+    color: #0f2e36;
+
 }
 
 .record-item small {
+
     display: inline-block;
+
     margin-bottom: 6px;
+
     color: #5b6b70;
+
 }
 
-.record-item a {
+.record-item p {
+
+    margin: 8px 0 0;
+
+    color: #33474d;
+
+}
+
+/* =========================================================
+
+   FORMS
+
+========================================================= */
+
+.portal-form {
+
+    display: grid;
+
+    gap: 16px;
+
+}
+
+.portal-form label {
+
+    display: block;
+
+    margin-bottom: 6px;
+
+    color: #0f2e36;
+
     font-weight: 600;
+
+}
+
+.dash-upload-form {
+
+    display: grid;
+
+    gap: 12px;
+
+    margin-top: 12px;
+
+}
+
+.dash-upload-form input[type="file"] {
+
+    width: 100%;
+
+    padding: 10px;
+
+    border: 1px solid var(--gray);
+
+    border-radius: 10px;
+
+    background: #fff;
+
+}
+
+/* =========================================================
+
+   BUTTONS
+
+========================================================= */
+
+.client-panel-head .btn-ghost,
+
+.client-action-row .btn {
+
+    border-radius: 999px;
+
+    padding: 10px 20px;
+
+    font-size: 0.95rem;
+
+}
+
+.client-action-row {
+
+    display: flex;
+
+    gap: 12px;
+
+    flex-wrap: wrap;
+
+    margin-top: 18px;
+
+}
+
+.client-page-heading .client-action-row {
+    margin-top: 18px;
+}
+
+.upload-btn-small {
+    width: fit-content !important;
+    padding: 10px 18px;
+    font-size: 0.95rem;
 }
 
 /* Payment Page */
@@ -2336,7 +2806,7 @@ tr:hover {
 /* ===== BUTTON ===== */
 
 .btn-outline {
-    border: 2px solid var(--teal);
+    border: 4px solid var(--teal);
     padding: 8px 15px;
     border-radius: 999px;
     background: transparent;
@@ -2897,69 +3367,7 @@ section.chatbot-panel,
     justify-content: center;
 }
 
-@media (max-width: 900px) {
 
-    .svc-feature-grid,
-    .svc-related-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .svc-hero-grid,
-    .svc-split {
-        grid-template-columns: 1fr;
-    }
-
-    .svc-hero-media img {
-        aspect-ratio: 16/10;
-    }
-}
-
-@media (max-width: 680px) {
-    .payment-success-page {
-        padding: 28px 14px 40px;
-    }
-
-    .payment-success-card {
-        padding: 24px 20px;
-        border-radius: 18px;
-    }
-
-    .payment-success-title {
-        font-size: 1.8rem;
-    }
-
-    .payment-success-row {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .payment-success-actions {
-        flex-direction: column;
-    }
-
-    .payment-success-actions .btn {
-        width: 100%;
-        text-align: center;
-    }
-}
-
-
-@media (max-width: 520px) {
-
-    .chatbot-widget {
-        right: 14px;
-        bottom: 14px;
-    }
-
-    .chatbot-panel {
-        width: calc(100vw - 28px);
-        height: 520px;
-    }
-
-    .chatbot-message {
-        max-width: 90%;
-    }
-}
 
 
 /* ===== Resource pages (FAQs, Articles) ===== */
@@ -4330,374 +4738,7 @@ section.chatbot-panel,
     justify-content: center;
 }
 
-@media (max-width: 980px) {
 
-    .home-hero-grid,
-    .home-why-pillars,
-    .home-process,
-    .home-service-cards,
-    .home-expertise-grid,
-    .home-insights-grid,
-    .home-bottom-band-inner {
-        grid-template-columns: 1fr;
-    }
-
-    .home-hero-metrics li {
-        border-right: none;
-        padding-right: 0;
-    }
-
-    .home-hero-floatcard {
-        position: relative;
-        left: auto;
-        bottom: auto;
-        width: 100%;
-        margin-top: 16px;
-    }
-
-    .home-hero-grid {
-        min-height: 0;
-    }
-
-    .home-hero-photo {
-        min-height: 260px;
-    }
-}
-
-@media (max-width: 600px) {
-    .home-page section {
-        padding: 56px 0;
-    }
-
-    .home-bottom {
-        padding-bottom: 64px;
-    }
-}
-
-/* ===== Motion ===== */
-@media (prefers-reduced-motion: no-preference) {
-    .newsletter-pop {
-        transition: transform .18s ease, opacity .18s ease;
-    }
-}
-
-/* ===== Responsive ===== */
-@media (max-width: 1100px) {
-    .portal-grid {
-        grid-template-columns: 220px 1fr;
-    }
-
-    .portal-sidepanel {
-        grid-column: 1 / -1;
-        grid-template-columns: 1fr 1fr;
-    }
-}
-
-@media (max-width: 980px) {
-
-    .hero-grid,
-    .split,
-    .portal-grid,
-    .portal-cards,
-    .portal-sidepanel,
-    .testimonials {
-        grid-template-columns: 1fr;
-    }
-
-    .services,
-    .team,
-    .foot {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .portal-banner h1 {
-        font-size: 2.2rem;
-    }
-
-    .portal-info-grid,
-    .portal-charges-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 900px) {
-
-    .mega-panel,
-    .payment-layout,
-    .appointment-access-layout {
-        grid-template-columns: 1fr;
-    }
-
-    .mega-panel {
-        width: min(360px, calc(100vw - 30px));
-        gap: 12px;
-        padding: 12px;
-    }
-
-    .mega-col {
-        width: 100%;
-        padding: 18px 20px;
-    }
-
-    .mega-title {
-        font-size: 1rem;
-        margin-bottom: 10px;
-    }
-
-    .mega-col p {
-        font-size: 0.95rem;
-        line-height: 1.5;
-        margin: 0 0 14px;
-    }
-
-    .mega-cta {
-        font-size: 0.95rem;
-    }
-
-    .appointment-access-layout {
-        min-height: auto;
-    }
-
-    .appointment-access-card {
-        justify-self: stretch;
-        max-width: 100%;
-    }
-}
-
-@media (max-width: 768px) {
-    .brand img {
-        height: 70px;
-        max-width: 180px;
-    }
-
-    .nav {
-        height: 100px;
-        padding: 0 10px;
-    }
-
-    .mega-panel {
-        width: min(340px, calc(100vw - 24px));
-        gap: 12px;
-        padding: 12px;
-    }
-
-    .mega-col {
-        width: 100%;
-        padding: 18px 20px;
-    }
-
-    .appointment-form-clean,
-    .summary-card {
-        max-width: 100%;
-        padding: 22px;
-    }
-
-    .summary-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 700px) {
-    .auth-row {
-        grid-template-columns: 1fr;
-    }
-
-    .auth-row--inline {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-    }
-}
-
-@media (max-width: 680px) {
-    .portal-topbar {
-        flex-direction: column;
-        justify-content: center;
-        gap: 12px;
-        padding: 14px 0;
-    }
-
-    .portal-nav {
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 14px;
-    }
-
-    .portal-banner {
-        padding: 26px 20px;
-    }
-
-    .portal-banner h1 {
-        font-size: 1.9rem;
-    }
-
-    .portal-section-head,
-    .payment-summary-row {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .dash-section,
-    .portal-section,
-    .payment-summary-card,
-    .payment-card {
-        padding: 20px;
-    }
-
-    .payment-summary-card,
-    .payment-card {
-        border-radius: 18px;
-    }
-
-    .payment-page {
-        padding: 28px 14px 40px;
-    }
-
-    .payment-title {
-        font-size: 1.7rem;
-    }
-
-    .payment-form-title {
-        font-size: 1.25rem;
-    }
-
-    .mega-panel {
-        width: min(320px, calc(100vw - 20px));
-        gap: 10px;
-        padding: 10px;
-    }
-
-    .mega-col {
-        padding: 16px 18px;
-    }
-
-    .mega-title {
-        font-size: 0.98rem;
-    }
-
-    .mega-col p,
-    .mega-cta {
-        font-size: 0.92rem;
-    }
-}
-
-/* ===== Mobile ===== */
-
-@media (max-width: 1200px) {
-
-    .client-dashboard-grid,
-    .client-stat-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .client-message-layout {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 768px) {
-
-    .client-sidebar {
-        transform: translateX(-100%);
-        z-index: 999;
-    }
-
-    .client-sidebar.active {
-        transform: translateX(0);
-    }
-
-    .client-main,
-    .client-portal-content {
-        margin-left: 0;
-        width: 100%;
-    }
-
-    .client-dashboard-grid,
-    .client-stat-grid,
-    .portal-info-grid,
-    .client-mini-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .client-page-content {
-        padding: 22px 18px 28px;
-    }
-
-    .client-page-hero h1 {
-        font-size: 2.2rem;
-    }
-}
-
-@media (max-width: 640px) {
-    .appointment-title {
-        font-size: 2.2rem;
-    }
-
-    .appointment-hero {
-        padding: 24px 0 10px;
-    }
-
-    .appointment-section {
-        padding: 10px 0 40px;
-    }
-
-    .appointment-access-page {
-        padding: 28px 14px 40px;
-    }
-
-    .appointment-access-title {
-        font-size: 2rem;
-    }
-
-    .appointment-access-card {
-        padding: 22px;
-        border-radius: 18px;
-    }
-
-    .resource-hero {
-        padding: 36px 0 28px;
-    }
-
-    .article-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 560px) {
-    .mega-panel {
-        width: min(300px, calc(100vw - 20px));
-        gap: 10px;
-        padding: 10px;
-    }
-
-    .mega-col {
-        width: 100%;
-        padding: 16px 18px;
-    }
-
-    .mega-title {
-        font-size: 0.95rem;
-    }
-
-    .mega-col p {
-        font-size: 0.9rem;
-        line-height: 1.45;
-    }
-
-    .mega-cta {
-        font-size: 0.9rem;
-    }
-
-    .services,
-    .team {
-        grid-template-columns: 1fr;
-    }
-
-    .newsletter,
-    .news-pop-form {
-        flex-direction: column;
-    }
-}
 
 /* MEET OUR PEOPLE */
 
@@ -4783,22 +4824,7 @@ section.chatbot-panel,
     color: #0b3a46;
 }
 
-@media (max-width: 900px) {
-    .people-grid {
-        grid-template-columns: 1fr;
-    }
-}
 
-@media (max-width: 600px) {
-    .person-card {
-        flex-direction: column;
-        text-align: center;
-    }
-
-    .icon-links {
-        justify-content: center;
-    }
-}
 
 .available-agent-box {
     margin-top: 20px;
@@ -4827,135 +4853,8 @@ section.chatbot-panel,
     object-fit: cover;
 }
 
-/* =========================================================
-   CLIENT PORTAL UI FIXES
-========================================================= */
 
-/* Main content should not be squeezed */
-.client-main {
-    margin-left: 260px;
-    width: calc(100% - 260px);
-    padding: 28px 36px 40px;
-    box-sizing: border-box;
-}
 
-/* Dashboard grid should only be 2 columns for panels */
-.client-dashboard-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1.4fr) minmax(340px, 0.8fr);
-    gap: 24px;
-    align-items: start;
-}
-
-/* Cards need proper internal spacing */
-.client-panel {
-    overflow: hidden;
-}
-
-/* Header button alignment */
-.client-panel-head {
-    align-items: flex-start;
-}
-
-.client-panel-head .btn {
-    white-space: nowrap;
-    min-width: 96px;
-    text-align: center;
-}
-
-/* Fix huge round buttons */
-.client-panel-head .btn-ghost,
-.client-action-row .btn {
-    border-radius: 999px;
-    padding: 10px 20px;
-    font-size: 0.95rem;
-}
-
-/* Payment summary cards */
-.client-mini-grid {
-    grid-template-columns: repeat(2, minmax(140px, 1fr));
-    gap: 16px;
-}
-
-.client-mini-card {
-    min-height: 120px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-
-.client-table {
-    table-layout: fixed;
-    width: 100%;
-}
-
-.client-table th,
-.client-table td {
-    vertical-align: middle;
-    word-break: normal;
-    overflow-wrap: break-word;
-}
-
-/* Appointment preview columns */
-.client-table th:nth-child(1),
-.client-table td:nth-child(1) {
-    width: 32%;
-}
-
-.client-table th:nth-child(2),
-.client-table td:nth-child(2) {
-    width: 34%;
-}
-
-.client-table th:nth-child(3),
-.client-table td:nth-child(3) {
-    width: 22%;
-}
-
-/* Hide extra appointment columns only on dashboard preview */
-.client-dashboard-grid .client-table th:nth-child(4),
-.client-dashboard-grid .client-table td:nth-child(4),
-.client-dashboard-grid .client-table th:nth-child(5),
-.client-dashboard-grid .client-table td:nth-child(5) {
-    display: none;
-}
-
-/* Better payment button spacing */
-.client-action-row {
-    margin-top: 18px;
-}
-
-/* Reduce massive whitespace on dashboard */
-.client-page-heading {
-    margin-bottom: 24px;
-}
-
-.client-stat-grid {
-    margin-bottom: 24px;
-}
-
-/* Responsive */
-@media (max-width: 1150px) {
-    .client-dashboard-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .client-mini-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-@media (max-width: 760px) {
-    .client-main {
-        margin-left: 0;
-        width: 100%;
-        padding: 22px 16px;
-    }
-
-    .client-mini-grid {
-        grid-template-columns: 1fr;
-    }
-}
 
 .appointment-step-title {
     margin: 14px 0 10px;
@@ -4991,4 +4890,468 @@ section.chatbot-panel,
     border-color: #f47b20;
     background: #fff4ec;
     color: #c15a12;
+}
+
+/* =========================================================
+   RESPONSIVE DESIGN
+========================================================= */
+
+/* ---------- Large tablets / small laptops ---------- */
+@media (max-width: 1200px) {
+
+    .client-dashboard-grid,
+    .client-stat-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .client-message-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .portal-grid {
+        grid-template-columns: 220px 1fr;
+    }
+
+    .portal-sidepanel {
+        grid-column: 1 / -1;
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* ---------- Tablets ---------- */
+@media (max-width: 980px) {
+
+    .home-hero-grid,
+    .home-why-pillars,
+    .home-process,
+    .home-service-cards,
+    .home-expertise-grid,
+    .home-insights-grid,
+    .home-bottom-band-inner,
+    .hero-grid,
+    .split,
+    .portal-grid,
+    .portal-cards,
+    .portal-sidepanel,
+    .testimonials,
+    .svc-feature-grid,
+    .svc-related-grid,
+    .svc-hero-grid,
+    .svc-split {
+        grid-template-columns: 1fr;
+    }
+
+    .services,
+    .team,
+    .foot {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .home-hero-grid {
+        min-height: 0;
+    }
+
+    .home-hero-photo {
+        min-height: 260px;
+    }
+
+    .home-hero-metrics li {
+        border-right: none;
+        padding-right: 0;
+    }
+
+    .home-hero-floatcard {
+        position: relative;
+        left: auto;
+        bottom: auto;
+        width: 100%;
+        margin-top: 16px;
+    }
+
+    .svc-hero-media img {
+        aspect-ratio: 16 / 10;
+    }
+
+    .portal-banner h1 {
+        font-size: 2.2rem;
+    }
+
+    .portal-info-grid,
+    .portal-charges-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ---------- Mobile / tablet navigation ---------- */
+@media (max-width: 900px) {
+
+    .mega-panel,
+    .payment-layout,
+    .appointment-access-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .mega-panel {
+        width: min(360px, calc(100vw - 30px));
+        gap: 12px;
+        padding: 12px;
+    }
+
+    .mega-col {
+        width: 100%;
+        padding: 18px 20px;
+    }
+
+    .mega-title {
+        font-size: 1rem;
+        margin-bottom: 10px;
+    }
+
+    .mega-col p {
+        font-size: 0.95rem;
+        line-height: 1.5;
+        margin: 0 0 14px;
+    }
+
+    .mega-cta {
+        font-size: 0.95rem;
+    }
+
+    .appointment-access-layout {
+        min-height: auto;
+    }
+
+    .appointment-access-card {
+        justify-self: stretch;
+        max-width: 100%;
+    }
+
+    .people-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ---------- Client portal mobile layout ---------- */
+@media (max-width: 768px) {
+
+    .client-sidebar {
+        transform: translateX(-100%);
+        z-index: 999;
+    }
+
+    .client-sidebar.active,
+    .client-sidebar.mobile-open {
+        transform: translateX(0);
+    }
+
+    .client-main,
+    .client-portal-content {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .client-dashboard-grid,
+    .client-stat-grid,
+    .portal-info-grid,
+    .client-mini-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .client-main {
+        padding: 22px 16px;
+    }
+
+    .client-page-content {
+        padding: 22px 18px 28px;
+    }
+
+    .client-page-hero h1 {
+        font-size: 2.2rem;
+    }
+}
+
+/* ---------- General mobile layout ---------- */
+@media (max-width: 768px) {
+
+    .brand img {
+        height: 70px;
+        max-width: 180px;
+    }
+
+    .nav {
+        height: 100px;
+        padding: 0 10px;
+    }
+
+    .mega-panel {
+        width: min(340px, calc(100vw - 24px));
+    }
+
+    .appointment-form-clean,
+    .summary-card {
+        max-width: 100%;
+        padding: 22px;
+    }
+
+    .summary-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ---------- Small mobile ---------- */
+@media (max-width: 700px) {
+
+    .auth-row {
+        grid-template-columns: 1fr;
+    }
+
+    .auth-row--inline {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .portal-topbar {
+        flex-direction: column;
+        justify-content: center;
+        gap: 12px;
+        padding: 14px 0;
+    }
+
+    .portal-nav {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 14px;
+    }
+
+    .portal-banner {
+        padding: 26px 20px;
+    }
+
+    .portal-banner h1 {
+        font-size: 1.9rem;
+    }
+
+    .portal-section-head,
+    .payment-summary-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .dash-section,
+    .portal-section,
+    .payment-summary-card,
+    .payment-card {
+        padding: 20px;
+    }
+
+    .payment-summary-card,
+    .payment-card {
+        border-radius: 18px;
+    }
+
+    .payment-page,
+    .payment-success-page,
+    .appointment-access-page {
+        padding: 28px 14px 40px;
+    }
+
+    .payment-title,
+    .payment-success-title {
+        font-size: 1.7rem;
+    }
+
+    .payment-form-title {
+        font-size: 1.25rem;
+    }
+
+    .payment-success-card {
+        padding: 24px 20px;
+        border-radius: 18px;
+    }
+
+    .payment-success-row,
+    .payment-success-actions {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .payment-success-actions .btn {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+/* ---------- Phone screens ---------- */
+@media (max-width: 640px) {
+
+    .appointment-title {
+        font-size: 2.2rem;
+    }
+
+    .appointment-hero {
+        padding: 24px 0 10px;
+    }
+
+    .appointment-section {
+        padding: 10px 0 40px;
+    }
+
+    .appointment-access-title {
+        font-size: 2rem;
+    }
+
+    .appointment-access-card {
+        padding: 22px;
+        border-radius: 18px;
+    }
+
+    .resource-hero {
+        padding: 36px 0 28px;
+    }
+
+    .article-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .home-page section {
+        padding: 56px 0;
+    }
+
+    .home-bottom {
+        padding-bottom: 64px;
+    }
+}
+
+/* ---------- Very small phones ---------- */
+@media (max-width: 560px) {
+
+    .mega-panel {
+        width: min(300px, calc(100vw - 20px));
+        gap: 10px;
+        padding: 10px;
+    }
+
+    .mega-col {
+        width: 100%;
+        padding: 16px 18px;
+    }
+
+    .mega-title {
+        font-size: 0.95rem;
+    }
+
+    .mega-col p,
+    .mega-cta {
+        font-size: 0.9rem;
+        line-height: 1.45;
+    }
+
+    .services,
+    .team {
+        grid-template-columns: 1fr;
+    }
+
+    .newsletter,
+    .news-pop-form {
+        flex-direction: column;
+    }
+
+    .person-card {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .icon-links {
+        justify-content: center;
+    }
+}
+
+/* ---------- Chatbot mobile ---------- */
+@media (max-width: 520px) {
+
+    .chatbot-widget {
+        right: 14px;
+        bottom: 14px;
+    }
+
+    .chatbot-panel {
+        width: calc(100vw - 28px);
+        height: 520px;
+    }
+
+    .chatbot-message {
+        max-width: 90%;
+    }
+}
+
+@media (max-width: 900px) {
+    .client-chat-shell {
+        grid-template-columns: 1fr;
+    }
+
+    .client-chat-people {
+        border-right: none;
+        border-bottom: 1px solid rgba(35, 107, 125, 0.12);
+    }
+
+    .chat-composer {
+        grid-template-columns: 46px 1fr auto;
+    }
+
+    .chat-subject-input {
+        grid-column: 1 / -1;
+    }
+
+    .chat-upload-panel {
+        left: 16px;
+        right: 16px;
+        width: auto;
+    }
+}
+
+/* ---------- Motion preference ---------- */
+@media (prefers-reduced-motion: no-preference) {
+
+    .newsletter-pop {
+        transition: transform .18s ease, opacity .18s ease;
+    }
+}
+
+/* FORCE FIX MESSAGE PAGE TOP/BOTTOM SPACING */
+
+.client-chat-shell {
+    padding: 0 !important;
+    margin: 0 !important;
+    align-items: stretch !important;
+    align-content: stretch !important;
+    height: calc(100vh - 150px) !important;
+    min-height: 0 !important;
+}
+
+.client-chat-people,
+.client-chat-main {
+    margin: 0 !important;
+    padding-top: 0 !important;
+    align-self: stretch !important;
+}
+
+.chat-people-header,
+.chat-header {
+    margin-top: 0 !important;
+}
+
+.client-chat-main {
+    display: grid !important;
+    grid-template-rows: auto 1fr auto !important;
+    overflow: hidden !important;
+}
+
+.chat-message-list {
+    min-height: 0 !important;
+    overflow-y: auto !important;
+}
+
+.chat-composer {
+    margin-top: 0 !important;
 }

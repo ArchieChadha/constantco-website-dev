@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appointment Details - Constant & Co</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="client-portal-page">
+
+    <!-- SIDEBAR -->
+    <aside class="client-sidebar">
+
+        <div class="client-sidebar-logo">
+            <a href="index.html">
+                <img src="https://constantandco.com.au/wp-content/uploads/2022/09/Logo-New.png"
+                    alt="Constant & Co logo">
+            </a>
+
+            <p>Client Portal</p>
+        </div>
+
+        <nav class="client-sidebar-nav">
+            <a href="client-dashboard.html">Dashboard</a>
+            <a href="client-appointments.html" class="active">
+                Appointments &amp; Services
+            </a>
+            <a href="client-documents.html">Documents</a>
+            <a href="client-messages.html">Messages</a>
+            <a href="client-billing.html">Billing</a>
+            <a href="client-settings.html">Settings</a>
+        </nav>
+
+        <div class="client-sidebar-user">
+            <strong id="sidebarClientName">Client</strong>
+            <small id="sidebarClientEmail">Logged in</small>
+
+            <a href="login.html" class="client-logout-link">
+                Logout
+            </a>
+        </div>
+
+    </aside>
+
+    <!-- PAGE CONTENT -->
+    <div class="client-portal-content">
+
+        <!-- TOPBAR -->
+        <header class="client-topbar">
+
+            <button id="sidebarToggleBtn" class="client-menu-btn" type="button" aria-label="Toggle sidebar">
+
+                ☰
+
+            </button>
+
+            <p>Appointment Details</p>
+
+        </header>
+
+        <!-- MAIN -->
+        <main class="client-main">
+
+            <!-- PAGE HEADING -->
+            <section class="client-page-heading">
+
+                <h1 id="appointmentDetailsHeading">
+                    Appointment Details
+                </h1>
+
+                <p>
+                    View your upcoming and previous appointments
+                    related to this service.
+                </p>
+
+                <div class="client-action-row">
+                    <a href="client-appointments.html" class="btn btn-ghost">
+
+                        ← Back to Services
+
+                    </a>
+                </div>
+
+            </section>
+
+            <!-- UPCOMING -->
+            <section class="client-panel">
+
+                <div class="client-panel-head">
+
+                    <div>
+                        <h2>Upcoming Appointments</h2>
+
+                        <p>
+                            Your scheduled upcoming appointments.
+                        </p>
+                    </div>
+
+                </div>
+
+                <table class="client-table">
+
+                    <thead>
+                        <tr>
+                            <th>Service</th>
+                            <th>Staff</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="upcomingAppointmentsTable">
+
+                        <tr>
+                            <td colspan="5">
+                                Loading appointments...
+                            </td>
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </section>
+
+            <!-- PREVIOUS -->
+            <section class="client-panel">
+
+                <div class="client-panel-head">
+
+                    <div>
+                        <h2>Previous Appointments</h2>
+
+                        <p>
+                            Your completed and previous appointments.
+                        </p>
+                    </div>
+
+                </div>
+
+                <table class="client-table">
+
+                    <thead>
+                        <tr>
+                            <th>Service</th>
+                            <th>Staff</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="previousAppointmentsTable">
+
+                        <tr>
+                            <td colspan="5">
+                                Loading appointments...
+                            </td>
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </section>
+
+        </main>
+
+    </div>
+
+    <script src="dashboard.js" defer></script>
+
+</body>
+
+</html>
