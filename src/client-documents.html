@@ -21,8 +21,8 @@
 
         <nav class="client-sidebar-nav">
             <a href="client-dashboard.html">Dashboard</a>
+            <a href="client-appointments.html">Appointments &amp; Services</a>
             <a href="client-documents.html" class="active">Documents</a>
-            <a href="client-tasks.html">Tasks</a>
             <a href="client-messages.html">Messages</a>
             <a href="client-billing.html">Billing</a>
             <a href="client-settings.html">Settings</a>
@@ -38,7 +38,9 @@
     <div class="client-portal-content">
 
         <header class="client-topbar">
-            <button class="client-menu-btn" type="button">☰</button>
+            <button id="sidebarToggleBtn" class="client-menu-btn" type="button" aria-label="Toggle sidebar">
+                ☰
+            </button>
             <p>Documents</p>
         </header>
 
@@ -53,14 +55,14 @@
                 <div class="client-panel-head">
                     <div>
                         <h2>Upload New Document</h2>
-                        <p>Upload files requested by your adviser or supporting documents for your appointment.</p>
+                        <p>Upload files requested by your adviser or supporting documents for your service.</p>
                     </div>
                 </div>
 
                 <form id="uploadForm" class="dash-upload-form" enctype="multipart/form-data">
                     <input type="file" name="file" required>
 
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="btn btn-primary upload-btn-small">
                         Upload Document
                     </button>
                 </form>
@@ -85,9 +87,8 @@
                 <div class="client-panel-head">
                     <div>
                         <h2>Requested Documents</h2>
-                        <p>Documents Constant & Co has asked you to provide.</p>
+                        <p>Documents Constant &amp; Co has asked you to provide.</p>
                     </div>
-                    <a href="client-tasks.html" class="btn btn-ghost">View as Tasks</a>
                 </div>
 
                 <div id="clientDocumentRequestsList" class="client-list">
@@ -99,6 +100,7 @@
     </div>
 
     <script src="dashboard.js" defer></script>
+
 </body>
 
 </html>

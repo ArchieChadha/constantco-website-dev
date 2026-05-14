@@ -316,6 +316,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 err.message || 'Failed to continue to payment'
             );
         }
+
+
     });
 
     loadServices();

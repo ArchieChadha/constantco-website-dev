@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appointments & Services - Constant & Co</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="client-portal-page">
+
+    <!-- SIDEBAR -->
+    <aside class="client-sidebar">
+
+        <div class="client-sidebar-logo">
+            <a href="index.html">
+                <img src="https://constantandco.com.au/wp-content/uploads/2022/09/Logo-New.png"
+                    alt="Constant & Co logo">
+            </a>
+
+            <p>Client Portal</p>
+        </div>
+
+        <nav class="client-sidebar-nav">
+
+            <a href="client-dashboard.html">
+                Dashboard
+            </a>
+
+            <a href="client-appointments.html" class="active">
+                Services
+            </a>
+
+            <a href="client-messages.html">
+                Conversations
+            </a>
+
+            <a href="client-billing.html">
+                Billing
+            </a>
+
+            <a href="client-settings.html">
+                Settings
+            </a>
+
+        </nav>
+
+        <div class="client-sidebar-user">
+
+            <strong id="sidebarClientName">
+                Client
+            </strong>
+
+            <small id="sidebarClientEmail">
+                Logged in
+            </small>
+
+            <a href="login.html" class="client-logout-link">
+                Logout
+            </a>
+
+        </div>
+
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <div class="client-portal-content">
+
+        <!-- TOPBAR -->
+        <header class="client-topbar">
+
+            <button id="sidebarToggleBtn" class="client-menu-btn" type="button" aria-label="Toggle sidebar">
+
+                ☰
+
+            </button>
+
+            <p>
+                Services
+            </p>
+
+        </header>
+
+        <!-- PAGE -->
+        <main class="client-main">
+
+            <div class="client-page-content">
+
+                <!-- PAGE HEADING -->
+                <section class="client-page-heading">
+
+                    <h1>
+                        Services
+                    </h1>
+
+                    <p>
+                        View your active and previous services, assigned advisers,
+                        related documents, and service-specific message history.
+                    </p>
+
+                </section>
+
+                <!-- SERVICES TABLE -->
+                <section class="client-panel">
+
+                    <div class="client-panel-head">
+
+                        <div>
+
+                            <h2>
+                                Service Overview
+                            </h2>
+
+                        </div>
+
+                    </div>
+
+                    <div class="client-table-wrap">
+
+                        <table class="client-table">
+
+                            <thead>
+
+                                <tr>
+                                    <th>Service</th>
+                                    <th>Agent</th>
+                                    <th>Appointment Status</th>
+                                    <th>Date & Time</th>
+                                    <th>Conversation History</th>
+                                    <th>Cancel / Reschedule</th>
+                                </tr>
+                            </thead>
+
+                            <tbody id="appointmentServiceTable">
+
+                                <tr>
+
+                                    <td colspan="6">Loading services...</td>
+
+                                </tr>
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                </section>
+
+                <script src="dashboard.js" defer></script>
+
+</body>
+
+</html>
