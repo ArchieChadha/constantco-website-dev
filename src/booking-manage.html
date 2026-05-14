@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Booking summary — Constant & Co</title>
+    <meta name="description" content="View, reschedule or cancel your Constant & Co appointment." />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+</head>
+
+<body>
+    <a href="#main" class="skip">Skip to content</a>
+
+    <header class="auth-minimal-header" role="banner">
+        <div class="container auth-minimal-inner">
+            <a href="index.html" class="auth-minimal-logo-link" aria-label="Constant & Co — go to homepage">
+                <img src="https://constantandco.com.au/wp-content/uploads/2022/09/Logo-New.png" alt=""
+                    width="180" height="72" decoding="async" />
+            </a>
+            <nav class="auth-minimal-nav" aria-label="Quick links">
+                <a href="index.html" class="auth-minimal-back">← Back to Website</a>
+                <a href="contact.html" class="auth-minimal-link">Contact</a>
+            </nav>
+        </div>
+    </header>
+
+    <main id="main" class="appointment-access-page">
+        <section class="appointment-access-wrap">
+            <div class="container">
+                <div id="manageLoad" class="auth-card auth-form">
+                    <p class="appointment-form-sub" style="margin:0;">Loading your booking…</p>
+                </div>
+
+                <div id="manageError" class="auth-card auth-form" hidden style="border-color:#c62828;">
+                    <h1 class="appointment-form-title">Booking link</h1>
+                    <p id="manageErrorText" class="appointment-form-sub" style="margin:0;color:#c62828;"></p>
+                    <p class="appointment-form-sub" style="margin-top:12px;">
+                        <a href="appointment-access.html">Book an appointment</a> or
+                        <a href="contact.html">contact us</a>.
+                    </p>
+                </div>
+
+                <div id="manageCard" class="auth-card auth-form" hidden>
+                    <p class="appointment-access-eyebrow" style="margin-bottom:8px;">Booking confirmed</p>
+                    <h1 class="appointment-form-title">Booking summary</h1>
+                    <p class="appointment-form-sub" style="margin-top:0;">
+                        You can reschedule or cancel below only while you are <strong>at least 24 hours before</strong> your appointment (Melbourne time). You can always view your details above.
+                    </p>
+                    <div id="manageDetails" class="booking-manage-details"></div>
+
+                    <div id="manageActions" hidden style="margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid #e5e7eb;">
+                        <h2 class="appointment-step-title" style="margin-top:0;">Reschedule</h2>
+                        <p class="appointment-form-sub">Choose a new date, then an available time with the same
+                            provider.</p>
+                        <label class="sr-only" for="rescheduleDate">New date</label>
+                        <input id="rescheduleDate" type="text" class="input-lg" placeholder="Select new date"
+                            autocomplete="off" />
+                        <div id="rescheduleSlots" class="available-agent-box" style="margin-top:12px;">
+                            <p class="small" style="margin:0;">Pick a date to see available times.</p>
+                        </div>
+                        <button type="button" id="rescheduleBtn" class="btn btn-primary auth-btn" disabled>
+                            Confirm new time
+                        </button>
+
+                        <h2 class="appointment-step-title" style="margin-top:2rem;">Cancel</h2>
+                        <p class="appointment-form-sub">Cancel your appointment if you no longer need it.</p>
+                        <button type="button" id="cancelBtn" class="btn btn-ghost auth-btn"
+                            style="border-color:#c62828;color:#b00020;">
+                            Cancel appointment
+                        </button>
+                    </div>
+
+                    <p id="manageClosed" class="small appointment-status" hidden style="margin-top:1rem;color:#555;">
+                    </p>
+                    <p id="manageStatus" class="small appointment-status" aria-live="polite" style="margin-top:8px;">
+                    </p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="booking-manage.js"></script>
+</body>
+
+</html>

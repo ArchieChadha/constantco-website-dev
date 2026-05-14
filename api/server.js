@@ -107,6 +107,7 @@ app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async
                     return res.json({ received: true, rejected: true });
                 }
 
+                const managementToken = generateManagementToken();
                 const appointmentResult = await client.query(
                     `INSERT INTO appointments
              (
@@ -122,12 +123,13 @@ app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async
                 appointment_time,
                 notes,
                 booking_fee,
+                management_token,
                 booking_status,
                 created_at,
                 updated_at
              )
              VALUES
-             ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::time, $11, $12, 'Confirmed', NOW(), NOW())
+             ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::time, $11, $12, $13, 'Confirmed', NOW(), NOW())
              RETURNING *`,
                     [
                         pending.client_id,
@@ -141,7 +143,8 @@ app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async
                         pending.appointment_date,
                         pending.appointment_time,
                         pending.notes || null,
-                        pending.booking_fee
+                        pending.booking_fee,
+                        managementToken
                     ]
                 );
 
@@ -375,6 +378,81 @@ const pool = new pg.Pool(
         }
 );
 
+const APPOINTMENT_TIMEZONE = process.env.APPOINTMENT_TIMEZONE || 'Australia/Melbourne';
+
+function publicSiteBaseUrl() {
+    const raw = (process.env.PUBLIC_SITE_URL || '').trim().replace(/\/+$/, '');
+    if (raw) return raw;
+    return `http://localhost:${PORT}`;
+}
+
+function generateManagementToken() {
+    return crypto.randomBytes(32).toString('hex');
+}
+
+async function ensureAppointmentManagementTokenColumn() {
+    await pool.query(
+        `ALTER TABLE appointments ADD COLUMN IF NOT EXISTS management_token VARCHAR(64)`
+    );
+    await pool.query(
+        `CREATE UNIQUE INDEX IF NOT EXISTS idx_appointments_management_token
+         ON appointments (management_token)
+         WHERE management_token IS NOT NULL`
+    );
+}
+
+/** Used by appointment booking checkout; was missing from setup-database.sql in-repo. */
+async function ensurePendingBookingsTable() {
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS pending_bookings (
+            id SERIAL PRIMARY KEY,
+            stripe_payment_intent_id VARCHAR(255) NOT NULL,
+            client_id INTEGER NOT NULL,
+            staff_id INTEGER NOT NULL,
+            full_name VARCHAR(255) NOT NULL,
+            email VARCHAR(255) NOT NULL,
+            phone VARCHAR(80),
+            company VARCHAR(255),
+            service_name VARCHAR(255) NOT NULL,
+            meeting_type VARCHAR(255) NOT NULL,
+            appointment_date DATE NOT NULL,
+            appointment_time TIME NOT NULL,
+            notes TEXT,
+            booking_fee INTEGER NOT NULL,
+            status VARCHAR(64) NOT NULL DEFAULT 'Pending',
+            created_at TIMESTAMPTZ DEFAULT NOW()
+        )
+    `);
+}
+
+async function ensureProcessedStripeEventsTable() {
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS processed_stripe_events (
+            id SERIAL PRIMARY KEY,
+            stripe_event_id VARCHAR(255) NOT NULL UNIQUE,
+            event_type VARCHAR(120) NOT NULL,
+            created_at TIMESTAMPTZ DEFAULT NOW()
+        )
+    `);
+}
+
+function paymentInitErrorMessage(err) {
+    const msg = err && err.message ? String(err.message) : '';
+    if (/relation ["'].*["'] does not exist/i.test(msg)) {
+        return 'Database is missing a required table. Restart the API after setup, or run the SQL migrations.';
+    }
+    if (err && (err.type === 'StripeAuthenticationError' || /No API key provided|Invalid API Key/i.test(msg))) {
+        return 'Stripe secret key is missing or invalid. Set STRIPE_SECRET_KEY in api/.env.';
+    }
+    if (err && err.type === 'StripeInvalidRequestError') {
+        return msg || 'Stripe rejected the payment request.';
+    }
+    if (msg && msg.includes('invalid input syntax for type integer')) {
+        return 'Invalid provider or booking data. Try choosing the time slot again.';
+    }
+    return msg || 'Payment initialization failed';
+}
+
 const mailTransporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
@@ -385,6 +463,49 @@ const mailTransporter = nodemailer.createTransport({
 
 async function sendAppointmentConfirmationEmail(appointment) {
     if (!appointment.email) return;
+
+    const base = publicSiteBaseUrl();
+    const token = appointment.management_token || '';
+    const summaryUrl =
+        token.length > 0
+            ? `${base}/booking-summary.html?token=${encodeURIComponent(token)}`
+            : '';
+    const manageUrl =
+        token.length > 0
+            ? `${base}/booking-manage.html?token=${encodeURIComponent(token)}`
+            : '';
+
+    const btnStyle =
+        'display:inline-block;padding:12px 20px;background:#1a365d;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;';
+    const btnStyleSecondary =
+        'display:inline-block;padding:12px 20px;background:#fff;color:#1a365d;text-decoration:none;border-radius:6px;font-weight:600;border:2px solid #1a365d;';
+
+    const manageBlock =
+        summaryUrl.length > 0 && manageUrl.length > 0
+            ? `
+            <p style="margin:24px 0 12px;">
+                <a href="${summaryUrl}" style="${btnStyle}">
+                    View booking summary
+                </a>
+            </p>
+            <p style="margin:0 0 12px;">
+                <a href="${manageUrl}" style="${btnStyleSecondary}">
+                    Reschedule or cancel
+                </a>
+            </p>
+            <p style="font-size:14px;color:#444;line-height:1.5;margin:0 0 16px;">
+                You can <strong>reschedule</strong> or <strong>cancel</strong> from the second link (or open it from your booking summary)
+                while you are <strong>at least 24 hours before</strong> your appointment (Melbourne time). Inside that 24-hour window, please contact us.
+            </p>
+            <p style="font-size:13px;color:#666;margin:0 0 8px;">
+                <strong>Booking summary</strong> (if the button does not work, copy and paste):<br/>
+                <span style="word-break:break-all;">${summaryUrl}</span>
+            </p>
+            <p style="font-size:13px;color:#666;margin:0;">
+                <strong>Reschedule / cancel</strong> (if the button does not work, copy and paste):<br/>
+                <span style="word-break:break-all;">${manageUrl}</span>
+            </p>`
+            : '';
 
     await mailTransporter.sendMail({
         from: `"Constant & Co" <${process.env.EMAIL_USER}>`,
@@ -401,7 +522,9 @@ async function sendAppointmentConfirmationEmail(appointment) {
             <p><strong>Date:</strong> ${appointment.appointment_date}</p>
             <p><strong>Time:</strong> ${appointment.appointment_time}</p>
 
-            <p>Thank you,<br>Constant & Co Team</p>
+            ${manageBlock}
+
+            <p style="margin-top:24px;">Thank you,<br>Constant & Co Team</p>
         `
     });
 
@@ -448,13 +571,6 @@ const isEmail = (s = '') => /^\S+@\S+\.\S+$/.test(s);
 const DEFAULT_SLOT_MINUTES = 60;
 const SLOT_PAD = (value) => String(value).padStart(2, '0');
 
-function toIsoDate(date) {
-    const year = date.getFullYear();
-    const month = SLOT_PAD(date.getMonth() + 1);
-    const day = SLOT_PAD(date.getDate());
-    return `${year}-${month}-${day}`;
-}
-
 function slotLabelFromMinutes(totalMinutes) {
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
@@ -465,6 +581,42 @@ function slotMinutesFromTimeString(time = '') {
     const [hour, minute] = String(time).split(':').map((part) => Number(part));
     if (!Number.isFinite(hour) || !Number.isFinite(minute)) return null;
     return (hour * 60) + minute;
+}
+
+/** Calendar date (YYYY-MM-DD) and seconds since local midnight in `timeZone` for `instant`. */
+function getZonedWallClock(timeZone, instant = new Date()) {
+    const fmt = new Intl.DateTimeFormat('en-CA', {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    });
+    const map = {};
+    for (const p of fmt.formatToParts(instant)) {
+        if (p.type !== 'literal') map[p.type] = p.value;
+    }
+    const year = map.year;
+    const month = map.month;
+    const day = map.day;
+    const hour = Number(map.hour);
+    const minute = Number(map.minute);
+    const second = Number(map.second ?? 0);
+    return {
+        isoDate: `${year}-${month}-${day}`,
+        secondsSinceMidnight: (hour * 3600) + (minute * 60) + second
+    };
+}
+
+/** Add whole calendar days to a civil YYYY-MM-DD (matches DB date columns). */
+function addCalendarDaysIso(isoDateStr, deltaDays) {
+    const [y, m, d] = String(isoDateStr).split('-').map(Number);
+    if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return isoDateStr;
+    const t = new Date(Date.UTC(y, m - 1, d + deltaDays, 12, 0, 0));
+    return `${t.getUTCFullYear()}-${SLOT_PAD(t.getUTCMonth() + 1)}-${SLOT_PAD(t.getUTCDate())}`;
 }
 
 function slotKey(date, time) {
@@ -526,7 +678,7 @@ async function resolveClientIdForBooking({
     return inserted.rows[0].id;
 }
 
-async function getProviderSlotsForDate(staffId, date) {
+async function getProviderSlotsForDate(staffId, date, excludeAppointmentId = null) {
     const availabilityRes = await pool.query(
         `SELECT start_time, end_time
          FROM staff_availability
@@ -556,17 +708,18 @@ async function getProviderSlotsForDate(staffId, date) {
          WHERE staff_id = $1
            AND appointment_date = $2
            AND booking_status IN ('Scheduled', 'Confirmed', 'Pending Payment')
+           AND NOT ($3::integer IS NOT NULL AND id = $3::integer)
          UNION
          SELECT appointment_time::text AS time_value
          FROM pending_bookings
          WHERE staff_id = $1
            AND appointment_date = $2
            AND status = 'Pending'`,
-        [staffId, date]
+        [staffId, date, excludeAppointmentId]
     );
 
     const booked = new Set(
-        bookedRes.rows.map((row) => String(row.time_value).slice(0, 5))
+        bookedRes.rows.map((row) => String(row.time_value).trim().slice(0, 5))
     );
 
     const slots = [];
@@ -583,7 +736,16 @@ async function getProviderSlotsForDate(staffId, date) {
         }
     }
 
-    return [...new Set(slots)].sort();
+    const merged = [...new Set(slots)].sort();
+    const zonedNow = getZonedWallClock(APPOINTMENT_TIMEZONE);
+    if (date !== zonedNow.isoDate) return merged;
+
+    return merged.filter((slot) => {
+        const slotMin = slotMinutesFromTimeString(slot);
+        if (slotMin === null) return false;
+        const slotStartSec = slotMin * 60;
+        return slotStartSec > zonedNow.secondsSinceMidnight;
+    });
 }
 
 const PASSWORD_RULE =
@@ -1120,6 +1282,8 @@ app.get('/api/client/service-history', async (req, res) => {
         const { rows } = await pool.query(
             `SELECT
                 a.id AS appointment_id,
+                a.client_id,
+                a.management_token,
                 a.service_name,
                 a.meeting_type,
                 a.appointment_date,
@@ -1136,6 +1300,31 @@ app.get('/api/client/service-history', async (req, res) => {
              ORDER BY a.appointment_date DESC, a.appointment_time DESC`,
             [clientId]
         );
+
+        const tokenable = new Set(['Scheduled', 'Confirmed', 'Pending Payment', 'Completed', 'Cancelled']);
+        for (const row of rows) {
+            if (row.management_token || !tokenable.has(row.booking_status)) continue;
+            const newTok = generateManagementToken();
+            const up = await pool.query(
+                `UPDATE appointments
+                 SET management_token = $2, updated_at = NOW()
+                 WHERE id = $1
+                   AND (management_token IS NULL OR trim(management_token) = '')
+                 RETURNING management_token`,
+                [row.appointment_id, newTok]
+            );
+            if (up.rows.length) {
+                row.management_token = up.rows[0].management_token;
+            } else {
+                const again = await pool.query(
+                    `SELECT management_token FROM appointments WHERE id = $1 LIMIT 1`,
+                    [row.appointment_id]
+                );
+                if (again.rows[0]?.management_token) {
+                    row.management_token = again.rows[0].management_token;
+                }
+            }
+        }
 
         res.json({
             ok: true,
@@ -1380,15 +1569,13 @@ app.get('/api/booking-providers', async (req, res) => {
             [service]
         );
 
-        const today = new Date();
+        const startIso = getZonedWallClock(APPOINTMENT_TIMEZONE).isoDate;
         const providers = [];
         for (const provider of providerRes.rows) {
             let nextDate = null;
             let nextTime = null;
             for (let i = 0; i < 30; i += 1) {
-                const probe = new Date(today);
-                probe.setDate(today.getDate() + i);
-                const isoDate = toIsoDate(probe);
+                const isoDate = addCalendarDaysIso(startIso, i);
                 const slots = await getProviderSlotsForDate(provider.id, isoDate);
                 if (slots.length) {
                     nextDate = isoDate;
@@ -1404,9 +1591,35 @@ app.get('/api/booking-providers', async (req, res) => {
             });
         }
 
+        let anyProviderDate = null;
+        let anyProviderTime = null;
+        for (const provider of providers) {
+            if (!provider.next_available_date || !provider.next_available_time) continue;
+            const stamp = `${provider.next_available_date}T${provider.next_available_time}`;
+            if (!anyProviderDate || `${anyProviderDate}T${anyProviderTime}` > stamp) {
+                anyProviderDate = provider.next_available_date;
+                anyProviderTime = provider.next_available_time;
+            }
+        }
+
+        const providersWithAny = providers.length
+            ? [
+                {
+                    id: 'any',
+                    full_name: 'Any Provider',
+                    email: null,
+                    phone: null,
+                    next_available_date: anyProviderDate,
+                    next_available_time: anyProviderTime,
+                    is_any_provider: true
+                },
+                ...providers
+            ]
+            : providers;
+
         res.json({
             ok: true,
-            providers
+            providers: providersWithAny
         });
     } catch (err) {
         console.error('Booking providers error:', err);
@@ -1417,13 +1630,67 @@ app.get('/api/booking-providers', async (req, res) => {
 app.get('/api/booking-slots', async (req, res) => {
     try {
         const service = String(req.query.service || '').trim();
-        const providerId = Number(req.query.providerId || 0);
+        const rawProviderId = String(req.query.providerId || '').trim();
+        const providerId = Number(rawProviderId || 0);
         const date = String(req.query.date || '').trim();
+        const excludeRaw = req.query.excludeAppointmentId;
+        const excludeAppointmentId =
+            excludeRaw != null &&
+            String(excludeRaw).trim() !== '' &&
+            Number.isFinite(Number(excludeRaw)) &&
+            Number(excludeRaw) > 0
+                ? Number(excludeRaw)
+                : null;
 
-        if (!service || !providerId || !date) {
+        if (!service || !rawProviderId || !date) {
             return res.status(400).json({
                 error: 'Service, provider and date are required'
             });
+        }
+
+        if (rawProviderId.toLowerCase() === 'any') {
+            const { rows: serviceProviders } = await pool.query(
+                `SELECT DISTINCT s.id, s.full_name
+                 FROM staff_users s
+                 JOIN staff_services ss ON ss.staff_id = s.id
+                 WHERE ss.service_name = $1
+                 ORDER BY s.full_name`,
+                [service]
+            );
+
+            let excludeStaffId = null;
+            if (excludeAppointmentId != null) {
+                const ex = await pool.query(
+                    `SELECT staff_id FROM appointments WHERE id = $1 LIMIT 1`,
+                    [excludeAppointmentId]
+                );
+                if (ex.rows.length) {
+                    excludeStaffId = Number(ex.rows[0].staff_id);
+                }
+            }
+
+            const slotMap = new Map();
+            for (const provider of serviceProviders) {
+                const staffForExcl =
+                    excludeStaffId != null && excludeStaffId === Number(provider.id)
+                        ? excludeAppointmentId
+                        : null;
+                const providerSlots = await getProviderSlotsForDate(provider.id, date, staffForExcl);
+                for (const slot of providerSlots) {
+                    if (!slotMap.has(slot)) {
+                        slotMap.set(slot, {
+                            time: slot,
+                            provider_id: provider.id,
+                            provider_name: provider.full_name
+                        });
+                    }
+                }
+            }
+
+            const slots = Array.from(slotMap.values())
+                .sort((a, b) => a.time.localeCompare(b.time));
+
+            return res.json({ ok: true, slots });
         }
 
         const serviceCheck = await pool.query(
@@ -1440,7 +1707,11 @@ app.get('/api/booking-slots', async (req, res) => {
             });
         }
 
-        const slots = await getProviderSlotsForDate(providerId, date);
+        const slots = (await getProviderSlotsForDate(providerId, date, excludeAppointmentId)).map((slot) => ({
+            time: slot,
+            provider_id: providerId,
+            provider_name: null
+        }));
         res.json({ ok: true, slots });
     } catch (err) {
         console.error('Booking slots error:', err);
@@ -1498,6 +1769,7 @@ app.post('/api/bookings', async (req, res) => {
         });
 
         const fee = Number(bookingFee) || 0;
+        const managementToken = generateManagementToken();
         const { rows } = await pool.query(
             `INSERT INTO appointments
             (
@@ -1513,12 +1785,13 @@ app.post('/api/bookings', async (req, res) => {
                 appointment_time,
                 notes,
                 booking_fee,
+                management_token,
                 booking_status,
                 created_at,
                 updated_at
             )
             VALUES
-            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::time, $11, $12, 'Scheduled', NOW(), NOW())
+            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::time, $11, $12, $13, 'Scheduled', NOW(), NOW())
             RETURNING *`,
             [
                 resolvedClientId,
@@ -1532,7 +1805,8 @@ app.post('/api/bookings', async (req, res) => {
                 appointmentDate,
                 appointmentTime,
                 String(notes || '').trim() || null,
-                fee
+                fee,
+                managementToken
             ]
         );
 
@@ -1687,44 +1961,88 @@ app.post('/api/appointments', async (req, res) => {
             });
         }
 
-        // Prevent double booking
+        // Prevent double booking (another client)
         const existing = await pool.query(
-            `SELECT id
+            `SELECT id, client_id
      FROM appointments
      WHERE staff_id = $1
        AND appointment_date = $2
        AND appointment_time = $3::time
-       AND booking_status IN('Scheduled', 'Confirmed')
+       AND booking_status IN ('Scheduled', 'Confirmed')
      LIMIT 1`,
             [staffId, appointmentDate, appointmentTime]
         );
 
         if (existing.rows.length > 0) {
-            return res.status(409).json({
-                error: 'This staff member is already booked for this session.'
+            const ex = existing.rows[0];
+            if (String(ex.client_id) !== String(clientId)) {
+                return res.status(409).json({
+                    error: 'This staff member is already booked for this session.'
+                });
+            }
+            let { rows: fullRows } = await pool.query(`SELECT * FROM appointments WHERE id = $1 LIMIT 1`, [ex.id]);
+            let aptRow = fullRows[0];
+            if (aptRow && !aptRow.management_token) {
+                const newTok = generateManagementToken();
+                await pool.query(
+                    `UPDATE appointments SET management_token = $2, updated_at = NOW() WHERE id = $1`,
+                    [aptRow.id, newTok]
+                );
+                aptRow = { ...aptRow, management_token: newTok };
+            }
+            const staffResultReuse = await pool.query(`SELECT full_name FROM staff_users WHERE id = $1 LIMIT 1`, [
+                staffId
+            ]);
+            return res.json({
+                ok: true,
+                reused: true,
+                appointment: {
+                    ...aptRow,
+                    staff_name: staffResultReuse.rows[0]?.full_name || 'Not assigned'
+                }
             });
         }
 
         const fee = Number(bookingFee) || 0;
+        const managementToken = generateManagementToken();
 
         const { rows } = await pool.query(
             `INSERT INTO appointments
-            (client_id, email, staff_id, full_name, email, phone, company, service_name, meeting_type, appointment_date, appointment_time, notes, booking_fee, booking_status, created_at, updated_at)
-     VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::time, $11, $12, 'Pending Payment', NOW(), NOW())
-     RETURNING * `,
+            (
+                client_id,
+                staff_id,
+                full_name,
+                email,
+                phone,
+                company,
+                service_name,
+                meeting_type,
+                appointment_date,
+                appointment_time,
+                notes,
+                booking_fee,
+                management_token,
+                booking_status,
+                created_at,
+                updated_at
+            )
+            VALUES
+            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::time, $11, $12, $13, 'Pending Payment', NOW(), NOW())
+            RETURNING *`,
             [
                 clientId,
                 staffId,
                 fullName.trim(),
-                email.trim(),
+                email.trim().toLowerCase(),
                 phone.trim(),
-                company.trim() || null,
+                (company && String(company).trim()) || null,
                 serviceName,
                 meetingType,
                 appointmentDate,
                 appointmentTime,
-                notes.trim() || null,
-                fee
+                (notes && String(notes).trim()) || null,
+                fee,
+                managementToken
             ]
         );
         const staffResult = await pool.query(
@@ -1745,6 +2063,295 @@ app.post('/api/appointments', async (req, res) => {
     }
 });
 
+/*------- Resolve manage token (summary page when sessionStorage was cleared) -------*/
+app.post('/api/booking/resolve-manage-token', async (req, res) => {
+    try {
+        const { email = '', appointmentDate = '', appointmentTime = '', clientId = null } = req.body || {};
+        const cleanEmail = String(email).trim().toLowerCase();
+        const date = String(appointmentDate).trim().slice(0, 10);
+        const timeRaw = String(appointmentTime).trim();
+        const timeShort = timeRaw.length >= 5 ? timeRaw.slice(0, 5) : timeRaw;
+        if (!cleanEmail || !date || !timeShort) {
+            return res.status(400).json({ error: 'Email, appointment date and time are required.' });
+        }
+
+        const params = [cleanEmail, date, timeShort];
+        let sql = `
+            SELECT management_token
+            FROM appointments
+            WHERE lower(trim(email)) = lower(trim($1::text))
+              AND appointment_date = $2::date
+              AND appointment_time = $3::time
+              AND booking_status IN ('Scheduled', 'Confirmed', 'Pending Payment')
+              AND management_token IS NOT NULL
+        `;
+        if (clientId != null && clientId !== '' && Number.isFinite(Number(clientId))) {
+            sql += ` AND client_id = $4::integer`;
+            params.push(Number(clientId));
+        }
+        sql += ` ORDER BY updated_at DESC NULLS LAST, created_at DESC LIMIT 1`;
+
+        const { rows } = await pool.query(sql, params);
+        if (!rows.length || !rows[0].management_token) {
+            return res.status(404).json({ error: 'No matching booking found.' });
+        }
+
+        res.json({ ok: true, token: rows[0].management_token });
+    } catch (err) {
+        console.error('resolve-manage-token error:', err);
+        res.status(500).json({ error: 'Could not resolve booking link.' });
+    }
+});
+
+/*------- Guest / client: view, reschedule, cancel by email link token -------*/
+app.get('/api/booking/manage/:token', async (req, res) => {
+    try {
+        const token = String(req.params.token || '').trim();
+        if (!/^[a-f0-9]{64}$/i.test(token)) {
+            return res.status(400).json({ error: 'Invalid booking link.' });
+        }
+
+        const { rows } = await pool.query(
+            `SELECT
+                a.id,
+                a.client_id,
+                a.full_name,
+                a.email,
+                a.phone,
+                a.company,
+                a.service_name,
+                a.meeting_type,
+                a.appointment_date,
+                a.appointment_time,
+                a.notes,
+                a.booking_status,
+                a.booking_fee,
+                a.staff_id,
+                s.full_name AS staff_full_name,
+                (
+                    a.management_token IS NOT NULL
+                    AND a.booking_status IN ('Scheduled', 'Confirmed', 'Pending Payment')
+                    AND NOW() <= (
+                        ((a.appointment_date + a.appointment_time) AT TIME ZONE $2)::timestamptz
+                        - INTERVAL '24 hours'
+                    )
+                ) AS can_modify,
+                (
+                    NOW() > ((a.appointment_date + a.appointment_time) AT TIME ZONE $2)::timestamptz
+                ) AS appointment_in_past
+             FROM appointments a
+             LEFT JOIN staff_users s ON s.id = a.staff_id
+             WHERE a.management_token = $1
+             LIMIT 1`,
+            [token, APPOINTMENT_TIMEZONE]
+        );
+
+        if (!rows.length) {
+            return res.status(404).json({ error: 'Booking not found or link is no longer valid.' });
+        }
+
+        const row = rows[0];
+        res.json({
+            ok: true,
+            booking: {
+                id: row.id,
+                client_id: row.client_id,
+                full_name: row.full_name,
+                email: row.email,
+                phone: row.phone,
+                company: row.company,
+                service_name: row.service_name,
+                meeting_type: row.meeting_type,
+                appointment_date: row.appointment_date,
+                appointment_time: row.appointment_time,
+                notes: row.notes,
+                booking_status: row.booking_status,
+                booking_fee: row.booking_fee,
+                staff_id: row.staff_id,
+                staff_full_name: row.staff_full_name
+            },
+            can_modify: Boolean(row.can_modify),
+            appointment_in_past: Boolean(row.appointment_in_past)
+        });
+    } catch (err) {
+        console.error('Booking manage GET error:', err);
+        res.status(500).json({ error: 'Failed to load booking.' });
+    }
+});
+
+app.post('/api/booking/manage/:token/cancel', async (req, res) => {
+    const token = String(req.params.token || '').trim();
+    if (!/^[a-f0-9]{64}$/i.test(token)) {
+        return res.status(400).json({ error: 'Invalid booking link.' });
+    }
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const sel = await client.query(
+            `SELECT id, booking_status
+             FROM appointments
+             WHERE management_token = $1
+               AND management_token IS NOT NULL
+               AND booking_status IN ('Scheduled', 'Confirmed', 'Pending Payment')
+               AND NOW() <= (
+                   ((appointment_date + appointment_time) AT TIME ZONE $2)::timestamptz
+                   - INTERVAL '24 hours'
+               )
+             FOR UPDATE`,
+            [token, APPOINTMENT_TIMEZONE]
+        );
+
+        if (!sel.rows.length) {
+            await client.query('ROLLBACK');
+            return res.status(403).json({
+                error: 'This booking cannot be cancelled online. It may be too close to the appointment time, already cancelled, or the link is invalid.'
+            });
+        }
+
+        await client.query(
+            `UPDATE appointments
+             SET booking_status = 'Cancelled', updated_at = NOW()
+             WHERE id = $1`,
+            [sel.rows[0].id]
+        );
+        await client.query('COMMIT');
+        res.json({ ok: true, message: 'Your appointment has been cancelled.' });
+    } catch (err) {
+        await client.query('ROLLBACK').catch(() => {});
+        console.error('Booking cancel error:', err);
+        res.status(500).json({ error: 'Could not cancel booking.' });
+    } finally {
+        client.release();
+    }
+});
+
+app.post('/api/booking/manage/:token/reschedule', async (req, res) => {
+    const token = String(req.params.token || '').trim();
+    if (!/^[a-f0-9]{64}$/i.test(token)) {
+        return res.status(400).json({ error: 'Invalid booking link.' });
+    }
+
+    const { appointmentDate = '', appointmentTime = '' } = req.body || {};
+    if (!appointmentDate || !appointmentTime) {
+        return res.status(400).json({ error: 'New date and time are required.' });
+    }
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const sel = await client.query(
+            `SELECT id, staff_id, service_name, appointment_date, appointment_time, booking_status
+             FROM appointments
+             WHERE management_token = $1
+               AND management_token IS NOT NULL
+               AND booking_status IN ('Scheduled', 'Confirmed', 'Pending Payment')
+               AND NOW() <= (
+                   ((appointment_date + appointment_time) AT TIME ZONE $2)::timestamptz
+                   - INTERVAL '24 hours'
+               )
+             FOR UPDATE`,
+            [token, APPOINTMENT_TIMEZONE]
+        );
+
+        if (!sel.rows.length) {
+            await client.query('ROLLBACK');
+            return res.status(403).json({
+                error: 'This booking cannot be rescheduled online. It may be too close to the appointment time, cancelled, or the link is invalid.'
+            });
+        }
+
+        const appt = sel.rows[0];
+        const newDate = String(appointmentDate).trim();
+        const newTimeRaw = String(appointmentTime).trim();
+        const newTime = newTimeRaw.length >= 5 ? newTimeRaw.slice(0, 5) : newTimeRaw;
+
+        const serviceCheck = await client.query(
+            `SELECT 1
+             FROM staff_services
+             WHERE staff_id = $1 AND service_name = $2
+             LIMIT 1`,
+            [appt.staff_id, String(appt.service_name).trim()]
+        );
+        if (!serviceCheck.rows.length) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ error: 'Provider no longer offers this service.' });
+        }
+
+        const validSlots = await getProviderSlotsForDate(appt.staff_id, newDate, appt.id);
+        if (!validSlots.includes(newTime)) {
+            await client.query('ROLLBACK');
+            return res.status(409).json({
+                error: 'That time is not available. Please choose another slot.'
+            });
+        }
+
+        const clash = await client.query(
+            `SELECT id
+             FROM appointments
+             WHERE staff_id = $1
+               AND appointment_date = $2
+               AND appointment_time = $3::time
+               AND booking_status IN ('Scheduled', 'Confirmed', 'Pending Payment')
+               AND id <> $4
+             LIMIT 1`,
+            [appt.staff_id, newDate, newTime, appt.id]
+        );
+        if (clash.rows.length) {
+            await client.query('ROLLBACK');
+            return res.status(409).json({
+                error: 'That slot was just taken. Please pick another time.'
+            });
+        }
+
+        const pendingClash = await client.query(
+            `SELECT id
+             FROM pending_bookings
+             WHERE staff_id = $1
+               AND appointment_date = $2
+               AND appointment_time = $3::time
+               AND status = 'Pending'
+             LIMIT 1`,
+            [appt.staff_id, newDate, newTime]
+        );
+        if (pendingClash.rows.length) {
+            await client.query('ROLLBACK');
+            return res.status(409).json({
+                error: 'That slot is currently held for another payment. Please choose another time.'
+            });
+        }
+
+        const { rows } = await client.query(
+            `UPDATE appointments
+             SET appointment_date = $1,
+                 appointment_time = $2::time,
+                 updated_at = NOW()
+             WHERE id = $3
+             RETURNING *`,
+            [newDate, newTime, appt.id]
+        );
+
+        await client.query('COMMIT');
+
+        const updated = rows[0];
+        try {
+            await sendAppointmentConfirmationEmail({
+                ...updated,
+                staff_full_name: undefined
+            });
+        } catch (mailErr) {
+            console.error('Reschedule confirmation email failed:', mailErr);
+        }
+
+        res.json({ ok: true, appointment: updated });
+    } catch (err) {
+        await client.query('ROLLBACK').catch(() => {});
+        console.error('Booking reschedule error:', err);
+        res.status(500).json({ error: 'Could not reschedule booking.' });
+    } finally {
+        client.release();
+    }
+});
 
 /*----- Booking Billing -------*/
 app.post('/api/create-booking-billing', async (req, res) => {
@@ -2699,6 +3306,17 @@ app.post('/api/create-pending-booking-payment-intent', async (req, res) => {
 
     try {
 
+        if (!process.env.STRIPE_SECRET_KEY || !String(process.env.STRIPE_SECRET_KEY).trim()) {
+            return res.status(503).json({
+                error: 'Payments are not configured: add STRIPE_SECRET_KEY to api/.env and restart the server.'
+            });
+        }
+        if (!process.env.STRIPE_PUBLISHABLE_KEY || !String(process.env.STRIPE_PUBLISHABLE_KEY).trim()) {
+            return res.status(503).json({
+                error: 'Payments are not configured: add STRIPE_PUBLISHABLE_KEY to api/.env and restart the server.'
+            });
+        }
+
         const {
             clientId,
             staffId,
@@ -2714,9 +3332,15 @@ app.post('/api/create-pending-booking-payment-intent', async (req, res) => {
             bookingFee
         } = req.body || {};
 
+        const staffIdNum = Number(staffId);
+        if (!Number.isFinite(staffIdNum) || staffIdNum <= 0) {
+            return res.status(400).json({
+                error: 'Invalid provider. Select a time slot so a specific staff member is assigned, then try again.'
+            });
+        }
+
         if (
             !clientId ||
-            !staffId ||
             !fullName ||
             !email ||
             !phone ||
@@ -2740,7 +3364,7 @@ app.post('/api/create-pending-booking-payment-intent', async (req, res) => {
        AND appointment_time = $3::time
        AND booking_status IN ('Scheduled', 'Confirmed', 'Pending Payment')
      LIMIT 1`,
-            [staffId, appointmentDate, appointmentTime]
+            [staffIdNum, appointmentDate, appointmentTime]
         );
 
         if (existingAppointment.rows.length > 0) {
@@ -2757,7 +3381,7 @@ app.post('/api/create-pending-booking-payment-intent', async (req, res) => {
        AND appointment_time = $3::time
        AND status = 'Pending'
      LIMIT 1`,
-            [staffId, appointmentDate, appointmentTime]
+            [staffIdNum, appointmentDate, appointmentTime]
         );
 
         if (existingPending.rows.length > 0) {
@@ -2767,8 +3391,15 @@ app.post('/api/create-pending-booking-payment-intent', async (req, res) => {
         }
 
         // Create Stripe payment intent
+        const amountCents = Math.round(Number(bookingFee));
+        if (!Number.isFinite(amountCents) || amountCents < 50) {
+            return res.status(400).json({
+                error: 'Booking fee must be at least $0.50 AUD (Stripe minimum). Check the selected service and fee.'
+            });
+        }
+
         const paymentIntent = await stripe.paymentIntents.create({
-            amount: Number(bookingFee),
+            amount: amountCents,
             currency: 'aud',
             automatic_payment_methods: {
                 enabled: true
@@ -2806,7 +3437,7 @@ app.post('/api/create-pending-booking-payment-intent', async (req, res) => {
             [
                 paymentIntent.id,
                 clientId,
-                staffId,
+                staffIdNum,
                 fullName.trim(),
                 email.trim(),
                 phone.trim(),
@@ -2816,7 +3447,7 @@ app.post('/api/create-pending-booking-payment-intent', async (req, res) => {
                 appointmentDate,
                 appointmentTime,
                 notes?.trim() || null,
-                Number(bookingFee)
+                amountCents
             ]
         );
 
@@ -2830,7 +3461,7 @@ app.post('/api/create-pending-booking-payment-intent', async (req, res) => {
         console.error('Pending booking payment intent error:', err);
 
         res.status(500).json({
-            error: 'Payment initialization failed'
+            error: paymentInitErrorMessage(err)
         });
     }
 });
@@ -2869,6 +3500,19 @@ app.use((err, req, res, next) => {
 });
 
 /* ---------- Start ---------- */
-app.listen(PORT, () => {
-    console.log(`✅ API running on http://localhost:${PORT}`);
-});
+(async () => {
+    try {
+        await ensureAppointmentManagementTokenColumn();
+    } catch (err) {
+        console.warn('Could not ensure appointments.management_token column:', err.message);
+    }
+    try {
+        await ensurePendingBookingsTable();
+        await ensureProcessedStripeEventsTable();
+    } catch (err) {
+        console.warn('Could not ensure pending_bookings / processed_stripe_events tables:', err.message);
+    }
+    app.listen(PORT, () => {
+        console.log(`✅ API running on http://localhost:${PORT}`);
+    });
+})();
