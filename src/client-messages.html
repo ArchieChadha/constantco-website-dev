@@ -21,8 +21,8 @@
 
         <nav class="client-sidebar-nav">
             <a href="client-dashboard.html">Dashboard</a>
+            <a href="client-appointments.html">Appointments &amp; Services</a>
             <a href="client-documents.html">Documents</a>
-            <a href="client-tasks.html">Tasks</a>
             <a href="client-messages.html" class="active">Messages</a>
             <a href="client-billing.html">Billing</a>
             <a href="client-settings.html">Settings</a>
@@ -38,72 +38,111 @@
     <div class="client-portal-content">
 
         <header class="client-topbar">
-            <button class="client-menu-btn" type="button">☰</button>
+            <button id="sidebarToggleBtn" class="client-menu-btn" type="button" aria-label="Toggle sidebar">
+                ☰
+            </button>
             <p>Messages</p>
         </header>
 
         <main class="client-main">
 
-            <section class="client-page-heading">
-                <h1>Messages</h1>
-                <p>Communicate with your assigned Constant & Co adviser.</p>
-            </section>
+            <section class="client-chat-shell">
 
-            <section class="client-message-layout">
+                <!-- LEFT ADVISER PANEL -->
+                <aside class="client-chat-people">
 
-                <div class="client-panel">
-                    <div class="client-panel-head">
+                    <div class="chat-people-header">
+                        <h2>Conversations</h2>
+                        <p>Your assigned Constant &amp; Co adviser</p>
+                    </div>
+
+                    <div id="chatPeopleList">
+                        <p>Loading conversations...</p>
+                    </div>
+
+                </aside>
+
+                <!-- MAIN CHAT AREA -->
+                <section class="client-chat-main">
+
+                    <div class="chat-header">
                         <div>
-                            <h2>Conversation History</h2>
-                            <p>Your recent messages with Constant & Co staff.</p>
+                            <h1 id="chatStaffName">Assigned Adviser</h1>
+                            <p id="chatServiceName">Service conversation</p>
                         </div>
                     </div>
 
-                    <div id="clientMessagesList" class="client-list">
+                    <div id="clientMessagesList" class="chat-message-list">
                         <p>No messages found.</p>
                     </div>
-                </div>
 
-                <div class="client-panel">
-                    <div class="client-panel-head">
-                        <div>
-                            <h2>Send Message</h2>
-                            <p>Send a direct message to your assigned adviser.</p>
+                    <!-- DOCUMENT POPUP -->
+                    <div id="documentUploadPanel" class="chat-upload-panel is-hidden">
+
+                        <div class="chat-upload-head">
+                            <div>
+                                <h3>Add Documents</h3>
+                                <p>Upload one or more files for this service.</p>
+                            </div>
+
+                            <button type="button" id="closeDocumentPanel" class="chat-icon-btn">
+                                ×
+                            </button>
                         </div>
+
+                        <form id="chatDocumentUploadForm" enctype="multipart/form-data">
+
+                            <label for="chatDocumentService">
+                                Service
+                            </label>
+
+                            <select id="chatDocumentService" class="input-lg" required>
+                                <option value="">Select service</option>
+                            </select>
+
+                            <label for="chatDocumentFiles">
+                                Documents
+                            </label>
+
+                            <input id="chatDocumentFiles" type="file" name="files" multiple required>
+
+                            <button type="submit" class="btn btn-primary upload-btn-small">
+                                Upload Documents
+                            </button>
+
+                            <p id="chatDocumentUploadStatus" class="small"></p>
+
+                        </form>
+
                     </div>
 
-                    <form id="clientMessageForm" class="portal-form">
+                    <!-- MESSAGE COMPOSER -->
+                    <form id="clientMessageForm" class="chat-composer">
 
-                        <div class="auth-row auth-row--single">
-                            <div>
-                                <label for="clientMessageSubject">Subject</label>
-                                <input type="text" id="clientMessageSubject" class="input-lg"
-                                    placeholder="Message subject" required>
-                            </div>
-                        </div>
-
-                        <div class="auth-row auth-row--single">
-                            <div>
-                                <label for="clientMessageText">Message</label>
-                                <textarea id="clientMessageText" class="input-lg appointment-textarea" rows="6"
-                                    placeholder="Write your message here..." required></textarea>
-                            </div>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary">
-                            Send Message
+                        <button id="openDocumentPanel" type="button" class="chat-plus-btn" aria-label="Add documents">
+                            +
                         </button>
 
-                        <p id="clientMessageStatus" class="small"></p>
+                        <textarea id="clientMessageText" placeholder="Type your message..." required></textarea>
+
+                        <button type="submit" class="btn btn-primary chat-send-btn">
+                            Send
+                        </button>
+
                     </form>
-                </div>
+
+                    <p id="clientMessageStatus" class="small"></p>
+
+                </section>
 
             </section>
 
         </main>
+
     </div>
 
     <script src="dashboard.js" defer></script>
+
 </body>
 
 </html>
