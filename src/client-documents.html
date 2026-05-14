@@ -10,67 +10,31 @@
 
 <body class="client-portal-page">
 
-    <aside class="client-sidebar">
-        <div class="client-sidebar-logo">
-            <a href="index.html">
-                <img src="https://constantandco.com.au/wp-content/uploads/2022/09/Logo-New.png"
-                    alt="Constant & Co logo">
-            </a>
-            <p>Client Portal</p>
-        </div>
-
-        <nav class="client-sidebar-nav">
-            <a href="client-dashboard.html">Dashboard</a>
-            <a href="client-appointments.html">Appointments &amp; Services</a>
-            <a href="client-documents.html" class="active">Documents</a>
-            <a href="client-messages.html">Messages</a>
-            <a href="client-billing.html">Billing</a>
-            <a href="client-settings.html">Settings</a>
-        </nav>
-
-        <div class="client-sidebar-user">
-            <strong id="sidebarClientName">Client</strong>
-            <small id="sidebarClientEmail">Logged in</small>
-            <a href="login.html" class="client-logout-link">Logout</a>
-        </div>
-    </aside>
-
-    <div class="client-portal-content">
+    <div class="client-portal-content documents-page-simple">
 
         <header class="client-topbar">
-            <button id="sidebarToggleBtn" class="client-menu-btn" type="button" aria-label="Toggle sidebar">
-                ☰
-            </button>
+
+            <div class="documents-topbar-left">
+                <a href="client-dashboard.html" class="btn btn-ghost">
+                    ← Back to Dashboard
+                </a>
+            </div>
+
             <p>Documents</p>
+
         </header>
 
         <main class="client-main">
 
             <section class="client-page-heading">
-                <h1>Documents</h1>
-                <p>Upload and manage your accounting, tax, payroll, and advisory documents securely.</p>
+                <h1>Document History</h1>
+                <p>
+                    View all uploaded accounting, tax, payroll, and advisory documents.
+                </p>
             </section>
 
             <section class="client-panel">
-                <div class="client-panel-head">
-                    <div>
-                        <h2>Upload New Document</h2>
-                        <p>Upload files requested by your adviser or supporting documents for your service.</p>
-                    </div>
-                </div>
 
-                <form id="uploadForm" class="dash-upload-form" enctype="multipart/form-data">
-                    <input type="file" name="file" required>
-
-                    <button type="submit" class="btn btn-primary upload-btn-small">
-                        Upload Document
-                    </button>
-                </form>
-
-                <div id="uploadStatus"></div>
-            </section>
-
-            <section class="client-panel">
                 <div class="client-panel-head">
                     <div>
                         <h2>Document Library</h2>
@@ -81,22 +45,11 @@
                 <div id="recordsList" class="records-list">
                     <p>No records found yet.</p>
                 </div>
-            </section>
 
-            <section class="client-panel">
-                <div class="client-panel-head">
-                    <div>
-                        <h2>Requested Documents</h2>
-                        <p>Documents Constant &amp; Co has asked you to provide.</p>
-                    </div>
-                </div>
-
-                <div id="clientDocumentRequestsList" class="client-list">
-                    <p>No document requests found.</p>
-                </div>
             </section>
 
         </main>
+
     </div>
 
     <script src="dashboard.js" defer></script>
