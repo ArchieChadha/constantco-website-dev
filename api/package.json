@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "start": "nodemon server.js"
+    "start": "nodemon --watch .env --watch server.js server.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",

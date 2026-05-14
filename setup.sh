@@ -36,8 +36,12 @@ PGUSER=postgres
 PGPASSWORD=
 PGDATABASE=constant_co
 PORT=3001
+
+# Stripe (required for appointment booking payments) — paste from https://dashboard.stripe.com/test/apikeys
+STRIPE_SECRET_KEY=
+STRIPE_PUBLISHABLE_KEY=
 EOF
-    echo "📝 Please edit api/.env and add your PostgreSQL password"
+    echo "📝 Please edit api/.env: PostgreSQL password + Stripe keys (see api/.env.example)"
 fi
 
 echo "✅ Setup complete!"
