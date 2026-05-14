@@ -602,6 +602,27 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function renderMessageContent(message) {
+        try {
+            const data = JSON.parse(message);
+
+            if (data.type === 'file') {
+                return `
+                <div class="chat-file-message">
+                    <strong>📎 ${escapeHTML(data.fileName || 'Document')}</strong>
+                    <a href="${API_BASE}/${data.filePath}" target="_blank" rel="noopener noreferrer">
+                        Open document
+                    </a>
+                </div>
+            `;
+            }
+        } catch {
+            // normal text message
+        }
+
+        return `<p>${escapeHTML(message || '')}</p>`;
+    }
+
     // ================================
     // LOAD CLIENT MESSAGES
     // ================================
@@ -622,7 +643,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (selectedConversation.serviceName) {
                 messages = messages.filter(msg =>
                     msg.service_name === selectedConversation.serviceName ||
-                    msg.staff_name === selectedConversation.staffName
+                    Number(msg.appointment_id) === Number(selectedConversation.appointmentId)
                 );
             }
 
@@ -651,7 +672,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         · ${formatDateTime(msg.created_at)}
                     </small>
 
-                    <p>${escapeHTML(msg.message || '')}</p>
+                    ${renderMessageContent(msg.message)}
                 </div>
             `;
             }).join('');
@@ -1062,20 +1083,127 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function setupChatDocumentUploadPanel() {
-        const openBtn = document.getElementById('openDocumentPanel');
-        const closeBtn = document.getElementById('closeDocumentPanel');
+    function setupChatDocumentUpload() {
+        const form = document.getElementById('chatDocumentUploadForm');
+        const fileInput = document.getElementById('chatDocumentFiles');
+        const statusEl = document.getElementById('chatDocumentUploadStatus');
         const panel = document.getElementById('documentUploadPanel');
 
-        if (!openBtn || !panel) return;
+        if (!form || !fileInput) return;
 
-        openBtn.addEventListener('click', () => {
-            panel.classList.toggle('is-hidden');
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const files = fileInput.files;
+
+            if (!files || files.length === 0) {
+                if (statusEl) statusEl.textContent = 'Please select at least one document.';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('clientId', clientId);
+            formData.append('staffId', selectedConversation.staffId || '');
+            formData.append('appointmentId', selectedConversation.appointmentId || '');
+            formData.append('serviceName', selectedConversation.serviceName || '');
+
+            for (const file of files) {
+                formData.append('files', file);
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/api/client/chat-documents`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(data.error || 'Failed to upload documents');
+                }
+
+                form.reset();
+                panel?.classList.add('is-hidden');
+
+                await loadClientMessages();
+                await loadSharedDocuments();
+
+            } catch (err) {
+                console.error(err);
+                if (statusEl) statusEl.textContent = err.message;
+            }
         });
 
-        closeBtn?.addEventListener('click', () => {
-            panel.classList.add('is-hidden');
+
+    }
+
+    function setupChatTabs() {
+        const tabs = document.querySelectorAll('.chat-tab');
+        const chatPanel = document.getElementById('chatTabPanel');
+        const sharedPanel = document.getElementById('sharedTabPanel');
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(item => item.classList.remove('active'));
+                tab.classList.add('active');
+
+                if (tab.dataset.chatTab === 'chat') {
+                    chatPanel?.classList.remove('is-hidden');
+                    sharedPanel?.classList.add('is-hidden');
+                }
+
+                if (tab.dataset.chatTab === 'shared') {
+                    chatPanel?.classList.add('is-hidden');
+                    sharedPanel?.classList.remove('is-hidden');
+                    loadSharedDocuments();
+                }
+            });
         });
+    }
+
+    async function loadSharedDocuments() {
+        const list = document.getElementById('sharedDocumentsList');
+
+        if (!list) return;
+
+        list.innerHTML = '<p>Loading shared documents...</p>';
+
+        try {
+            const res = await fetch(
+                `${API_BASE}/api/client/shared-documents?clientId=${encodeURIComponent(clientId)}&serviceName=${encodeURIComponent(selectedConversation.serviceName || '')}`
+            );
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || 'Failed to load shared documents');
+            }
+
+            const documents = data.documents || [];
+
+            if (!documents.length) {
+                list.innerHTML = '<p>No shared documents found.</p>';
+                return;
+            }
+
+            list.innerHTML = documents.map(doc => `
+            <div class="shared-document-card">
+                <strong>${escapeHTML(doc.file_name || 'Document')}</strong>
+                <small>
+                    Shared on ${formatDateTime(doc.uploaded_at)}
+                </small>
+                <br>
+                <a href="${API_BASE}/${doc.file_path}" target="_blank" rel="noopener noreferrer">
+                    Open document
+                </a>
+            </div>
+        `).join('');
+
+        } catch (err) {
+            console.error(err);
+            list.innerHTML = '<p>Failed to load shared documents.</p>';
+        }
     }
 
     // ================================
@@ -1097,5 +1225,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         setupClientMessageForm();
         setupChatDocumentUploadPanel();
+        setupChatDocumentUpload();
+        setupChatTabs();
     })();
 });

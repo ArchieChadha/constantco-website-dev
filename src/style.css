@@ -1684,6 +1684,20 @@ body {
     background: #ffffff !important;
 }
 
+.chat-file-message {
+    display: grid;
+    gap: 6px;
+}
+
+.chat-file-message strong {
+    color: #0f2e36;
+}
+
+.chat-file-message a {
+    font-weight: 700;
+    color: var(--teal);
+}
+
 /* HEADER */
 
 .chat-header {

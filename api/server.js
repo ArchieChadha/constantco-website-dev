@@ -1471,20 +1471,21 @@ app.get('/api/client/messages', async (req, res) => {
 
         const { rows } = await pool.query(
             `SELECT
-                m.id,
-                m.appointment_id,
-                m.sender_type,
-                m.subject,
-                m.message,
-                m.created_at,
-                s.full_name AS staff_name
-             FROM portal_messages m
-             LEFT JOIN staff_users s ON s.id = m.staff_id
-             WHERE m.client_id = $1
-             ORDER BY m.created_at DESC`,
+        m.id,
+        m.appointment_id,
+        m.staff_id,
+        m.sender_type,
+        m.subject,
+        m.message,
+        m.service_name,
+        m.created_at,
+        s.full_name AS staff_name
+     FROM portal_messages m
+     LEFT JOIN staff_users s ON s.id = m.staff_id
+     WHERE m.client_id = $1
+     ORDER BY m.created_at DESC`,
             [clientId]
         );
-
         res.json({
             ok: true,
             messages: rows
@@ -1497,6 +1498,98 @@ app.get('/api/client/messages', async (req, res) => {
         });
     }
 });
+
+/*--------Chat Documents--------*/
+app.post('/api/client/chat-documents', upload.array('files'), async (req, res) => {
+    try {
+        const { clientId, staffId, appointmentId, serviceName } = req.body;
+        const files = req.files || [];
+
+        if (!clientId || !files.length) {
+            return res.status(400).json({ error: 'Client and documents are required' });
+        }
+
+        const savedDocuments = [];
+
+        for (const file of files) {
+            const filePath = `uploads/${file.filename}`;
+
+            const documentResult = await pool.query(
+                `
+                INSERT INTO client_documents
+                    (client_id, appointment_id, service_name, file_name, file_path, uploaded_at)
+                VALUES
+                    ($1, $2, $3, $4, $5, NOW())
+                RETURNING *
+                `,
+                [
+                    clientId,
+                    appointmentId || null,
+                    serviceName || null,
+                    file.originalname,
+                    filePath
+                ]
+            );
+
+            const savedDocument = documentResult.rows[0];
+            savedDocuments.push(savedDocument);
+
+            await pool.query(
+                `
+                INSERT INTO portal_messages
+                    (client_id, staff_id, appointment_id, sender_type, subject, message, service_name, created_at)
+                VALUES
+                    ($1, $2, $3, 'client', $4, $5, $6, NOW())
+                `,
+                [
+                    clientId,
+                    staffId || null,
+                    appointmentId || null,
+                    serviceName || 'Shared Document',
+                    JSON.stringify({
+                        type: 'file',
+                        fileName: savedDocument.file_name,
+                        filePath: savedDocument.file_path
+                    }),
+                    serviceName || null
+                ]
+            );
+        }
+
+        res.json({
+            success: true,
+            documents: savedDocuments
+        });
+
+    } catch (err) {
+        console.error('Chat document upload error:', err);
+        res.status(500).json({ error: 'Failed to upload chat documents' });
+    }
+});
+
+app.get('/api/client/shared-documents', async (req, res) => {
+    try {
+        const { clientId, serviceName } = req.query;
+
+        const result = await pool.query(
+            `
+            SELECT *
+            FROM client_documents
+            WHERE client_id = $1
+            AND ($2::text IS NULL OR service_name = $2)
+            ORDER BY uploaded_at DESC
+            `,
+            [clientId, serviceName || null]
+        );
+
+        res.json({ documents: result.rows });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to load shared documents' });
+    }
+});
+
 
 /*--------Client Document Request--------*/
 app.get('/api/client/document-requests', async (req, res) => {
@@ -1636,9 +1729,9 @@ app.get('/api/booking-slots', async (req, res) => {
         const excludeRaw = req.query.excludeAppointmentId;
         const excludeAppointmentId =
             excludeRaw != null &&
-            String(excludeRaw).trim() !== '' &&
-            Number.isFinite(Number(excludeRaw)) &&
-            Number(excludeRaw) > 0
+                String(excludeRaw).trim() !== '' &&
+                Number.isFinite(Number(excludeRaw)) &&
+                Number(excludeRaw) > 0
                 ? Number(excludeRaw)
                 : null;
 
@@ -2218,7 +2311,7 @@ app.post('/api/booking/manage/:token/cancel', async (req, res) => {
         await client.query('COMMIT');
         res.json({ ok: true, message: 'Your appointment has been cancelled.' });
     } catch (err) {
-        await client.query('ROLLBACK').catch(() => {});
+        await client.query('ROLLBACK').catch(() => { });
         console.error('Booking cancel error:', err);
         res.status(500).json({ error: 'Could not cancel booking.' });
     } finally {
@@ -2345,7 +2438,7 @@ app.post('/api/booking/manage/:token/reschedule', async (req, res) => {
 
         res.json({ ok: true, appointment: updated });
     } catch (err) {
-        await client.query('ROLLBACK').catch(() => {});
+        await client.query('ROLLBACK').catch(() => { });
         console.error('Booking reschedule error:', err);
         res.status(500).json({ error: 'Could not reschedule booking.' });
     } finally {
