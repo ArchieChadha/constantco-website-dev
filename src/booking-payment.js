@@ -41,6 +41,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         setMessage('No booking fee found.');
         return;
     }
+
+    /** Stripe redirect must match how you opened this page (same origin/path as static files). */
+    function stripeBookingSuccessReturnUrl() {
+        const { origin, pathname } = window.location;
+        const dir = pathname.endsWith('/') ? pathname : pathname.replace(/[^/]+$/, '');
+        return `${origin}${dir}booking-payment-success.html`;
+    }
+
     let stripe;
     let elements;
     try {
@@ -85,7 +93,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const { error } = await stripe.confirmPayment({
             elements,
             confirmParams: {
-                return_url: `http://127.0.0.1:5500/src/booking-payment-success.html`
+                return_url: stripeBookingSuccessReturnUrl()
             }
         });
         if (error) {
