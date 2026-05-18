@@ -6,9 +6,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const clientId = sessionStorage.getItem('clientId');
 
-    // ================================
-    // FORMAT HELPERS
-    // ================================
     function formatText(text) {
         return text
             ? text
@@ -54,9 +51,6 @@ document.addEventListener('DOMContentLoaded', () => {
             .replaceAll("'", '&#039;');
     }
 
-    // ================================
-    // ELEMENTS
-    // ================================
     const nameEl = document.getElementById('dashName');
 
     const profileName = document.getElementById('profileName');
@@ -84,9 +78,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const payBtn = document.querySelector('.payment-action-btn');
 
-    // ================================
-    // SIDEBAR TOGGLE
-    // ================================
     const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
     const sidebar = document.querySelector('.client-sidebar');
     const clientMain = document.querySelector('.client-main');
@@ -131,17 +122,11 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('resize', handleSidebarState);
     handleSidebarState();
 
-    // ================================
-    // GUARD
-    // ================================
     if (!clientId) {
         window.location.href = './login.html';
         return;
     }
 
-    // ================================
-    // HELPERS
-    // ================================
     function setUploadStatus(message = '', ok = false) {
         if (!uploadStatus) return;
 
@@ -213,9 +198,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ================================
-    // SECTION TOGGLING
-    // ================================
     const sectionIds = [
         'profileSection',
         'servicesSection',
@@ -261,9 +243,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // ================================
-    // LOAD PROFILE
-    // ================================
     async function loadProfile() {
         try {
             const res = await fetch(`${API_BASE}/api/profile?clientId=${encodeURIComponent(clientId)}`);
@@ -288,9 +267,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ================================
-    // LOAD SERVICES
-    // ================================
     async function loadServices() {
         if (!servicesList) return;
 
@@ -320,9 +296,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ================================
-    // FILE UPLOAD
-    // ================================
     uploadForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -372,9 +345,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // ================================
-    // LOAD RECORDS
-    // ================================
     async function loadRecords() {
         if (!recordsList) return;
 
@@ -406,9 +376,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ================================
-    // LOAD CHARGES
-    // ================================
     async function loadCharges() {
         try {
             const res = await fetch(`${API_BASE}/api/charges?clientId=${encodeURIComponent(clientId)}`);
@@ -442,9 +409,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ================================
-    // LOAD CLIENT SERVICE HISTORY
-    // ================================
     async function loadClientServiceHistory() {
         try {
             const res = await fetch(`${API_BASE}/api/client/service-history?clientId=${encodeURIComponent(clientId)}`);
@@ -456,13 +420,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const services = data.services || [];
 
-            const upcomingAppointmentsCount =
-                document.getElementById('upcomingAppointmentsCount');
+            const upcomingAppointmentsCount = document.getElementById('upcomingAppointmentsCount');
 
             if (upcomingAppointmentsCount) {
-                const upcomingCount = services.filter(service =>
-                    service.booking_status !== 'Cancelled'
-                ).length;
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                const upcomingCount = services.filter(service => {
+                    const appointmentDate = new Date(service.appointment_date);
+
+                    return (
+                        appointmentDate >= today &&
+                        service.booking_status !== 'Cancelled'
+                    );
+                }).length;
 
                 upcomingAppointmentsCount.textContent = upcomingCount;
             }
@@ -505,9 +476,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ================================
-    // LOAD CLIENT PAYMENT HISTORY
-    // ================================
     async function loadClientPaymentHistory() {
         try {
             const res = await fetch(`${API_BASE}/api/client/payment-history?clientId=${encodeURIComponent(clientId)}`);
@@ -541,9 +509,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ================================
-    // CLIENT MESSAGE FORM
-    // ================================
     function setupClientMessageForm() {
         const form = document.getElementById('clientMessageForm');
 
@@ -608,13 +573,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (data.type === 'file') {
                 return `
-                <div class="chat-file-message">
-                    <strong>📎 ${escapeHTML(data.fileName || 'Document')}</strong>
-                    <a href="${API_BASE}/${data.filePath}" target="_blank" rel="noopener noreferrer">
-                        Open document
-                    </a>
-                </div>
-            `;
+                    <div class="chat-file-message">
+                        <strong>📎 ${escapeHTML(data.fileName || 'Document')}</strong>
+                        <a href="${API_BASE}/${data.filePath}" target="_blank" rel="noopener noreferrer">
+                            Open document
+                        </a>
+                    </div>
+                `;
             }
         } catch {
             // normal text message
@@ -623,9 +588,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return `<p>${escapeHTML(message || '')}</p>`;
     }
 
-    // ================================
-    // LOAD CLIENT MESSAGES
-    // ================================
     async function loadClientMessages() {
         try {
             const res = await fetch(`${API_BASE}/api/client/messages?clientId=${encodeURIComponent(clientId)}`);
@@ -636,13 +598,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             let messages = data.messages || [];
+
             messages.sort((a, b) => {
                 return new Date(a.created_at) - new Date(b.created_at);
             });
 
-            if (selectedConversation.serviceName) {
+            if (selectedConversation.appointmentId) {
                 messages = messages.filter(msg =>
-                    msg.service_name === selectedConversation.serviceName ||
                     Number(msg.appointment_id) === Number(selectedConversation.appointmentId)
                 );
             }
@@ -666,15 +628,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 const isClient = msg.sender_type === 'client';
 
                 return `
-                <div class="chat-bubble ${isClient ? 'chat-bubble-client' : 'chat-bubble-agent'}">
-                    <small>
-                        ${isClient ? 'You' : escapeHTML(msg.staff_name || selectedConversation.staffName || 'Adviser')}
-                        · ${formatDateTime(msg.created_at)}
-                    </small>
+                    <div class="chat-bubble ${isClient ? 'chat-bubble-client' : 'chat-bubble-agent'}">
+                        <small>
+                            ${isClient ? 'You' : escapeHTML(msg.staff_name || selectedConversation.staffName || 'Adviser')}
+                            · ${formatDateTime(msg.created_at)}
+                        </small>
 
-                    ${renderMessageContent(msg.message)}
-                </div>
-            `;
+                        ${renderMessageContent(msg.message)}
+                    </div>
+                `;
             }).join('');
 
             clientMessagesList.scrollTop = clientMessagesList.scrollHeight;
@@ -684,9 +646,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ================================
-    // LOAD CLIENT DOCUMENT REQUESTS
-    // ================================
     async function loadClientDocumentRequests() {
         try {
             const res = await fetch(`${API_BASE}/api/client/document-requests?clientId=${encodeURIComponent(clientId)}`);
@@ -733,12 +692,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ================================
-    // LOAD APPOINTMENT SERVICE TABLE
-    // ================================
     async function loadAppointmentServiceTable() {
         try {
-            const res = await fetch(`${API_BASE}/api/client/service-history?clientId=${encodeURIComponent(clientId)}`);
+            const res = await fetch(
+                `${API_BASE}/api/client/service-history?clientId=${encodeURIComponent(clientId)}`
+            );
+
             const data = await res.json();
 
             if (!res.ok) {
@@ -759,108 +718,58 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            const grouped = {};
+            table.innerHTML = services.map(item => {
+                const appointmentDateTime = new Date(
+                    `${String(item.appointment_date).slice(0, 10)}T${String(item.appointment_time).slice(0, 5)}`
+                );
 
-            services.forEach(item => {
-                const serviceName = item.service_name || 'Unknown Service';
+                const now = new Date();
 
-                const appointmentDate = item.appointment_date
-                    ? new Date(item.appointment_date)
-                    : null;
+                let displayStatus = 'Confirmed';
 
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-
-                const isUpcoming =
-                    appointmentDate &&
-                    appointmentDate >= today &&
-                    item.booking_status !== 'Cancelled';
-
-                if (!grouped[serviceName]) {
-                    grouped[serviceName] = {
-                        serviceName,
-                        staffName: item.staff_name || 'Not assigned',
-                        appointmentStatus: isUpcoming ? 'Scheduled' : 'Completed',
-                        upcomingDateTime: isUpcoming
-                            ? `${formatDate(item.appointment_date)} at ${formatTime(item.appointment_time)}`
-                            : 'No upcoming appointment',
-                        appointmentId: null,
-                        managementToken: null,
-                        pastStamp: null,
-                        pastDisplayDateTime: null,
-                        pastAppointmentId: null,
-                        pastManagementToken: null,
-                        pastBookingStatus: null
-                    };
+                if (item.booking_status === 'Cancelled') {
+                    displayStatus = 'Cancelled';
+                } else if (appointmentDateTime < now) {
+                    displayStatus = 'Completed';
+                } else {
+                    displayStatus = 'Confirmed';
                 }
 
-                if (isUpcoming) {
-                    grouped[serviceName].appointmentStatus = 'Scheduled';
-                    grouped[serviceName].upcomingDateTime =
-                        `${formatDate(item.appointment_date)} at ${formatTime(item.appointment_time)}`;
-                    grouped[serviceName].appointmentId = item.appointment_id;
-                    grouped[serviceName].managementToken = item.management_token || null;
-                }
-
-                if (!isUpcoming) {
-                    const dRaw = item.appointment_date;
-                    const tRaw = item.appointment_time;
-                    const stamp = `${String(dRaw).slice(0, 10)}T${String(tRaw ?? '').trim().slice(0, 5)}`;
-                    const g = grouped[serviceName];
-                    if (!g.pastStamp || stamp > g.pastStamp) {
-                        g.pastStamp = stamp;
-                        g.pastDisplayDateTime =
-                            `${formatDate(item.appointment_date)} at ${formatTime(item.appointment_time)}`;
-                        g.pastAppointmentId = item.appointment_id;
-                        g.pastManagementToken = item.management_token || null;
-                        g.pastBookingStatus = item.booking_status || 'Completed';
-                    }
-                }
-            });
-
-            table.innerHTML = Object.values(grouped).map((item) => {
-                const hasUpcoming =
-                    item.appointmentId != null && String(item.appointmentId).trim() !== '';
-                const dateTimeCell = hasUpcoming
-                    ? item.upcomingDateTime
-                    : item.pastDisplayDateTime || '—';
-                const statusCell = hasUpcoming
-                    ? item.appointmentStatus
-                    : item.pastBookingStatus || item.appointmentStatus || '—';
-
-                const summaryTok = hasUpcoming ? item.managementToken : item.pastManagementToken;
-                const summaryLink =
-                    summaryTok && String(summaryTok).trim()
-                        ? `<a href="booking-summary.html?token=${encodeURIComponent(String(summaryTok).trim())}">View booking summary</a>`
-                        : '<span class="small">—</span>';
+                const summaryLink = item.management_token
+                    ? `<a href="booking-summary.html?token=${encodeURIComponent(item.management_token)}">
+                        View booking summary
+                       </a>`
+                    : '—';
 
                 return `
-    <tr>
-        <td>${escapeHTML(item.serviceName)}</td>
+                    <tr>
+                        <td>${escapeHTML(item.service_name || '')}</td>
 
-        <td>${escapeHTML(item.staffName)}</td>
+                        <td>${escapeHTML(item.staff_name || 'Not assigned')}</td>
 
-        <td>${escapeHTML(statusCell)}</td>
+                        <td>${escapeHTML(displayStatus)}</td>
 
-        <td>${escapeHTML(dateTimeCell)}</td>
+                        <td>
+                            ${formatDate(item.appointment_date)}
+                            at
+                            ${formatTime(item.appointment_time)}
+                        </td>
 
-        <td>
-            <a href="client-messages.html?service=${encodeURIComponent(item.serviceName)}">
-                View Conversation History
-            </a>
-        </td>
+                        <td>
+                            <a href="client-messages.html?appointmentId=${encodeURIComponent(item.appointment_id)}">
+                                View Conversation History
+                            </a>
+                        </td>
 
-        <td>${summaryLink}</td>
-    </tr>
-`;
+                        <td>${summaryLink}</td>
+                    </tr>
+                `;
             }).join('');
+
         } catch (err) {
             console.error(err);
         }
     }
-    // ===========================
-    // LOAD APPOINTMENT DETAILS
-    // ==========================
 
     async function loadAppointmentDetailsPage() {
         const upcomingTable = document.getElementById('upcomingAppointmentsTable');
@@ -903,21 +812,21 @@ document.addEventListener('DOMContentLoaded', () => {
             function renderRows(list, emptyMessage) {
                 if (!list.length) {
                     return `
-                    <tr>
-                        <td colspan="5">${emptyMessage}</td>
-                    </tr>
-                `;
+                        <tr>
+                            <td colspan="5">${emptyMessage}</td>
+                        </tr>
+                    `;
                 }
 
                 return list.map(app => `
-                <tr>
-                    <td>${escapeHTML(app.service_name || '')}</td>
-                    <td>${escapeHTML(app.staff_name || 'Not assigned')}</td>
-                    <td>${formatDate(app.appointment_date)}</td>
-                    <td>${formatTime(app.appointment_time)}</td>
-                    <td>${escapeHTML(app.booking_status || '')}</td>
-                </tr>
-            `).join('');
+                    <tr>
+                        <td>${escapeHTML(app.service_name || '')}</td>
+                        <td>${escapeHTML(app.staff_name || 'Not assigned')}</td>
+                        <td>${formatDate(app.appointment_date)}</td>
+                        <td>${formatTime(app.appointment_time)}</td>
+                        <td>${escapeHTML(app.booking_status || '')}</td>
+                    </tr>
+                `).join('');
             }
 
             upcomingTable.innerHTML = renderRows(upcoming, 'No upcoming appointments found.');
@@ -927,16 +836,16 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Appointment details error:', err);
 
             upcomingTable.innerHTML = `
-            <tr>
-                <td colspan="5">Failed to load upcoming appointments.</td>
-            </tr>
-        `;
+                <tr>
+                    <td colspan="5">Failed to load upcoming appointments.</td>
+                </tr>
+            `;
 
             previousTable.innerHTML = `
-            <tr>
-                <td colspan="5">Failed to load previous appointments.</td>
-            </tr>
-        `;
+                <tr>
+                    <td colspan="5">Failed to load previous appointments.</td>
+                </tr>
+            `;
         }
     }
 
@@ -949,7 +858,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadClientChatAgents() {
         const peopleList = document.getElementById('chatPeopleList');
-        const serviceSelect = document.getElementById('chatDocumentService');
 
         if (!peopleList) return;
 
@@ -985,38 +893,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const conversations = Object.values(grouped);
 
-            peopleList.innerHTML = conversations.map((item, index) => `
-            <button
-                type="button"
-                class="chat-person ${index === 0 ? 'active' : ''}"
-                data-service="${escapeHTML(item.serviceName)}"
-                data-staff-name="${escapeHTML(item.staffName)}"
-                data-staff-id="${item.staffId || ''}"
-                data-appointment-id="${item.appointmentId || ''}">
+            const params = new URLSearchParams(window.location.search);
+            const targetAppointmentId = params.get('appointmentId');
 
-                <div class="chat-avatar">
-                    ${escapeHTML(getInitials(item.staffName))}
-                </div>
+            let selectedIndex = 0;
 
-                <div>
-                    <strong>${escapeHTML(item.staffName)}</strong>
-                    <small>${escapeHTML(item.serviceName)}</small>
-                </div>
-            </button>
-        `).join('');
+            if (targetAppointmentId) {
+                const foundIndex = conversations.findIndex(item =>
+                    String(item.appointmentId) === String(targetAppointmentId)
+                );
 
-            if (serviceSelect) {
-                serviceSelect.innerHTML = `
-                <option value="">Select service</option>
-                ${conversations.map(item => `
-                    <option value="${escapeHTML(item.serviceName)}">
-                        ${escapeHTML(item.serviceName)}
-                    </option>
-                `).join('')}
-            `;
+                if (foundIndex !== -1) {
+                    selectedIndex = foundIndex;
+                }
             }
 
-            selectConversation(conversations[0]);
+            peopleList.innerHTML = conversations.map((item, index) => `
+                <button
+                    type="button"
+                    class="chat-person ${index === selectedIndex ? 'active' : ''}"
+                    data-service="${escapeHTML(item.serviceName)}"
+                    data-staff-name="${escapeHTML(item.staffName)}"
+                    data-staff-id="${item.staffId || ''}"
+                    data-appointment-id="${item.appointmentId || ''}">
+
+                    <div class="chat-avatar">
+                        ${escapeHTML(getInitials(item.staffName))}
+                    </div>
+
+                    <div>
+                        <strong>${escapeHTML(item.staffName)}</strong>
+                        <small>${escapeHTML(item.serviceName)}</small>
+                    </div>
+                </button>
+            `).join('');
+
+            selectConversation(conversations[selectedIndex]);
 
             document.querySelectorAll('.chat-person').forEach(button => {
                 button.addEventListener('click', () => {
@@ -1056,6 +968,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         loadClientMessages();
+        loadSharedDocuments();
     }
 
     function getInitials(name) {
@@ -1134,8 +1047,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (statusEl) statusEl.textContent = err.message;
             }
         });
-
-
     }
 
     function setupChatTabs() {
@@ -1171,7 +1082,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const res = await fetch(
-                `${API_BASE}/api/client/shared-documents?clientId=${encodeURIComponent(clientId)}&serviceName=${encodeURIComponent(selectedConversation.serviceName || '')}`
+                `${API_BASE}/api/client/shared-documents?clientId=${encodeURIComponent(clientId)}&appointmentId=${encodeURIComponent(selectedConversation.appointmentId || '')}`
             );
 
             const data = await res.json();
@@ -1188,17 +1099,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             list.innerHTML = documents.map(doc => `
-            <div class="shared-document-card">
-                <strong>${escapeHTML(doc.file_name || 'Document')}</strong>
-                <small>
-                    Shared on ${formatDateTime(doc.uploaded_at)}
-                </small>
-                <br>
-                <a href="${API_BASE}/${doc.file_path}" target="_blank" rel="noopener noreferrer">
-                    Open document
-                </a>
-            </div>
-        `).join('');
+                <div class="shared-document-card">
+                    <strong>${escapeHTML(doc.file_name || 'Document')}</strong>
+                    <small>
+                        Shared on ${formatDateTime(doc.uploaded_at)}
+                    </small>
+                    <br>
+                    <a href="${API_BASE}/${doc.file_path}" target="_blank" rel="noopener noreferrer">
+                        Open document
+                    </a>
+                </div>
+            `).join('');
 
         } catch (err) {
             console.error(err);
@@ -1206,11 +1117,78 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ================================
-    // INITIAL LOAD
-    // ================================
-    (async function initialiseDashboard() {
+    function setupProfileUpdate() {
 
+        const openBtn = document.getElementById('openProfileUpdateBtn');
+        const closeBtn = document.getElementById('closeProfileUpdateBtn');
+
+        const modal = document.getElementById('profileUpdateModal');
+        const form = document.getElementById('profileUpdateForm');
+
+        const statusEl = document.getElementById('profileUpdateStatus');
+
+        const updateName = document.getElementById('updateName');
+        const updateEmail = document.getElementById('updateEmail');
+        const updatePhone = document.getElementById('updatePhone');
+
+        if (!openBtn || !modal || !form) return;
+
+        openBtn.addEventListener('click', () => {
+
+            updateName.value = profileName?.textContent || '';
+            updateEmail.value = profileEmail?.textContent || '';
+            updatePhone.value = profilePhone?.textContent || '';
+
+            modal.classList.remove('is-hidden');
+        });
+
+        closeBtn?.addEventListener('click', () => {
+            modal.classList.add('is-hidden');
+        });
+
+        form.addEventListener('submit', async (event) => {
+
+            event.preventDefault();
+
+            try {
+
+                const res = await fetch(`${API_BASE}/api/client/update-profile`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        clientId,
+                        name: updateName.value.trim(),
+                        email: updateEmail.value.trim(),
+                        phone: updatePhone.value.trim()
+                    })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(data.error || 'Failed to update profile');
+                }
+
+                statusEl.textContent = 'Profile updated successfully.';
+                statusEl.style.color = '#1a7f37';
+
+                modal.classList.add('is-hidden');
+
+                await loadProfile();
+
+            } catch (err) {
+
+                console.error(err);
+
+                statusEl.textContent = err.message;
+                statusEl.style.color = '#b00020';
+            }
+        });
+    }
+
+    (async function initialiseDashboard() {
         await loadProfile().catch(console.error);
         await loadServices().catch(console.error);
         await loadRecords().catch(console.error);
@@ -1221,11 +1199,12 @@ document.addEventListener('DOMContentLoaded', () => {
         await loadClientDocumentRequests().catch(console.error);
         await loadAppointmentServiceTable().catch(console.error);
         await loadAppointmentDetailsPage().catch(console.error);
-        await loadClientChatAgents();
+        await loadClientChatAgents().catch(console.error);
 
         setupClientMessageForm();
         setupChatDocumentUploadPanel();
         setupChatDocumentUpload();
         setupChatTabs();
+        setupProfileUpdate();
     })();
 });

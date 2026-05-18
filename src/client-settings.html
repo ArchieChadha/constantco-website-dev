@@ -39,7 +39,9 @@
     <div class="client-portal-content">
 
         <header class="client-topbar">
-            <button class="client-menu-btn" type="button">☰</button>
+            <button id="sidebarToggleBtn" class="client-menu-btn" type="button" aria-label="Toggle sidebar">
+                ☰
+            </button>
             <p>Settings</p>
         </header>
 
@@ -56,6 +58,10 @@
                         <h2>Profile Information</h2>
                         <p>Your account details stored in the client portal.</p>
                     </div>
+
+                    <button type="button" id="openProfileUpdateBtn" class="btn btn-primary">
+                        Update Profile
+                    </button>
                 </div>
 
                 <div class="portal-info-grid">
@@ -84,19 +90,6 @@
             <section class="client-panel">
                 <div class="client-panel-head">
                     <div>
-                        <h2>Services Overview</h2>
-                        <p>Services linked to your Constant & Co account.</p>
-                    </div>
-                </div>
-
-                <div id="servicesList" class="portal-services-list">
-                    <p>No services found.</p>
-                </div>
-            </section>
-
-            <section class="client-panel">
-                <div class="client-panel-head">
-                    <div>
                         <h2>Account Actions</h2>
                     </div>
                 </div>
@@ -109,6 +102,53 @@
             </section>
 
         </main>
+    </div>
+
+    <div id="profileUpdateModal" class="profile-modal is-hidden">
+
+        <div class="profile-modal-card">
+
+            <div class="profile-modal-head">
+                <h2>Update Profile</h2>
+
+                <button type="button" id="closeProfileUpdateBtn" class="profile-modal-close">
+                    ✕
+                </button>
+            </div>
+
+            <form id="profileUpdateForm">
+
+                <div class="profile-form-grid">
+
+                    <div class="profile-form-group">
+                        <label>Full Name</label>
+                        <input type="text" id="updateName" required>
+                    </div>
+
+                    <div class="profile-form-group">
+                        <label>Email</label>
+                        <input type="email" id="updateEmail" required>
+                    </div>
+
+                    <div class="profile-form-group">
+                        <label>Phone</label>
+                        <input type="text" id="updatePhone">
+                    </div>
+
+                </div>
+
+                <div class="profile-modal-actions">
+                    <button type="submit" class="btn btn-primary">
+                        Save Changes
+                    </button>
+                </div>
+
+                <p id="profileUpdateStatus"></p>
+
+            </form>
+
+        </div>
+
     </div>
 
     <script src="dashboard.js" defer></script>

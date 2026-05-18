@@ -21,9 +21,7 @@
 
         <nav class="client-sidebar-nav">
             <a href="client-dashboard.html">Dashboard</a>
-            <a href="client-appointments.html">
-                Services
-            </a>
+            <a href="client-appointments.html">Services</a>
             <a href="client-messages.html">Conversations</a>
             <a href="client-billing.html" class="active">Billing</a>
             <a href="client-settings.html">Settings</a>
@@ -39,35 +37,17 @@
     <div class="client-portal-content">
 
         <header class="client-topbar">
-            <button class="client-menu-btn" type="button">☰</button>
+            <button id="sidebarToggleBtn" class="client-menu-btn" type="button" aria-label="Toggle sidebar">
+                ☰
+            </button>
             <p>Billing</p>
         </header>
 
         <main class="client-main">
 
             <section class="client-page-heading">
-                <h1>Billing & Payments</h1>
+                <h1>Billing &amp; Payments</h1>
                 <p>View your current charges, payment status, and payment history.</p>
-            </section>
-
-            <section class="client-stat-grid client-stat-grid-3">
-                <article class="client-stat-card">
-                    <p>Total Charge</p>
-                    <h2 id="totalChargeValue">$0.00</h2>
-                    <small id="chargeService">—</small>
-                </article>
-
-                <article class="client-stat-card">
-                    <p>Amount Paid</p>
-                    <h2 id="amountPaidValue">$0.00</h2>
-                    <small>Payments received</small>
-                </article>
-
-                <article class="client-stat-card">
-                    <p>Amount Due</p>
-                    <h2 id="chargeValue">$0.00</h2>
-                    <small id="chargeStatus">—</small>
-                </article>
             </section>
 
             <section class="client-panel">
@@ -95,12 +75,27 @@
 
                     <div class="client-mini-card">
                         <h4>Total Charge</h4>
-                        <p id="billingTotalChargeValue">$0.00</p>
+                        <p id="totalChargeValue">$0.00</p>
+                    </div>
+
+                    <div class="client-mini-card">
+                        <h4>Amount Paid</h4>
+                        <p id="amountPaidValue">$0.00</p>
+                    </div>
+
+                    <div class="client-mini-card">
+                        <h4>Amount Due</h4>
+                        <p id="chargeValue">$0.00</p>
                     </div>
 
                     <div class="client-mini-card">
                         <h4>Status</h4>
-                        <p id="billingChargeStatus">—</p>
+                        <p id="chargeStatus">—</p>
+                    </div>
+
+                    <div class="client-mini-card">
+                        <h4>Service</h4>
+                        <p id="chargeService">—</p>
                     </div>
                 </div>
             </section>

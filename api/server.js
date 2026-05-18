@@ -276,13 +276,14 @@ app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async
 
                 const newStatus = newAmountDue === 0 ? 'Paid' : 'Pending';
 
-                await client.query(
+                const result = await client.query(
                     `UPDATE appointment_billing
-             SET amount_paid = $1,
-                 amount_due = $2,
-                 payment_status = $3,
-                 updated_at = NOW()
-             WHERE id = $4`,
+     SET amount_paid = $1,
+         amount_due = $2,
+         payment_status = $3,
+         updated_at = NOW()
+     WHERE id = $4
+     RETURNING *`,
                     [newAmountPaid, newAmountDue, newStatus, billing.id]
                 );
 
@@ -303,16 +304,19 @@ app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async
 
             const result = await client.query(
                 `UPDATE appointment_billing
-                 SET payment_status = 'Failed',
-                     updated_at = NOW()
-                 WHERE id = $1
-                 RETURNING *`,
-                [billingId]
+     SET amount_paid = $1,
+         amount_due = $2,
+         payment_status = $3,
+         updated_at = NOW()
+     WHERE id = $4
+     RETURNING *`,
+                [newAmountPaid, newAmountDue, newStatus, billing.id]
             );
 
             console.log('❌ Payment failed:', paymentIntent.id);
             console.log('🧠 Failed rows updated:', result.rowCount);
             console.log('🧠 Failed updated row:', result.rows[0]);
+            console.log('Billing updated:', result.rows[0]);
         }
 
         await client.query('COMMIT');
@@ -1393,32 +1397,33 @@ app.post('/api/client/messages', async (req, res) => {
     try {
         const {
             clientId,
+            appointmentId,
             subject = '',
             message = ''
         } = req.body || {};
 
-        if (!clientId || !message.trim()) {
+        if (!clientId || !appointmentId || !message.trim()) {
             return res.status(400).json({
-                error: 'Client and message are required'
+                error: 'Client, appointment and message are required'
             });
         }
 
-        // Find the latest appointment with assigned staff for this client
         const appointmentResult = await pool.query(
             `SELECT 
                 id,
-                staff_id
+                staff_id,
+                service_name
              FROM appointments
-             WHERE client_id = $1
+             WHERE id = $1
+               AND client_id = $2
                AND staff_id IS NOT NULL
-             ORDER BY appointment_date DESC, appointment_time DESC, created_at DESC
              LIMIT 1`,
-            [clientId]
+            [appointmentId, clientId]
         );
 
         if (!appointmentResult.rows.length) {
             return res.status(400).json({
-                error: 'No assigned staff member found for this client'
+                error: 'No matching appointment found for this client'
             });
         }
 
@@ -1433,16 +1438,18 @@ app.post('/api/client/messages', async (req, res) => {
                 sender_type,
                 subject,
                 message,
+                service_name,
                 created_at
              )
-             VALUES ($1, $2, $3, 'client', $4, $5, NOW())
+             VALUES ($1, $2, $3, 'client', $4, $5, $6, NOW())
              RETURNING *`,
             [
                 clientId,
                 appointment.staff_id,
                 appointment.id,
-                subject.trim() || null,
-                message.trim()
+                subject.trim() || appointment.service_name || null,
+                message.trim(),
+                appointment.service_name || null
             ]
         );
 
@@ -1569,24 +1576,34 @@ app.post('/api/client/chat-documents', upload.array('files'), async (req, res) =
 
 app.get('/api/client/shared-documents', async (req, res) => {
     try {
-        const { clientId, serviceName } = req.query;
+        const { clientId, appointmentId } = req.query;
 
         const result = await pool.query(
             `
-            SELECT *
+            SELECT
+                id,
+                file_name,
+                file_path,
+                uploaded_at,
+                appointment_id
             FROM client_documents
             WHERE client_id = $1
-            AND ($2::text IS NULL OR service_name = $2)
+            AND appointment_id = $2
             ORDER BY uploaded_at DESC
             `,
-            [clientId, serviceName || null]
+            [clientId, appointmentId]
         );
 
-        res.json({ documents: result.rows });
+        res.json({
+            documents: result.rows
+        });
 
     } catch (err) {
         console.error(err);
-        res.status(500).json({ error: 'Failed to load shared documents' });
+
+        res.status(500).json({
+            error: 'Failed to load shared documents'
+        });
     }
 });
 
@@ -1622,6 +1639,58 @@ app.get('/api/client/document-requests', async (req, res) => {
 
         res.status(500).json({
             error: 'Failed to load requests'
+        });
+    }
+});
+
+/*------Profile Update-------*/
+app.put('/api/client/update-profile', async (req, res) => {
+
+    try {
+
+        const {
+            clientId,
+            name,
+            email,
+            phone
+        } = req.body || {};
+
+        if (!clientId || !name || !email) {
+            return res.status(400).json({
+                error: 'Missing required fields'
+            });
+        }
+
+        const { rows } = await pool.query(
+            `
+            UPDATE portal_clients
+            SET
+                name = $1,
+                email = $2,
+                phone = $3,
+                updated_at = NOW()
+            WHERE id = $4
+            RETURNING *
+            `,
+            [
+                name.trim(),
+                email.trim(),
+                phone?.trim() || null,
+                clientId
+            ]
+        );
+
+        res.json({
+            ok: true,
+            client: rows[0]
+        });
+
+    } catch (err) {
+
+        console.error('Update profile error:', err);
+
+        res.status(500).json({
+            error: 'Failed to update profile'
         });
     }
 });

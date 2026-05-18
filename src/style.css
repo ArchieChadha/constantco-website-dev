@@ -2028,6 +2028,33 @@ body {
 
 }
 
+/* Simple document history page */
+.documents-page-simple {
+    margin-left: 0 !important;
+    width: 100% !important;
+}
+
+.documents-page-simple .client-main {
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 1100px;
+    margin-right: auto !important;
+    margin-left: auto !important;
+    padding: 42px 24px;
+}
+
+.documents-page-simple .client-topbar {
+    padding: 0 32px;
+}
+
+.documents-page-simple .client-page-heading {
+    margin-bottom: 28px;
+}
+
+.documents-page-simple .client-panel {
+    margin-top: 0;
+}
+
 .record-item {
 
     background: #fbfdfd;
@@ -5038,6 +5065,64 @@ section.chatbot-panel,
     border-color: #f47b20;
     background: #fff4ec;
     color: #c15a12;
+}
+
+.profile-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    z-index: 9999;
+}
+
+.profile-modal.is-hidden {
+    display: none;
+}
+
+.profile-modal-card {
+    width: min(95%, 600px);
+    background: #fff;
+    border-radius: 18px;
+    padding: 2rem;
+}
+
+.profile-modal-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.profile-modal-close {
+    border: none;
+    background: transparent;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+.profile-form-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.profile-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.profile-form-group input {
+    padding: 0.9rem 1rem;
+    border-radius: 12px;
+    border: 1px solid #d6dfe2;
+}
+
+.profile-modal-actions {
+    margin-top: 1.5rem;
 }
 
 /* =========================================================
