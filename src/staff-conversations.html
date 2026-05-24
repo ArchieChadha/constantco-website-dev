@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversations - Constant & Co</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="client-portal-page staff-portal-page">
+
+    <!-- SIDEBAR -->
+
+    <aside class="client-sidebar">
+
+        <div class="client-sidebar-logo">
+
+            <a href="index.html">
+
+                <img src="https://constantandco.com.au/wp-content/uploads/2022/09/Logo-New.png" alt="Constant & Co">
+
+            </a>
+
+            <p>Staff Portal</p>
+
+        </div>
+
+        <nav class="client-sidebar-nav">
+
+            <a href="staff-dashboard.html">
+                Dashboard
+            </a>
+
+            <a href="staff-appointments.html">
+                Appointments
+            </a>
+
+            <a href="staff-clients.html">
+                Clients
+            </a>
+
+            <a href="staff-leave.html">
+                Leave Requests
+            </a>
+
+            <a href="staff-conversations.html" class="active">
+                Conversations
+            </a>
+
+            <a href="staff-documents.html">
+                Documents
+            </a>
+
+            <a href="staff-transfers.html">
+                Transfers
+            </a>
+
+            <a href="staff-payments.html">
+                Payments
+            </a>
+
+        </nav>
+
+        <div class="client-sidebar-user">
+
+            <strong id="staffNameSidebar">
+
+                Staff
+
+            </strong>
+
+            <small id="staffEmailSidebar">
+
+                Logged in
+
+            </small>
+
+            <a href="#" id="logoutBtn" class="client-logout-link">
+
+                Logout
+
+            </a>
+
+        </div>
+
+    </aside>
+
+    <!-- CONTENT -->
+
+    <div class="client-portal-content">
+
+        <!-- TOPBAR -->
+
+        <header class="client-topbar">
+
+            <button id="sidebarToggleBtn" class="client-menu-btn" type="button">
+
+                ☰
+
+            </button>
+
+            <p>
+
+                Conversations
+
+            </p>
+
+        </header>
+
+        <!-- MAIN -->
+
+        <main class="client-main">
+
+            <div class="client-chat-shell">
+
+                <!-- LEFT CHAT LIST -->
+
+                <aside class="client-chat-people">
+
+                    <div class="chat-people-header">
+
+                        <h2>
+
+                            Chats
+
+                        </h2>
+
+                        <p>
+
+                            Client conversations
+
+                        </p>
+
+                    </div>
+
+                    <div id="staffChatPeopleList">
+
+                    </div>
+
+                </aside>
+
+                <!-- RIGHT CHAT AREA -->
+
+                <section class="client-chat-main">
+
+                    <!-- CHAT HEADER -->
+
+                    <div class="chat-header">
+
+                        <div class="chat-title-row">
+
+                            <div class="chat-avatar" id="chatAvatar">
+
+                                C
+
+                            </div>
+
+                            <div>
+
+                                <h1 id="chatClientName">
+
+                                    Client
+
+                                </h1>
+
+                                <p id="chatServiceName">
+
+                                    Service
+
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                        <!-- TABS -->
+
+                        <div class="chat-tabs">
+
+                            <button class="chat-tab active" data-staff-chat-tab="chat">
+
+                                Chat
+
+                            </button>
+
+                            <button class="chat-tab" data-staff-chat-tab="shared">
+
+                                Shared
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                    <!-- CHAT TAB -->
+
+                    <div id="staffChatTabPanel" class="chat-tab-panel">
+
+                        <div id="staffMessagesList" class="chat-message-list">
+
+                        </div>
+
+                    </div>
+
+                    <!-- SHARED TAB -->
+
+                    <div id="staffSharedTabPanel" class="chat-tab-panel is-hidden">
+
+                        <div class="shared-documents-head">
+
+                            <h2>
+
+                                Shared Documents
+
+                            </h2>
+
+                            <p>
+
+                                Files exchanged between staff and client
+
+                            </p>
+
+                        </div>
+
+                        <div id="staffSharedDocumentsList" class="shared-documents-list">
+
+                        </div>
+
+                    </div>
+
+                    <!-- MESSAGE FORM -->
+
+                    <form id="staffReplyForm" class="chat-composer">
+
+                        <button type="button" id="openStaffDocumentPanel" class="chat-plus-btn">
+
+                            📎
+
+                        </button>
+
+                        <input type="file" id="staffChatFiles" hidden multiple>
+
+                        <textarea id="replyMessage" placeholder="Write a message..."></textarea>
+
+                        <button type="submit" class="btn btn-primary chat-send-btn">
+
+                            Send
+
+                        </button>
+
+                    </form>
+
+                    <!-- UPLOAD POPUP -->
+
+                    <div id="staffUploadPanel" class="chat-upload-panel is-hidden">
+
+                        <div class="chat-upload-head">
+
+                            <h3>
+
+                                Upload Documents
+
+                            </h3>
+
+                            <button type="button" id="closeStaffUploadPanel" class="chat-icon-btn">
+
+                                ✕
+
+                            </button>
+
+                        </div>
+
+                        <p>
+
+                            Share files with this client conversation.
+
+                        </p>
+
+                        <p id="selectedStaffFilesText">
+
+                            No files selected.
+
+                        </p>
+
+                        <div class="client-action-row">
+
+                            <button type="button" id="chooseStaffFilesBtn" class="btn btn-ghost">
+
+                                Choose Files
+
+                            </button>
+
+                            <button type="button" id="uploadStaffFilesBtn" class="btn btn-primary">
+
+                                Upload Documents
+
+                            </button>
+
+                        </div>
+
+                        <p id="staffUploadStatus" class="small">
+
+                        </p>
+
+                    </div>
+
+                </section>
+
+            </div>
+
+        </main>
+
+    </div>
+
+    <script src="staff-portal.js" defer></script>
+    <script src="staff-conversations.js" defer></script>
+
+</body>
+
+</html>

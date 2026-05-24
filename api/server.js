@@ -1578,35 +1578,117 @@ app.get('/api/client/shared-documents', async (req, res) => {
     try {
         const { clientId, appointmentId } = req.query;
 
-        const result = await pool.query(
-            `
-            SELECT
-                id,
-                file_name,
-                file_path,
-                uploaded_at,
-                appointment_id
-            FROM client_documents
-            WHERE client_id = $1
-            AND appointment_id = $2
-            ORDER BY uploaded_at DESC
-            `,
-            [clientId, appointmentId]
-        );
+        if (!clientId) {
+            return res.status(400).json({
+                error: 'Client ID required'
+            });
+        }
+
+        let result;
+
+        if (appointmentId && String(appointmentId).trim() !== '') {
+            result = await pool.query(
+                `SELECT id, file_name, file_path, uploaded_at, appointment_id, service_name
+                 FROM client_documents
+                 WHERE client_id = $1
+                   AND appointment_id = $2
+                 ORDER BY uploaded_at DESC`,
+                [clientId, appointmentId]
+            );
+        } else {
+            result = await pool.query(
+                `SELECT id, file_name, file_path, uploaded_at, appointment_id, service_name
+                 FROM client_documents
+                 WHERE client_id = $1
+                 ORDER BY uploaded_at DESC`,
+                [clientId]
+            );
+        }
 
         res.json({
+            ok: true,
             documents: result.rows
         });
 
     } catch (err) {
-        console.error(err);
-
+        console.error('Shared documents error:', err);
         res.status(500).json({
             error: 'Failed to load shared documents'
         });
     }
 });
 
+app.post('/api/staff/chat-documents', upload.array('files'), async (req, res) => {
+    try {
+        const { staffId, clientId, appointmentId, serviceName } = req.body;
+        const files = req.files || [];
+
+        if (!staffId || !clientId || !files.length) {
+            return res.status(400).json({
+                error: 'Staff, client and files are required'
+            });
+        }
+
+        for (const file of files) {
+            const fileName = file.filename;
+            const filePath = `uploads/${file.filename}`;
+
+            const documentResult = await pool.query(
+                `INSERT INTO client_documents
+                    (client_id, appointment_id, service_name, file_name, file_path, uploaded_at)
+                 VALUES
+                    ($1, $2, $3, $4, $5, NOW())
+                 RETURNING *`,
+                [
+                    clientId,
+                    appointmentId || null,
+                    serviceName || null,
+                    fileName,
+                    filePath
+                ]
+            );
+
+            const savedDocument = documentResult.rows[0];
+
+            await pool.query(
+                `INSERT INTO portal_messages
+                    (
+                        client_id,
+                        staff_id,
+                        appointment_id,
+                        sender_type,
+                        subject,
+                        message,
+                        created_at
+                    )
+                 VALUES
+                    ($1, $2, $3, 'staff', $4, $5, NOW())`,
+                [
+                    clientId,
+                    staffId,
+                    appointmentId || null,
+                    serviceName || 'Shared Document',
+                    JSON.stringify({
+                        type: 'file',
+                        fileName: savedDocument.file_name,
+                        filePath: savedDocument.file_path
+                    })
+                ]
+            );
+        }
+
+        res.json({
+            ok: true,
+            message: 'Documents uploaded successfully'
+        });
+
+    } catch (err) {
+        console.error('Staff chat document upload error:', err);
+        res.status(500).json({
+            error: 'Failed to upload staff documents'
+        });
+    }
+});
 
 /*--------Client Document Request--------*/
 app.get('/api/client/document-requests', async (req, res) => {
@@ -2684,21 +2766,37 @@ app.get('/api/staff/messages', async (req, res) => {
                 error: 'Valid staff ID required'
             });
         }
+
         const { rows } = await pool.query(
             `SELECT
-m.id, m.client_id, pc.name AS client_name,
-               m.appointment_id, m.sender_type,
-               m.subject, m.message, m.created_at
-            FROM portal_messages m
-            JOIN portal_clients pc ON pc.id = m.client_id
-            WHERE m.staff_id = $1
-            ORDER BY m.created_at DESC`,
+                a.client_id,
+                pc.name AS client_name,
+                a.id AS appointment_id,
+                a.service_name,
+                pm.id,
+                pm.sender_type,
+                pm.subject,
+                pm.message,
+                pm.created_at
+             FROM appointments a
+             JOIN portal_clients pc ON pc.id = a.client_id
+             LEFT JOIN portal_messages pm
+                ON pm.appointment_id = a.id
+             WHERE a.staff_id = $1
+             ORDER BY a.appointment_date DESC, a.appointment_time DESC, pm.created_at ASC`,
             [staffId]
         );
-        res.json({ ok: true, messages: rows });
+
+        res.json({
+            ok: true,
+            messages: rows
+        });
+
     } catch (err) {
         console.error('Staff messages error:', err);
-        res.status(500).json({ error: 'Failed to load messages' });
+        res.status(500).json({
+            error: 'Failed to load messages'
+        });
     }
 });
 
@@ -2707,27 +2805,36 @@ app.post('/api/staff/messages', async (req, res) => {
         const {
             clientId,
             staffId,
+            appointmentId = null,
             subject,
             message
         } = req.body;
+
+        if (!clientId || !staffId || !message?.trim()) {
+            return res.status(400).json({
+                error: 'Client, staff and message are required'
+            });
+        }
 
         const { rows } = await pool.query(
             `INSERT INTO portal_messages
              (
                 client_id,
                 staff_id,
+                appointment_id,
                 sender_type,
                 subject,
                 message,
                 created_at
              )
-             VALUES ($1, $2, 'staff', $3, $4, NOW())
+             VALUES ($1, $2, $3, 'staff', $4, $5, NOW())
              RETURNING *`,
             [
                 clientId,
                 staffId,
+                appointmentId || null,
                 subject || null,
-                message
+                message.trim()
             ]
         );
 
@@ -2737,8 +2844,7 @@ app.post('/api/staff/messages', async (req, res) => {
         });
 
     } catch (err) {
-        console.error(err);
-
+        console.error('Staff message send error:', err);
         res.status(500).json({
             error: 'Failed to send message'
         });

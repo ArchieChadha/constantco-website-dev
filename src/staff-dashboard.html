@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Dashboard - Constant & Co</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="client-portal-page staff-portal-page">
+
+    <aside class="client-sidebar">
+
+        <div class="client-sidebar-logo">
+            <a href="index.html">
+                <img src="https://constantandco.com.au/wp-content/uploads/2022/09/Logo-New.png" alt="Constant & Co">
+            </a>
+            <p>Staff Portal</p>
+        </div>
+
+        <nav class="client-sidebar-nav">
+            <a href="staff-dashboard.html" class="active">Dashboard</a>
+            <a href="staff-appointments.html">Appointments</a>
+            <a href="staff-clients.html">Clients</a>
+            <a href="staff-leave.html">Leave Requests</a>
+            <a href="staff-conversations.html">Conversations</a>
+            <a href="staff-documents.html">Documents</a>
+            <a href="staff-transfers.html">Transfers</a>
+            <a href="staff-payments.html">Payments</a>
+        </nav>
+
+        <div class="client-sidebar-user">
+            <strong id="staffNameSidebar">Staff</strong>
+            <small id="staffEmailSidebar"></small>
+
+            <a href="#" id="logoutBtn" class="client-logout-link">
+                Logout
+            </a>
+        </div>
+
+    </aside>
+
+    <div class="client-portal-content">
+
+        <header class="client-topbar">
+
+            <button id="sidebarToggleBtn" class="client-menu-btn" type="button">
+
+                ☰
+
+            </button>
+
+            <p>Staff Dashboard</p>
+
+        </header>
+
+        <main class="client-main">
+
+            <section class="client-page-heading">
+                <h1 id="staffName">Welcome</h1>
+
+                <p id="staffEmail"></p>
+
+                <p>
+                    Manage appointments, conversations, documents,
+                    leave requests and payments.
+                </p>
+            </section>
+
+            <section class="client-stat-grid client-stat-grid-3">
+
+                <article class="client-stat-card">
+                    <p>Appointments</p>
+                    <h2 id="staffAppointments">0</h2>
+                </article>
+
+                <article class="client-stat-card">
+                    <p>Clients</p>
+                    <h2 id="staffClientsCount">0</h2>
+                </article>
+
+                <article class="client-stat-card">
+                    <p>Messages</p>
+                    <h2 id="staffMessages">0</h2>
+                </article>
+
+                <article class="client-stat-card">
+                    <p>Document Requests</p>
+                    <h2 id="staffDocumentRequests">0</h2>
+                </article>
+
+                <article class="client-stat-card">
+                    <p>Payments</p>
+                    <h2 id="staffPayments">$0</h2>
+                </article>
+
+                <article class="client-stat-card">
+                    <p>Transfer Requests</p>
+                    <h2 id="staffRequests">0</h2>
+                </article>
+
+            </section>
+
+        </main>
+
+    </div>
+
+    <script src="staff-portal.js" defer></script>
+    <script src="staff-dashboard.js" defer></script>
+</body>
+
+</html>

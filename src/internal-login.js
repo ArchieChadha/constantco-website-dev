@@ -64,7 +64,7 @@
                 if (data.user.role === 'admin') {
                     window.location.href = 'super-admin-portal.html';
                 } else {
-                    window.location.href = 'staff-portal.html';
+                    window.location.href = 'staff-dashboard.html';
                 }
             }, 500);
 
