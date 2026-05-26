@@ -2805,16 +2805,34 @@ app.post('/api/staff/messages', async (req, res) => {
         const {
             clientId,
             staffId,
-            appointmentId = null,
-            subject,
-            message
-        } = req.body;
+            appointmentId,
+            subject = '',
+            message = ''
+        } = req.body || {};
 
-        if (!clientId || !staffId || !message?.trim()) {
+        if (!clientId || !staffId || !appointmentId || !message.trim()) {
             return res.status(400).json({
-                error: 'Client, staff and message are required'
+                error: 'Client, staff, appointment and message are required'
             });
         }
+
+        const appointmentResult = await pool.query(
+            `SELECT id, service_name
+             FROM appointments
+             WHERE id = $1
+               AND client_id = $2
+               AND staff_id = $3
+             LIMIT 1`,
+            [appointmentId, clientId, staffId]
+        );
+
+        if (!appointmentResult.rows.length) {
+            return res.status(400).json({
+                error: 'No matching appointment found for this staff and client'
+            });
+        }
+
+        const appointment = appointmentResult.rows[0];
 
         const { rows } = await pool.query(
             `INSERT INTO portal_messages
@@ -2825,16 +2843,18 @@ app.post('/api/staff/messages', async (req, res) => {
                 sender_type,
                 subject,
                 message,
+                service_name,
                 created_at
              )
-             VALUES ($1, $2, $3, 'staff', $4, $5, NOW())
+             VALUES ($1, $2, $3, 'staff', $4, $5, $6, NOW())
              RETURNING *`,
             [
                 clientId,
                 staffId,
-                appointmentId || null,
-                subject || null,
-                message.trim()
+                appointment.id,
+                subject.trim() || appointment.service_name || 'Staff message',
+                message.trim(),
+                appointment.service_name || null
             ]
         );
 
@@ -2846,7 +2866,7 @@ app.post('/api/staff/messages', async (req, res) => {
     } catch (err) {
         console.error('Staff message send error:', err);
         res.status(500).json({
-            error: 'Failed to send message'
+            error: err.message || 'Failed to send message'
         });
     }
 });

@@ -32,14 +32,14 @@ function renderConversationList(messages) {
     const grouped = {};
 
     messages.forEach(msg => {
-        const key = `${msg.client_id}-${msg.appointment_id || msg.subject || 'general'}`;
+        const key = `${msg.client_id}-${msg.service_name || msg.subject || 'general'}`;
 
         if (!grouped[key]) {
             grouped[key] = {
                 clientId: msg.client_id,
                 clientName: msg.client_name || 'Client',
                 serviceName: msg.service_name || msg.subject || 'Service',
-                appointmentId: msg.appointment_id || '',
+                appointmentId: '',
                 messages: []
             };
         }
