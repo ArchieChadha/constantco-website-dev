@@ -39,7 +39,7 @@ function renderConversationList(messages) {
                 clientId: msg.client_id,
                 clientName: msg.client_name || 'Client',
                 serviceName: msg.service_name || msg.subject || 'Service',
-                appointmentId: '',
+                appointmentId: msg.appointment_id,
                 messages: []
             };
         }
@@ -156,7 +156,7 @@ function setupStaffReplyForm() {
                 body: JSON.stringify({
                     staffId,
                     clientId: selectedConversation.clientId,
-                    appointmentId: selectedConversation.appointmentId || null,
+                    appointmentId: selectedConversation.appointmentId,
                     subject: selectedConversation.serviceName,
                     message
                 })

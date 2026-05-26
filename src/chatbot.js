@@ -1,4 +1,4 @@
-const API_BASE =
+const CHATBOT_API_BASE =
     location.hostname === "localhost" || location.hostname === "127.0.0.1"
         ? "http://localhost:3001"
         : "";
@@ -176,7 +176,7 @@ async function startBooking() {
     try {
         addMessage("Please choose a service.", "bot");
 
-        const res = await fetch(`${API_BASE}/api/booking-services`);
+        const res = await fetch(`${CHATBOT_API_BASE}/api/booking-services`);
         const data = await res.json();
 
         if (!data.services || !data.services.length) {
