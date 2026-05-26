@@ -1050,23 +1050,42 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function setupChatTabs() {
+
         const tabs = document.querySelectorAll('.chat-tab');
+
         const chatPanel = document.getElementById('chatTabPanel');
+
         const sharedPanel = document.getElementById('sharedTabPanel');
 
+        const composer = document.querySelector('.chat-composer');
+
         tabs.forEach(tab => {
+
             tab.addEventListener('click', () => {
-                tabs.forEach(item => item.classList.remove('active'));
+
+                tabs.forEach(item => {
+                    item.classList.remove('active');
+                });
+
                 tab.classList.add('active');
 
                 if (tab.dataset.chatTab === 'chat') {
+
                     chatPanel?.classList.remove('is-hidden');
+
                     sharedPanel?.classList.add('is-hidden');
+
+                    composer?.classList.remove('is-hidden');
                 }
 
                 if (tab.dataset.chatTab === 'shared') {
+
                     chatPanel?.classList.add('is-hidden');
+
                     sharedPanel?.classList.remove('is-hidden');
+
+                    composer?.classList.add('is-hidden');
+
                     loadSharedDocuments();
                 }
             });

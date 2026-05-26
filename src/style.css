@@ -1545,8 +1545,7 @@ body {
 }
 
 /* =========================================================
-   CLIENT MESSAGES PAGE - FINAL OVERRIDE FIX
-   Paste this at the VERY BOTTOM of style.css
+   CLIENT MESSAGES PAGE
 ========================================================= */
 
 .client-chat-shell,
@@ -1724,9 +1723,10 @@ body {
 }
 
 #chatServiceName {
-    margin: 6px 0 0 56px !important;
+    margin: 4px 0 0 0 !important;
     color: #5b6b70 !important;
     font-size: 0.95rem !important;
+    text-align: left !important;
 }
 
 .chat-tabs {
@@ -6080,4 +6080,51 @@ section.chatbot-panel,
 
 .chat-composer.is-hidden {
     display: none !important;
+}
+
+/* Make client/staff shared document cards consistent */
+.shared-document-card {
+    background: #ffffff !important;
+    border: 1px solid rgba(35, 107, 125, 0.12) !important;
+    border-radius: 18px !important;
+    padding: 22px 24px !important;
+    margin-bottom: 18px !important;
+    box-shadow: 0 2px 10px rgba(15, 46, 54, 0.05) !important;
+}
+
+.shared-document-card strong {
+    display: block !important;
+    margin-bottom: 10px !important;
+    color: #0f2e36 !important;
+    word-break: break-word !important;
+}
+
+.shared-document-card small {
+    display: block !important;
+    margin-bottom: 14px !important;
+    color: #5b6b70 !important;
+}
+
+.shared-document-card a {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: 150px !important;
+    height: 46px !important;
+    padding: 0 22px !important;
+    border-radius: 999px !important;
+    border: 2px solid var(--teal) !important;
+    color: var(--teal) !important;
+    background: transparent !important;
+    font-weight: 600 !important;
+    text-decoration: none !important;
+}
+
+.shared-document-card a:hover {
+    background: var(--aqua) !important;
+    text-decoration: none !important;
+}
+
+.shared-documents-list {
+    padding: 18px 24px 24px !important;
 }

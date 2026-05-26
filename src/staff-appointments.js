@@ -42,6 +42,24 @@ function renderAppointmentsTable(appointments) {
         return;
     }
 
+    function getAppointmentDisplayStatus(app) {
+        if (app.booking_status === 'Cancelled') {
+            return 'Cancelled';
+        }
+
+        const appointmentDateTime = new Date(
+            `${String(app.appointment_date).slice(0, 10)}T${String(app.appointment_time).slice(0, 5)}`
+        );
+
+        const now = new Date();
+
+        if (appointmentDateTime < now) {
+            return 'Completed';
+        }
+
+        return 'Scheduled';
+    }
+
     tableBody.innerHTML = appointments.map(app => `
 
         <tr>

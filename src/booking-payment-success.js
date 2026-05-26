@@ -54,11 +54,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     setMessage('Saving your booking confirmation… You can open “View booking summary” anytime.');
 
     try {
-        const appointmentRes = await fetch(`${API_BASE}/api/appointments`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(pendingBooking)
-        });
         const appointmentData = await appointmentRes.json();
         if (!appointmentRes.ok) {
             throw new Error(appointmentData.error || 'Failed to save appointment.');
