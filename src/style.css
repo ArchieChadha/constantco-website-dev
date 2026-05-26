@@ -6127,3 +6127,11 @@ tr:hover {
 .chat-composer.is-hidden {
     display: none !important;
 }
+/* Show chatbot only on homepage */
+.chatbot-widget {
+    display: none !important;
+}
+
+body.home-page .chatbot-widget {
+    display: block !important;
+}
