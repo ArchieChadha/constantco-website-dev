@@ -8,15 +8,10 @@ import multer from 'multer';
 import path from 'path';
 import Stripe from 'stripe';
 import crypto from 'crypto';
-import OpenAI from 'openai';
 import nodemailer from 'nodemailer';
 
 dotenv.config();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
-});
-
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -336,38 +331,154 @@ app.use(express.json());
 app.use(express.static(path.join(process.cwd(), '..', 'src')));
 
 /* ---------- AI Chatbot ---------- */
-app.post('/api/ai-chatbot', async (req, res) => {
+app.post('/api/chatbot', async (req, res) => {
     try {
-        const { message = '' } = req.body || {};
-        if (!message.trim()) {
-            return res.status(400).json({ error: 'Message is required' });
+        const { type, message, service, providerId, date, email } = req.body || {};
+
+        if (type === 'services') {
+            const result = await pool.query(`
+                SELECT DISTINCT service_name
+                FROM staff_services
+                WHERE service_name IS NOT NULL
+                  AND trim(service_name) <> ''
+                ORDER BY service_name
+            `);
+
+            return res.json({
+                ok: true,
+                services: result.rows.map(row => row.service_name)
+            });
         }
-        const response = await openai.responses.create({
-            model: 'gpt-5.5-mini',
-            input: [
-                {
-                    role: 'system',
-                    content:
-                        'You are the Constant & Co website assistant. Help users with appointment booking, payments, client portal, document uploads, accounting services, FAQs, and contact information. Keep answers short, helpful, and professional. If the question is outside Constant & Co website support, politely redirect the user.'
-                },
-                {
-                    role: 'user',
-                    content: message
-                }
-            ]
-        });
-        res.json({
+
+        if (type === 'providers') {
+            if (!service) {
+                return res.status(400).json({
+                    ok: false,
+                    error: 'Service is required'
+                });
+            }
+
+            const result = await pool.query(
+                `
+                SELECT DISTINCT
+                    s.id,
+                    s.full_name,
+                    s.email,
+                    s.phone
+                FROM staff_users s
+                JOIN staff_services ss
+                    ON ss.staff_id = s.id
+                WHERE ss.service_name = $1
+                ORDER BY s.full_name
+                `,
+                [service]
+            );
+
+            return res.json({
+                ok: true,
+                providers: result.rows
+            });
+        }
+
+        if (type === 'slots') {
+            if (!service || !providerId || !date) {
+                return res.status(400).json({
+                    ok: false,
+                    error: 'Service, provider and date are required'
+                });
+            }
+
+            const slots = await getProviderSlotsForDate(providerId, date);
+
+            return res.json({
+                ok: true,
+                slots: slots.map(time => ({
+                    time,
+                    provider_id: providerId
+                }))
+            });
+        }
+
+        if (type === 'billing') {
+            if (!email) {
+                return res.status(400).json({
+                    ok: false,
+                    error: 'Email is required'
+                });
+            }
+
+            const result = await pool.query(
+                `
+                SELECT
+                    pc.name AS client_name,
+                    pc.email,
+                    ab.service_name,
+                    ab.total_charge,
+                    ab.amount_paid,
+                    ab.amount_due,
+                    ab.payment_status
+                FROM portal_clients pc
+                LEFT JOIN appointment_billing ab
+                    ON ab.client_id = pc.id
+                WHERE lower(pc.email) = lower($1)
+                ORDER BY ab.created_at DESC
+                LIMIT 1
+                `,
+                [email]
+            );
+
+            if (!result.rows.length) {
+                return res.status(404).json({
+                    ok: false,
+                    error: 'No billing record found for this email'
+                });
+            }
+
+            return res.json({
+                ok: true,
+                billing: result.rows[0]
+            });
+        }
+
+        if (message) {
+            const text = message.toLowerCase();
+
+            if (text.includes('book')) {
+                return res.json({
+                    ok: true,
+                    reply: 'Sure. Please choose Book an appointment to continue.'
+                });
+            }
+
+            if (text.includes('service')) {
+                return res.json({
+                    ok: true,
+                    reply: 'You can ask about Tax, Business Advisory, Payroll, or Auditing services.'
+                });
+            }
+
+            if (text.includes('payment') || text.includes('billing')) {
+                return res.json({
+                    ok: true,
+                    reply: 'Please choose Payment or billing help and enter your email.'
+                });
+            }
+        }
+
+        return res.json({
             ok: true,
-            reply: response.output_text || 'Sorry, I could not generate a response.'
+            reply: 'How can we help? Please choose one of the options.'
         });
+
     } catch (err) {
-        console.error('AI chatbot error:', err);
-        res.status(500).json({ error: 'AI chatbot failed' });
+        console.error('Chatbot route error:', err);
+
+        res.status(500).json({
+            ok: false,
+            error: 'Chatbot server error'
+        });
     }
 });
-
-const uploadsFolder = path.join(process.cwd(), 'uploads');
-app.use('/uploads', express.static(uploadsFolder));
 
 /* ---------- Postgres Pool ---------- */
 const pool = new pg.Pool(
@@ -3780,6 +3891,64 @@ app.use((err, req, res, next) => {
     } catch (err) {
         console.warn('Could not ensure pending_bookings / processed_stripe_events tables:', err.message);
     }
+  app.get('/api/chatbot/billing-summary', async (req, res) => {
+    try {
+        const email = String(req.query.email || '').trim().toLowerCase();
+
+        if (!email) {
+            return res.status(400).json({ error: 'Email is required' });
+        }
+
+        const clientResult = await pool.query(
+            `SELECT id, name, email
+             FROM portal_clients
+             WHERE lower(email) = $1
+             LIMIT 1`,
+            [email]
+        );
+
+        if (!clientResult.rows.length) {
+            return res.status(404).json({ error: 'Client not found' });
+        }
+
+        const client = clientResult.rows[0];
+
+        const billingResult = await pool.query(
+            `SELECT
+                ab.service_name,
+                ab.total_charge,
+                ab.amount_paid,
+                ab.amount_due,
+                ab.payment_status
+             FROM appointment_billing ab
+             WHERE ab.client_id = $1
+             ORDER BY ab.created_at DESC
+             LIMIT 1`,
+            [client.id]
+        );
+
+        if (!billingResult.rows.length) {
+            return res.status(404).json({ error: 'No billing record found' });
+        }
+
+        const billing = billingResult.rows[0];
+
+        res.json({
+            ok: true,
+            client_id: client.id,
+            client_name: client.name,
+            service_name: billing.service_name,
+            total_charge: Number(billing.total_charge || 0),
+            amount_paid: Number(billing.amount_paid || 0),
+            amount_due: Number(billing.amount_due || 0),
+            payment_status: billing.payment_status || 'Pending'
+        });
+
+    } catch (err) {
+        console.error('Chatbot billing summary error:', err);
+        res.status(500).json({ error: 'Failed to load billing summary' });
+    }
+});  
     app.listen(PORT, () => {
         console.log(`✅ API running on http://localhost:${PORT}`);
     });
