@@ -66,7 +66,6 @@ function showMainOptions() {
     removeOptions();
 
     showOptions([
-        { label: "Book an appointment", action: "bookAppointment" },
         { label: "Ask about services", action: "askServices" },
         { label: "Payment or billing help", action: "billingHelp" },
         { label: "Existing booking help", action: "existingBooking" },
@@ -519,7 +518,6 @@ function showServiceDetails(service) {
     addMessage(details[service] || "This service is available at Constant & Co.", "bot");
 
     showOptions([
-        { label: "Book this service", action: "bookThisService", value: service },
         { label: "Main Menu", action: "mainMenu" }
     ]);
 }
