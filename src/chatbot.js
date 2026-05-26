@@ -1,4 +1,4 @@
-const CHATBOT_API_BASE =
+const CHATBOT_CHATBOT_API_BASE =
     location.hostname === "localhost" || location.hostname === "127.0.0.1"
         ? "http://localhost:3001"
         : "";
@@ -176,7 +176,7 @@ async function startBooking() {
     try {
         addMessage("Please choose a service.", "bot");
 
-        const res = await fetch(`${CHATBOT_API_BASE}/api/booking-services`);
+        const res = await fetch(`${CHATBOT_CHATBOT_API_BASE}/api/booking-services`);
         const data = await res.json();
 
         if (!data.services || !data.services.length) {
@@ -204,7 +204,7 @@ async function loadProviders(service) {
         addMessage("Choose a provider.", "bot");
 
         const res = await fetch(
-            `${API_BASE}/api/booking-providers?service=${encodeURIComponent(service)}`
+            `${CHATBOT_API_BASE}/api/booking-providers?service=${encodeURIComponent(service)}`
         );
 
         const data = await res.json();
@@ -239,7 +239,7 @@ async function loadSlots() {
         addMessage("Checking available time slots...", "bot");
 
         const res = await fetch(
-            `${API_BASE}/api/booking-slots?service=${encodeURIComponent(bookingData.service)}&providerId=${bookingData.providerId}&date=${bookingData.date}`
+            `${CHATBOT_API_BASE}/api/booking-slots?service=${encodeURIComponent(bookingData.service)}&providerId=${bookingData.providerId}&date=${bookingData.date}`
         );
 
         const data = await res.json();
@@ -277,7 +277,7 @@ async function createBooking() {
     try {
         addMessage("Creating booking...", "bot");
 
-        const res = await fetch(`${API_BASE}/api/bookings`, {
+        const res = await fetch(`${CHATBOT_API_BASE}/api/bookings`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -406,7 +406,7 @@ async function handleTypedInput(text) {
 
 async function loadBilling(email) {
     try {
-        const res = await fetch(`${API_BASE}/api/chatbot`, {
+        const res = await fetch(`${CHATBOT_API_BASE}/api/chatbot`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -440,7 +440,7 @@ async function loadBilling(email) {
 
 async function loadExistingBooking(token) {
     try {
-        const res = await fetch(`${API_BASE}/api/booking/manage/${encodeURIComponent(token)}`);
+        const res = await fetch(`${CHATBOT_API_BASE}/api/booking/manage/${encodeURIComponent(token)}`);
         const data = await res.json();
 
         if (!res.ok) {
@@ -466,7 +466,7 @@ async function loadExistingBooking(token) {
 
 async function sendContactMessage() {
     try {
-        const res = await fetch(`${API_BASE}/api/contact`, {
+        const res = await fetch(`${CHATBOT_API_BASE}/api/contact`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
