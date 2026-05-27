@@ -3,17 +3,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function loadStaffAppointments() {
-
     try {
-
         const res = await fetch(
             `${API_BASE}/api/staff/appointments?staffId=${staffId}`
         );
 
         const data = await res.json();
 
-        const appointments =
-            data.appointments || [];
+        const appointments = (data.appointments || []).filter(app =>
+            app.booking_status !== 'Cancelled'
+        );
 
         renderAppointmentsTable(appointments);
 
