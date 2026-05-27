@@ -7,20 +7,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupStaffFileUpload();
 });
 
-async function loadStaffConversations() {
+async function loadStaffConversations(
+    keepAppointmentId = null,
+    keepClientId = null
+) {
     try {
         const res = await fetch(`${API_BASE}/api/staff/messages?staffId=${encodeURIComponent(staffId)}`);
         const data = await res.json();
 
         if (!res.ok) throw new Error(data.error || 'Failed to load conversations');
 
-        renderConversationList(data.messages || []);
+        renderConversationList(
+            data.messages || [],
+            keepAppointmentId,
+            keepClientId
+        );
     } catch (err) {
         console.error(err);
     }
 }
 
-function renderConversationList(messages) {
+function renderConversationList(
+    messages,
+    keepAppointmentId = null,
+    keepClientId = null
+) {
     const list = document.getElementById('staffChatPeopleList');
     if (!list) return;
 
@@ -68,11 +79,57 @@ function renderConversationList(messages) {
 
             selectedConversation = conversations[Number(button.dataset.index)];
             renderSelectedConversation();
+
+            const activeTab = document.querySelector('.chat-tab.active');
+
+            if (activeTab?.dataset.staffChatTab === 'shared') {
+                loadStaffSharedDocuments();
+            }
         });
     });
 
-    selectedConversation = conversations[0];
+    let selectedIndex = 0;
+
+    if (keepAppointmentId || keepClientId) {
+
+        const foundIndex =
+            conversations.findIndex(item => {
+
+                return (
+                    String(item.appointmentId) ===
+                    String(keepAppointmentId)
+
+                    &&
+
+                    String(item.clientId) ===
+                    String(keepClientId)
+                );
+            });
+
+        if (foundIndex !== -1) {
+            selectedIndex = foundIndex;
+        }
+    }
+
+    selectedConversation =
+        conversations[selectedIndex];
+
     renderSelectedConversation();
+
+    setTimeout(() => {
+
+        document
+            .querySelectorAll('.staff-chat-person')
+            .forEach(btn => btn.classList.remove('active'));
+
+        const activeButton =
+            document.querySelector(
+                `.staff-chat-person[data-index="${selectedIndex}"]`
+            );
+
+        activeButton?.classList.add('active');
+
+    }, 0);
 }
 
 function renderSelectedConversation() {
@@ -165,9 +222,18 @@ function setupStaffReplyForm() {
             const data = await res.json();
 
             if (!res.ok) throw new Error(data.error || 'Failed to send message');
-
             textarea.value = '';
-            await loadStaffConversations();
+
+            const currentAppointmentId =
+                selectedConversation.appointmentId;
+
+            const currentClientId =
+                selectedConversation.clientId;
+
+            await loadStaffConversations(
+                currentAppointmentId,
+                currentClientId
+            );
 
         } catch (err) {
             console.error(err);
@@ -325,7 +391,10 @@ function setupStaffFileUpload() {
             selectedText.textContent = 'No files selected.';
 
             // REFRESH CHAT + SHARED
-            await loadStaffConversations();
+            await loadStaffConversations(
+                selectedConversation.appointmentId,
+                selectedConversation.clientId
+            );
 
             await loadStaffSharedDocuments();
 

@@ -28,7 +28,9 @@ async function loadDashboardStats() {
         const messagesData = await messagesRes.json();
 
         const appointments =
-            appointmentsData.appointments || [];
+            (appointmentsData.appointments || []).filter(app =>
+                app.booking_status !== 'Cancelled'
+            );
 
         const clients =
             clientsData.clients || [];

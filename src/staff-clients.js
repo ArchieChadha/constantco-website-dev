@@ -49,7 +49,19 @@ function renderClientsTable(clients) {
 
             <td>${escapeHTML(client.phone || '')}</td>
 
-            <td>${escapeHTML(client.client_type || '')}</td>
+            <td>
+    ${escapeHTML(
+        (client.client_type || '')
+            .charAt(0)
+            .toUpperCase()
+
+        +
+
+        (client.client_type || '')
+            .slice(1)
+            .toLowerCase()
+    )}
+</td>
 
             <td>${escapeHTML(client.service_name || '')}</td>
 

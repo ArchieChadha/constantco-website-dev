@@ -3045,20 +3045,46 @@ app.get('/api/staff/clients', async (req, res) => {
                 error: 'Valid staff ID required'
             });
         }
-
         const { rows } = await pool.query(
-            `SELECT DISTINCT
-                pc.id AS client_id,
-                pc.name AS client_name
+            `SELECT
+        pc.id AS client_id,
+        COALESCE(pc.name, MAX(a.full_name)) AS client_name,
+        COALESCE(pc.email, MAX(a.email)) AS email,
+        COALESCE(pc.phone, MAX(a.phone)) AS phone,
 
-             FROM appointments a
+        STRING_AGG(
+            DISTINCT a.service_name,
+            ' / '
+        ) AS service_name,
 
-             JOIN portal_clients pc
-                ON a.client_id = pc.id
+        CASE
+            WHEN pc.client_type IS NOT NULL
+                 AND trim(pc.client_type) <> ''
+            THEN pc.client_type
 
-             WHERE a.staff_id = $1
+            WHEN MAX(a.company) IS NOT NULL
+                 AND trim(MAX(a.company)) <> ''
+            THEN 'Business'
 
-             ORDER BY pc.name ASC`,
+            ELSE 'Individual'
+        END AS client_type
+
+     FROM appointments a
+
+     LEFT JOIN portal_clients pc
+        ON a.client_id = pc.id
+
+     WHERE a.staff_id = $1
+       AND a.booking_status <> 'Cancelled'
+
+     GROUP BY
+        pc.id,
+        pc.name,
+        pc.email,
+        pc.phone,
+        pc.client_type
+
+     ORDER BY client_name ASC`,
             [staffId]
         );
 
@@ -3911,30 +3937,30 @@ app.use((err, req, res, next) => {
     } catch (err) {
         console.warn('Could not ensure pending_bookings / processed_stripe_events tables:', err.message);
     }
-  app.get('/api/chatbot/billing-summary', async (req, res) => {
-    try {
-        const email = String(req.query.email || '').trim().toLowerCase();
+    app.get('/api/chatbot/billing-summary', async (req, res) => {
+        try {
+            const email = String(req.query.email || '').trim().toLowerCase();
 
-        if (!email) {
-            return res.status(400).json({ error: 'Email is required' });
-        }
+            if (!email) {
+                return res.status(400).json({ error: 'Email is required' });
+            }
 
-        const clientResult = await pool.query(
-            `SELECT id, name, email
+            const clientResult = await pool.query(
+                `SELECT id, name, email
              FROM portal_clients
              WHERE lower(email) = $1
              LIMIT 1`,
-            [email]
-        );
+                [email]
+            );
 
-        if (!clientResult.rows.length) {
-            return res.status(404).json({ error: 'Client not found' });
-        }
+            if (!clientResult.rows.length) {
+                return res.status(404).json({ error: 'Client not found' });
+            }
 
-        const client = clientResult.rows[0];
+            const client = clientResult.rows[0];
 
-        const billingResult = await pool.query(
-            `SELECT
+            const billingResult = await pool.query(
+                `SELECT
                 ab.service_name,
                 ab.total_charge,
                 ab.amount_paid,
@@ -3944,31 +3970,31 @@ app.use((err, req, res, next) => {
              WHERE ab.client_id = $1
              ORDER BY ab.created_at DESC
              LIMIT 1`,
-            [client.id]
-        );
+                [client.id]
+            );
 
-        if (!billingResult.rows.length) {
-            return res.status(404).json({ error: 'No billing record found' });
+            if (!billingResult.rows.length) {
+                return res.status(404).json({ error: 'No billing record found' });
+            }
+
+            const billing = billingResult.rows[0];
+
+            res.json({
+                ok: true,
+                client_id: client.id,
+                client_name: client.name,
+                service_name: billing.service_name,
+                total_charge: Number(billing.total_charge || 0),
+                amount_paid: Number(billing.amount_paid || 0),
+                amount_due: Number(billing.amount_due || 0),
+                payment_status: billing.payment_status || 'Pending'
+            });
+
+        } catch (err) {
+            console.error('Chatbot billing summary error:', err);
+            res.status(500).json({ error: 'Failed to load billing summary' });
         }
-
-        const billing = billingResult.rows[0];
-
-        res.json({
-            ok: true,
-            client_id: client.id,
-            client_name: client.name,
-            service_name: billing.service_name,
-            total_charge: Number(billing.total_charge || 0),
-            amount_paid: Number(billing.amount_paid || 0),
-            amount_due: Number(billing.amount_due || 0),
-            payment_status: billing.payment_status || 'Pending'
-        });
-
-    } catch (err) {
-        console.error('Chatbot billing summary error:', err);
-        res.status(500).json({ error: 'Failed to load billing summary' });
-    }
-});  
+    });
     app.listen(PORT, () => {
         console.log(`✅ API running on http://localhost:${PORT}`);
     });
