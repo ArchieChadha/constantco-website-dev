@@ -3054,7 +3054,7 @@ app.get('/api/staff/clients', async (req, res) => {
 
         STRING_AGG(
             DISTINCT a.service_name,
-            ' / '
+            ' & '
         ) AS service_name,
 
         CASE
