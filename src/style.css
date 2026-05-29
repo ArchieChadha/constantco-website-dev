@@ -323,11 +323,28 @@ section {
     overflow: hidden;
     box-shadow: var(--shadow-sm);
     position: relative;
+
+    transition:
+        transform 0.25s ease,
+        box-shadow 0.25s ease;
+}
+
+.member:hover {
+    transform: translateY(-6px);
+
+    box-shadow:
+        0 15px 30px rgba(0,0,0,0.15);
 }
 
 .member img {
     aspect-ratio: 4/3;
     object-fit: cover;
+
+    transition: transform 0.3s ease;
+}
+
+.member:hover img {
+    transform: scale(1.05);
 }
 
 .cap {
