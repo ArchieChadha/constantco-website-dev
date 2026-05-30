@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff - Constant & Co</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="client-portal-page staff-portal-page">
+    <aside class="client-sidebar">
+        <div class="client-sidebar-logo">
+            <a href="index.html">
+                <img src="https://constantandco.com.au/wp-content/uploads/2022/09/Logo-New.png" alt="Constant & Co">
+            </a>
+            <p>Admin Portal</p>
+        </div>
+        <nav class="client-sidebar-nav">
+            <a href="super-admin-portal.html">Dashboard</a>
+            <a href="super-admin-appointments.html">Appointments</a>
+            <a href="super-admin-clients.html">Clients</a>
+            <a href="super-admin-staff.html" class="active">Staff</a>
+            <a href="super-admin-payments.html">Payments</a>
+            <a href="super-admin-transfers.html">Transfers</a>
+            <a href="super-admin-reports.html">Reports</a>
+            <a href="super-admin-settings.html">Settings</a>
+        </nav>
+        <div class="client-sidebar-user">
+            <strong id="adminNameSidebar">Admin</strong>
+            <small id="adminEmailSidebar">Logged in</small>
+            <a href="#" id="logoutBtn" class="client-logout-link">Logout</a>
+        </div>
+    </aside>
+
+    <div class="client-portal-content">
+        <header class="client-topbar">
+            <button id="sidebarToggleBtn" class="client-menu-btn" type="button">☰</button>
+            <p>Staff</p>
+        </header>
+        <main class="client-main">
+            </section>
+            <section class="client-page-heading">
+                <h1>Staff Management</h1>
+            </section>
+            <section class="client-panel">
+
+                <div class="client-panel-head">
+
+                    <div>
+                        <h2>Onboard Staff</h2>
+                        <p>Create new staff accounts and assign services.</p>
+                    </div>
+
+                </div>
+
+                <form id="adminStaffForm" class="portal-form">
+
+                    <div class="auth-row">
+
+                        <div>
+                            <label>Full Name</label>
+                            <input type="text" id="staffFullName" class="input-lg" required>
+                        </div>
+
+                        <div>
+                            <label>Email</label>
+                            <input type="email" id="staffEmail" class="input-lg" required>
+                        </div>
+
+                    </div>
+
+                    <div class="auth-row">
+
+                        <div>
+                            <label>Phone</label>
+                            <input type="text" id="staffPhone" class="input-lg">
+                        </div>
+
+                        <div>
+                            <label>Password</label>
+                            <input type="password" id="staffPassword" class="input-lg" required>
+                        </div>
+
+                    </div>
+
+                    <div class="auth-row">
+
+                        <div>
+                            <label>Services</label>
+
+                            <select id="staffServices" class="input-lg" multiple>
+                                <option value="Tax Return">Tax Return</option>
+                                <option value="Business Advisory">Business Advisory</option>
+                                <option value="Payroll Support">Payroll Support</option>
+                                <option value="Auditing">Auditing</option>
+                                <option value="General Consultation">General Consultation</option>
+                            </select>
+
+                        </div>
+
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        Onboard Staff
+                    </button>
+
+                </form>
+
+            </section>
+            <section class="client-panel">
+                <table class="client-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Services</th>
+                            <th>Verified</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminStaffTable">
+                        <tr>
+                            <td colspan="5">Loading...</td>
+                            
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+        </main>
+    </div>
+
+    <script src="super-admin-common.js" defer></script>
+    <script src="super-admin-staff.js" defer></script>
+</body>
+
+</html>

@@ -4,12 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Constant & Co</title>
+    <title>Reports - Constant & Co</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body class="client-portal-page staff-portal-page">
-
     <aside class="client-sidebar">
         <div class="client-sidebar-logo">
             <a href="index.html">
@@ -17,18 +16,16 @@
             </a>
             <p>Admin Portal</p>
         </div>
-
         <nav class="client-sidebar-nav">
-            <a href="super-admin-portal.html" class="active">Dashboard</a>
+            <a href="super-admin-portal.html">Dashboard</a>
             <a href="super-admin-appointments.html">Appointments</a>
             <a href="super-admin-clients.html">Clients</a>
             <a href="super-admin-staff.html">Staff</a>
             <a href="super-admin-payments.html">Payments</a>
             <a href="super-admin-transfers.html">Transfers</a>
-            <a href="super-admin-reports.html">Reports</a>
+            <a href="super-admin-reports.html" class="active">Reports</a>
             <a href="super-admin-settings.html">Settings</a>
         </nav>
-
         <div class="client-sidebar-user">
             <strong id="adminNameSidebar">Admin</strong>
             <small id="adminEmailSidebar">Logged in</small>
@@ -37,52 +34,53 @@
     </aside>
 
     <div class="client-portal-content">
-
         <header class="client-topbar">
             <button id="sidebarToggleBtn" class="client-menu-btn" type="button">☰</button>
-            <p>Admin Dashboard</p>
+            <p>Reports</p>
         </header>
-
         <main class="client-main">
-
             <section class="client-page-heading">
-                <h1>Admin Dashboard</h1>
-                <p>Manage appointments, clients, staff, payments, transfers, leave requests, documents, newsletter
-                    subscribers and system reports.</p>
+                <h1>Reports</h1>
             </section>
-
             <section class="client-stat-grid">
                 <div class="client-stat-card">
-                    <a href="super-admin-clients.html">Total Clients</a>
-                    <h2 id="adminTotalClients">0</h2>
+                    <p>Total Revenue</p>
+                    <h2 id="reportRevenue">$0.00</h2>
                 </div>
-
                 <div class="client-stat-card">
-                    <a href="super-admin-staff.html">Total Staff</a>
-                    <h2 id="adminTotalStaff">0</h2>
+                    <p>Total Appointments</p>
+                    <h2 id="reportAppointments">0</h2>
                 </div>
-
                 <div class="client-stat-card">
-                    <a href="super-admin-appointments.html">Upcoming Appointments</a>
-                    <h2 id="adminUpcomingAppointments">0</h2>
+                    <p>Total Clients</p>
+                    <h2 id="reportClients">0</h2>
                 </div>
-
                 <div class="client-stat-card">
-                    <a href="super-admin-payments.html">Total Revenue</a>
-                    <h2 id="adminTotalRevenue">$0.00</h2>
+                    <p>Total Staff</p>
+                    <h2 id="reportStaff">0</h2>
                 </div>
-
-                <div class="client-stat-card">
-                    <a href="super-admin-transfers.html">Pending Transfers</a>
-                    <h2 id="adminPendingTransfers">0</h2>
-                </div>
+            </section>
+            <section class="client-panel">
+                <h2>Service Breakdown</h2>
+                <table class="client-table">
+                    <thead>
+                        <tr>
+                            <th>Service</th>
+                            <th>Bookings</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportServicesTable">
+                        <tr>
+                            <td colspan="2">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
             </section>
         </main>
     </div>
 
     <script src="super-admin-common.js" defer></script>
-    <script src="super-admin-dashboard.js" defer></script>
-
+    <script src="super-admin-reports.js" defer></script>
 </body>
 
 </html>
