@@ -2999,6 +2999,7 @@ tr:hover {
 .portal-header h2 {
     color: #0f2e36;
 }
+
 /* =========================
    CONSTANT & CO CHATBOT
 ========================= */
@@ -3160,6 +3161,7 @@ tr:hover {
     cursor: pointer;
     font-weight: 700;
 }
+
 @media (max-width: 600px) {
     .chatbot-widget {
         left: 14px;
@@ -3197,6 +3199,7 @@ tr:hover {
     align-items: center;
     justify-content: center;
 }
+
 /* ===== Service pages (modern) ===== */
 .svc-page {
     --svc-accent: var(--teal);
@@ -6182,4 +6185,54 @@ tr:hover {
 
 body.home-page .chatbot-widget {
     display: block !important;
+}
+
+/* ==============================
+   ADMIN STAFF SERVICES SELECT
+================================= */
+
+#adminStaffForm select[multiple] {
+
+    width: 100%;
+
+    min-height: 180px;
+
+    padding: 14px 16px;
+
+    border: 1px solid rgba(35, 107, 125, 0.18);
+
+    border-radius: 18px;
+
+    background: #ffffff;
+
+    color: #0f2e36;
+
+    font-size: 1rem;
+
+    line-height: 1.6;
+
+    box-sizing: border-box;
+
+    overflow-y: auto;
+
+}
+
+#adminStaffForm select[multiple] option {
+
+    padding: 10px 12px;
+
+    border-radius: 10px;
+
+    margin-bottom: 4px;
+
+}
+
+#adminStaffForm select[multiple]:focus {
+
+    outline: none;
+
+    border-color: var(--teal);
+
+    box-shadow: 0 0 0 3px rgba(35, 107, 125, 0.10);
+
 }

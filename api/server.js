@@ -2788,10 +2788,10 @@ app.post('/api/internal-login', async (req, res) => {
         // 2. If not admin, check staff_users table
         if (!user) {
             const staffResult = await pool.query(
-                `SELECT id, full_name, email, password, verified
-                 FROM staff_users
-                 WHERE email = $1
-                 LIMIT 1`,
+                `SELECT id, full_name, email, password, verified, active
+     FROM staff_users
+     WHERE email = $1
+     LIMIT 1`,
                 [email.trim()]
             );
 
@@ -2807,6 +2807,12 @@ app.post('/api/internal-login', async (req, res) => {
 
         if (!user.verified) {
             return res.status(403).json({ error: 'Account is not verified' });
+        }
+
+        if (userType === 'staff' && user.active === false) {
+            return res.status(403).json({
+                error: 'This staff account has been disabled'
+            });
         }
 
         const stored = user.password || '';
@@ -3444,18 +3450,104 @@ cp.id, pc.name AS client_name,
     }
 });
 
+/*------Admin Dashboard-------*/
+app.get('/api/admin/dashboard', async (req, res) => {
+    try {
+        const [
+            clientsResult,
+            staffResult,
+            appointmentsResult,
+            revenueResult,
+            transfersResult,
+            leaveResult,
+            recentAppointmentsResult
+        ] = await Promise.all([
+            pool.query(`SELECT COUNT(*)::int AS total FROM portal_clients`),
+
+            pool.query(`SELECT COUNT(*)::int AS total FROM staff_users`),
+
+            pool.query(
+                `SELECT COUNT(*)::int AS total
+                 FROM appointments
+                 WHERE booking_status <> 'Cancelled'
+                   AND appointment_date >= CURRENT_DATE`
+            ),
+
+            pool.query(
+                `SELECT COALESCE(SUM(amount), 0)::int AS total
+                 FROM client_payments
+                 WHERE status = 'succeeded'`
+            ),
+
+            pool.query(
+                `SELECT COUNT(*)::int AS total
+                 FROM client_transfer_requests
+                 WHERE status = 'Pending'`
+            ),
+
+            pool.query(
+                `SELECT COUNT(*)::int AS total
+                 FROM availability_change_requests
+                 WHERE status = 'Pending'`
+            ),
+
+            pool.query(
+                `SELECT
+                    a.id,
+                    a.full_name AS client_name,
+                    s.full_name AS staff_name,
+                    a.service_name,
+                    a.appointment_date,
+                    a.booking_status
+                 FROM appointments a
+                 LEFT JOIN staff_users s
+                    ON s.id = a.staff_id
+                 ORDER BY a.created_at DESC
+                 LIMIT 8`
+            )
+        ]);
+
+        res.json({
+            ok: true,
+            totalClients: clientsResult.rows[0].total,
+            totalStaff: staffResult.rows[0].total,
+            upcomingAppointments: appointmentsResult.rows[0].total,
+            totalRevenue: revenueResult.rows[0].total,
+            pendingTransfers: transfersResult.rows[0].total,
+            pendingLeave: leaveResult.rows[0].total,
+            recentAppointments: recentAppointmentsResult.rows
+        });
+
+    } catch (err) {
+        console.error('Admin dashboard error:', err);
+        res.status(500).json({
+            error: 'Failed to load admin dashboard'
+        });
+    }
+});
+
 /*------Admin Appointments-------*/
 
 app.get('/api/admin/appointments', async (_req, res) => {
     try {
         const { rows } = await pool.query(
             `SELECT 
-                a.id, a.client_id, a.staff_id,
-            a.full_name, a.email, a.phone, a.company,
-            a.service_name, a.meeting_type,
-            a.appointment_date, a.appointment_time,
-            a.notes, a.booking_fee, a.booking_status, a.created_at,
-            s.full_name AS staff_name
+    a.id,
+    a.client_id,
+    a.staff_id,
+    a.full_name AS client_name,
+    a.email,
+    a.phone,
+    a.company,
+    a.service_name,
+    a.meeting_type,
+    a.appointment_date,
+    a.appointment_time,
+    a.notes,
+    a.booking_fee,
+    a.booking_status,
+    a.created_at,
+    s.full_name AS staff_name
              FROM appointments a
              LEFT JOIN staff_users s ON a.staff_id = s.id
              ORDER BY a.created_at DESC`
@@ -3468,6 +3560,172 @@ app.get('/api/admin/appointments', async (_req, res) => {
     } catch (err) {
         console.error('Admin appointments fetch error:', err);
         res.status(500).json({ error: 'Failed to fetch appointments' });
+    }
+});
+
+/*------Admin Clients-------*/
+
+app.get('/api/admin/clients', async (_req, res) => {
+    try {
+        const { rows } = await pool.query(
+            `SELECT
+                pc.id AS client_id,
+                pc.name AS client_name,
+                pc.email,
+                pc.phone,
+                pc.client_type,
+                STRING_AGG(DISTINCT a.service_name, ' / ') AS service_name
+             FROM portal_clients pc
+             LEFT JOIN appointments a
+                ON a.client_id = pc.id
+               AND a.booking_status <> 'Cancelled'
+             GROUP BY
+                pc.id,
+                pc.name,
+                pc.email,
+                pc.phone,
+                pc.client_type
+             ORDER BY pc.name ASC`
+        );
+
+        res.json({
+            ok: true,
+            clients: rows
+        });
+
+    } catch (err) {
+        console.error('Admin clients fetch error:', err);
+        res.status(500).json({
+            error: 'Failed to fetch clients'
+        });
+    }
+});
+
+/*------Admin Staff List-------*/
+app.get('/api/admin/staff', async (_req, res) => {
+    try {
+        const { rows } = await pool.query(
+            `SELECT
+                s.id,
+                s.full_name,
+                s.email,
+                s.phone,
+                s.verified,
+                s.active,
+                STRING_AGG(DISTINCT ss.service_name, ' / ') AS services
+             FROM staff_users s
+             LEFT JOIN staff_services ss
+                ON ss.staff_id = s.id
+             GROUP BY s.id
+             ORDER BY s.full_name ASC`
+        );
+
+        res.json({
+            ok: true,
+            staff: rows
+        });
+
+    } catch (err) {
+        console.error('Admin staff fetch error:', err);
+        res.status(500).json({
+            error: 'Failed to fetch staff'
+        });
+    }
+});
+
+/*------Onboard Staff-------*/
+app.post('/api/admin/staff', async (req, res) => {
+    try {
+        const {
+            fullName = '',
+            email = '',
+            phone = '',
+            password = '',
+            services = []
+        } = req.body || {};
+
+        if (!fullName.trim() || !email.trim() || !password.trim()) {
+            return res.status(400).json({
+                error: 'Name, email and password are required'
+            });
+        }
+
+        const hash = await bcrypt.hash(password, 10);
+
+        const staffResult = await pool.query(
+            `INSERT INTO staff_users
+             (full_name, email, phone, password, verified, active, created_at)
+             VALUES ($1, $2, $3, $4, true, true, NOW())
+             RETURNING id, full_name, email, phone, verified, active`,
+            [
+                fullName.trim(),
+                email.trim().toLowerCase(),
+                phone.trim() || null,
+                hash
+            ]
+        );
+
+        const staff = staffResult.rows[0];
+
+        for (const service of services) {
+            if (!service.trim()) continue;
+
+            await pool.query(
+                `INSERT INTO staff_services
+                 (staff_id, service_name)
+                 VALUES ($1, $2)`,
+                [staff.id, service.trim()]
+            );
+        }
+
+        res.status(201).json({
+            ok: true,
+            staff
+        });
+
+    } catch (err) {
+        console.error('Admin staff onboard error:', err);
+        res.status(500).json({
+            error: 'Failed to onboard staff'
+        });
+    }
+});
+
+/*------Offboard Staff-------*/
+app.put('/api/admin/staff/:staffId/offboard', async (req, res) => {
+    try {
+        const staffId = Number(req.params.staffId);
+
+        if (!staffId) {
+            return res.status(400).json({
+                error: 'Valid staff ID required'
+            });
+        }
+
+        const { rows } = await pool.query(
+            `UPDATE staff_users
+             SET active = false
+             WHERE id = $1
+             RETURNING id, full_name, email, active`,
+            [staffId]
+        );
+
+        if (!rows.length) {
+            return res.status(404).json({
+                error: 'Staff member not found'
+            });
+        }
+
+        res.json({
+            ok: true,
+            staff: rows[0]
+        });
+
+    } catch (err) {
+        console.error('Admin staff offboard error:', err);
+        res.status(500).json({
+            error: 'Failed to offboard staff'
+        });
     }
 });
 
