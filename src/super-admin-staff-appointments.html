@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reports - Constant & Co</title>
+    <title>Staff Appointments - Constant & Co</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -21,10 +21,10 @@
             <a href="super-admin-portal.html">Dashboard</a>
             <a href="super-admin-appointments.html">Appointments</a>
             <a href="super-admin-clients.html">Clients</a>
-            <a href="super-admin-staff.html">Staff</a>
+            <a href="super-admin-staff.html" class="active">Staff</a>
             <a href="super-admin-payments.html">Payments</a>
             <a href="super-admin-transfers.html">Transfers</a>
-            <a href="super-admin-reports.html" class="active">Reports</a>
+            <a href="super-admin-reports.html">Reports</a>
         </nav>
 
         <div class="client-sidebar-user">
@@ -37,70 +37,53 @@
     <div class="client-portal-content">
         <header class="client-topbar">
             <button id="sidebarToggleBtn" class="client-menu-btn" type="button">☰</button>
-            <p>Reports</p>
+            <p>Staff Appointments</p>
         </header>
 
         <main class="client-main">
-            <section class="client-page-heading reports-heading">
-                <div>
-                    <h1>Business Reports</h1>
-                    <p>Analyse revenue, appointment status, and service demand.</p>
-                </div>
-
-                <span id="reportGeneratedAt" class="report-date-badge">Loading...</span>
-            </section>
-
-            <section class="client-panel report-main-panel">
-                <div class="client-panel-head">
-                    <div>
-                        <h2>Business Analysis</h2>
-                        <p>Use the dropdown to switch between report views.</p>
-                    </div>
-
-                    <select id="reportChartType" class="input-sm">
-                        <option value="revenue">Revenue Trend</option>
-                        <option value="services">Service Demand</option>
-                        <option value="status">Appointment Status</option>
-                    </select>
-                </div>
-
-                <div id="businessAnalysisChart" class="business-analysis-chart">
-                    Loading chart...
-                </div>
-
-                <p id="businessChartNote" class="report-chart-note">
-                    Loading report...
-                </p>
+            <section class="client-page-heading">
+                <h1>Staff Appointments</h1>
+                <p id="staffAppointmentHeading">Loading staff appointments...</p>
             </section>
 
             <section class="client-panel">
                 <div class="client-panel-head">
                     <div>
-                        <h2>Service Breakdown</h2>
-                        <p>Appointment count by service type.</p>
+                        <h2>Appointments</h2>
+                        <p>View appointments assigned to this staff member.</p>
                     </div>
                 </div>
 
                 <table class="client-table">
                     <thead>
                         <tr>
+                            <th>Client</th>
+                            <th>Email</th>
                             <th>Service</th>
-                            <th>Bookings</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Meeting</th>
+                            <th>Status</th>
+                            <th>Payment</th>
                         </tr>
                     </thead>
 
-                    <tbody id="reportServicesTable">
+                    <tbody id="staffAppointmentsTable">
                         <tr>
-                            <td colspan="2">Loading...</td>
+                            <td colspan="8">Loading...</td>
                         </tr>
                     </tbody>
                 </table>
             </section>
+
+            <button type="button" class="btn btn-primary" onclick="window.location.href='super-admin-staff.html'">
+                Back to Staff
+            </button>
         </main>
     </div>
 
     <script src="super-admin-common.js" defer></script>
-    <script src="super-admin-reports.js" defer></script>
+    <script src="super-admin-staff-appointments.js" defer></script>
 </body>
 
 </html>

@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Payments - Constant & Co</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body class="client-portal-page staff-portal-page">
     <aside class="client-sidebar">
         <div class="client-sidebar-logo">
@@ -22,7 +24,6 @@
             <a href="super-admin-payments.html" class="active">Payments</a>
             <a href="super-admin-transfers.html">Transfers</a>
             <a href="super-admin-reports.html">Reports</a>
-            <a href="super-admin-settings.html">Settings</a>
         </nav>
         <div class="client-sidebar-user">
             <strong id="adminNameSidebar">Admin</strong>
@@ -40,11 +41,41 @@
             <section class="client-page-heading">
                 <h1>Payments</h1>
             </section>
-            <section class="client-panel"><table class="client-table"><thead><tr><th>Client</th><th>Service</th><th>Amount</th><th>Currency</th><th>Status</th><th>Date</th></tr></thead><tbody id="adminPaymentsTable"><tr><td colspan="6">Loading...</td></tr></tbody></table></section>
+            <section class="client-panel">
+                <div class="client-panel-head">
+                    <div>
+                        <h2>Payments</h2>
+                        <p>View all client payments and appointment billing records.</p>
+                    </div>
+                </div>
+
+                <table class="client-table">
+                    <thead>
+                        <tr>
+                            <th>Client</th>
+                            <th>Email</th>
+                            <th>Service</th>
+                            <th>Staff</th>
+                            <th>Paid Amount</th>
+                            <th>Total Charge</th>
+                            <th>Amount Due</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="adminPaymentsTable">
+                        <tr>
+                            <td colspan="9">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
         </main>
     </div>
 
     <script src="super-admin-common.js" defer></script>
     <script src="super-admin-payments.js" defer></script>
 </body>
+
 </html>

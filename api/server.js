@@ -646,6 +646,65 @@ async function sendAppointmentConfirmationEmail(appointment) {
     console.log('Confirmation email sent to:', appointment.email);
 }
 
+/*-----Email Client After Staff Transfer-----*/
+async function sendStaffTransferEmail(appointment, newStaff) {
+    if (!appointment.email || !appointment.management_token) {
+        return;
+    }
+
+    const base = publicSiteBaseUrl();
+
+    const manageUrl = `${base}/booking-manage.html?token=${encodeURIComponent(appointment.management_token)}`;
+
+    const buttonStyle =
+        'display:inline-block;padding:12px 20px;background:#fff;color:#1a365d;text-decoration:none;border-radius:6px;font-weight:600;border:2px solid #1a365d;';
+
+    await mailTransporter.sendMail({
+        from: `"Constant & Co" <${process.env.EMAIL_USER}>`,
+        to: appointment.email,
+        subject: 'Your Appointment Agent Has Been Changed - Constant & Co',
+        html: `
+            <h2>Your appointment agent has been changed</h2>
+
+            <p>Hello ${appointment.full_name || 'there'},</p>
+
+            <p>
+                Your appointment with Constant & Co has been transferred to another available agent.
+            </p>
+
+            <p><strong>New agent:</strong> ${newStaff.full_name}</p>
+            <p><strong>Service:</strong> ${appointment.service_name}</p>
+            <p><strong>Date:</strong> ${appointment.appointment_date}</p>
+            <p><strong>Time:</strong> ${String(appointment.appointment_time).slice(0, 5)}</p>
+
+            <p>
+                If you would like to reschedule this appointment with your assigned agent,
+                please click the button below.
+            </p>
+
+            <p style="margin:24px 0 12px;">
+                <a href="${manageUrl}" style="${buttonStyle}">
+                    Reschedule or cancel
+                </a>
+            </p>
+
+            <p style="font-size:14px;color:#444;line-height:1.5;">
+                You can reschedule online while you are at least 24 hours before your appointment.
+                Please choose a later date only.
+            </p>
+
+            <p style="font-size:13px;color:#666;">
+                If the button does not work, copy and paste this link into your browser:<br>
+                <span style="word-break:break-all;">${manageUrl}</span>
+            </p>
+
+            <p style="margin-top:24px;">Thank you,<br>Constant & Co Team</p>
+        `
+    });
+
+    console.log('Transfer email sent to:', appointment.email);
+}
+
 app.get('/', (req, res) => {
     res.sendFile(path.join(process.cwd(), '..', 'src', 'index.html'));
 });
@@ -724,6 +783,35 @@ function getZonedWallClock(timeZone, instant = new Date()) {
         isoDate: `${year}-${month}-${day}`,
         secondsSinceMidnight: (hour * 3600) + (minute * 60) + second
     };
+}
+
+/*-----Automatically Mark Past Appointments As Completed-----*/
+async function markPastAppointmentsCompleted() {
+    const now = getZonedWallClock(APPOINTMENT_TIMEZONE);
+
+    const currentTime = slotLabelFromMinutes(
+        Math.floor(now.secondsSinceMidnight / 60)
+    );
+
+    await pool.query(
+        `
+        UPDATE appointments
+        SET booking_status = 'Completed',
+            updated_at = NOW()
+        WHERE booking_status IN ('Scheduled', 'Confirmed')
+          AND (
+                appointment_date < $1::date
+                OR (
+                    appointment_date = $1::date
+                    AND appointment_time < $2::time
+                )
+          )
+        `,
+        [
+            now.isoDate,
+            currentTime
+        ]
+    );
 }
 
 /** Add whole calendar days to a civil YYYY-MM-DD (matches DB date columns). */
@@ -1386,6 +1474,7 @@ app.get('/api/records', async (req, res) => {
 /*-------CLient Service History-------*/
 app.get('/api/client/service-history', async (req, res) => {
     try {
+        await markPastAppointmentsCompleted();
         const { clientId } = req.query;
 
         if (!clientId) {
@@ -3453,6 +3542,7 @@ cp.id, pc.name AS client_name,
 /*------Admin Dashboard-------*/
 app.get('/api/admin/dashboard', async (req, res) => {
     try {
+        await markPastAppointmentsCompleted();
         const [
             clientsResult,
             staffResult,
@@ -3526,10 +3616,113 @@ app.get('/api/admin/dashboard', async (req, res) => {
     }
 });
 
+/*------Admin Reports------*/
+app.get('/api/admin/reports', async (_req, res) => {
+    try {
+        await markPastAppointmentsCompleted();
+
+        const [
+            revenueResult,
+            appointmentsResult,
+            clientsResult,
+            staffResult,
+            serviceBreakdownResult,
+            statusBreakdownResult,
+            monthlyRevenueResult
+        ] = await Promise.all([
+            pool.query(
+                `
+                SELECT COALESCE(SUM(amount), 0)::int AS total
+                FROM client_payments
+                WHERE LOWER(status) = 'succeeded'
+                `
+            ),
+
+            pool.query(
+                `
+                SELECT COUNT(*)::int AS total
+                FROM appointments
+                WHERE booking_status <> 'Cancelled'
+                `
+            ),
+
+            pool.query(
+                `
+                SELECT COUNT(*)::int AS total
+                FROM portal_clients
+                `
+            ),
+
+            pool.query(
+                `
+                SELECT COUNT(*)::int AS total
+                FROM staff_users
+                WHERE COALESCE(active, true) = true
+                `
+            ),
+
+            pool.query(
+                `
+                SELECT
+                    COALESCE(service_name, 'Not specified') AS service_name,
+                    COUNT(*)::int AS total
+                FROM appointments
+                WHERE booking_status <> 'Cancelled'
+                GROUP BY COALESCE(service_name, 'Not specified')
+                ORDER BY total DESC, service_name ASC
+                `
+            ),
+
+            pool.query(
+                `
+                SELECT
+                    COALESCE(booking_status, 'Unknown') AS booking_status,
+                    COUNT(*)::int AS total
+                FROM appointments
+                GROUP BY COALESCE(booking_status, 'Unknown')
+                ORDER BY total DESC
+                `
+            ),
+
+            pool.query(
+                `
+                SELECT
+                    TO_CHAR(created_at, 'YYYY-MM') AS month_label,
+                    COALESCE(SUM(amount), 0)::int AS total
+                FROM client_payments
+                WHERE LOWER(status) = 'succeeded'
+                GROUP BY TO_CHAR(created_at, 'YYYY-MM')
+                ORDER BY month_label ASC
+                `
+            )
+        ]);
+
+        res.json({
+            ok: true,
+            totalRevenue: revenueResult.rows[0].total,
+            totalAppointments: appointmentsResult.rows[0].total,
+            totalClients: clientsResult.rows[0].total,
+            totalStaff: staffResult.rows[0].total,
+            serviceBreakdown: serviceBreakdownResult.rows,
+            statusBreakdown: statusBreakdownResult.rows,
+            monthlyRevenue: monthlyRevenueResult.rows
+        });
+
+    } catch (err) {
+        console.error('Admin reports error:', err);
+
+        res.status(500).json({
+            error: 'Failed to load admin reports',
+            details: err.message
+        });
+    }
+});
+
 /*------Admin Appointments-------*/
 
 app.get('/api/admin/appointments', async (_req, res) => {
     try {
+        await markPastAppointmentsCompleted();
         const { rows } = await pool.query(
             `SELECT 
     a.id,
@@ -3729,6 +3922,278 @@ app.put('/api/admin/staff/:staffId/offboard', async (req, res) => {
     }
 });
 
+/*------Admin Staff Individual Appointments-------*/
+app.get('/api/admin/staff/:staffId/appointments', async (req, res) => {
+    try {
+        const staffId = Number(req.params.staffId);
+
+        if (!staffId) {
+            return res.status(400).json({
+                error: 'Valid staff ID required'
+            });
+        }
+
+        const staffResult = await pool.query(
+            `SELECT id, full_name, email, phone
+             FROM staff_users
+             WHERE id = $1
+             LIMIT 1`,
+            [staffId]
+        );
+
+        if (!staffResult.rows.length) {
+            return res.status(404).json({
+                error: 'Staff member not found'
+            });
+        }
+
+        const appointmentsResult = await pool.query(
+            `SELECT
+                a.id,
+                a.client_id,
+                a.full_name AS client_name,
+                a.email AS client_email,
+                a.phone,
+                a.company,
+                a.service_name,
+                a.meeting_type,
+                a.appointment_date,
+                a.appointment_time,
+                a.notes,
+                a.booking_fee,
+                a.booking_status,
+                a.created_at,
+                ab.payment_status,
+                ab.total_charge,
+                ab.amount_paid,
+                ab.amount_due
+             FROM appointments a
+             LEFT JOIN appointment_billing ab
+                ON ab.appointment_id = a.id
+             WHERE a.staff_id = $1
+             ORDER BY a.appointment_date DESC, a.appointment_time DESC`,
+            [staffId]
+        );
+
+        res.json({
+            ok: true,
+            staff: staffResult.rows[0],
+            appointments: appointmentsResult.rows
+        });
+
+    } catch (err) {
+        console.error('Admin staff appointments error:', err);
+        res.status(500).json({
+            error: 'Failed to fetch staff appointments'
+        });
+    }
+});
+
+
+/*------Admin Payments-------*/
+app.get('/api/admin/payments', async (_req, res) => {
+    try {
+        const { rows } = await pool.query(
+            `
+            SELECT
+                cp.id,
+                pc.name AS client_name,
+                pc.email AS client_email,
+                a.service_name,
+                s.full_name AS staff_name,
+                cp.amount,
+                cp.currency,
+                cp.status,
+                cp.created_at AS payment_date,
+                ab.booking_fee,
+                ab.service_charge,
+                ab.total_charge,
+                ab.amount_paid,
+                ab.amount_due,
+                ab.payment_status
+            FROM client_payments cp
+            JOIN appointment_billing ab
+                ON ab.id = cp.billing_id
+            LEFT JOIN appointments a
+                ON a.id = ab.appointment_id
+            LEFT JOIN portal_clients pc
+                ON pc.id = cp.client_id
+            LEFT JOIN staff_users s
+                ON s.id = a.staff_id
+            ORDER BY cp.created_at DESC
+            `
+        );
+
+        res.json({
+            ok: true,
+            payments: rows
+        });
+
+    } catch (err) {
+        console.error('Admin payments error:', err);
+
+        res.status(500).json({
+            error: 'Failed to load admin payments'
+        });
+    }
+});
+
+/*------Admin Profile: Get Own Profile------*/
+app.get('/api/admin/profile/:adminId', async (req, res) => {
+    try {
+        const adminId = Number(req.params.adminId);
+
+        if (!adminId) {
+            return res.status(400).json({
+                error: 'Valid admin ID required'
+            });
+        }
+
+        const { rows } = await pool.query(
+            `
+            SELECT id, full_name, email, role, verified
+            FROM admins
+            WHERE id = $1
+            LIMIT 1
+            `,
+            [adminId]
+        );
+
+        if (!rows.length) {
+            return res.status(404).json({
+                error: 'Admin not found'
+            });
+        }
+
+        res.json({
+            ok: true,
+            admin: rows[0]
+        });
+
+    } catch (err) {
+        console.error('Admin profile fetch error:', err);
+
+        res.status(500).json({
+            error: 'Failed to load admin profile'
+        });
+    }
+});
+
+
+/*------Admin Profile: Update Own Profile------*/
+app.put('/api/admin/profile/:adminId', async (req, res) => {
+    try {
+        const adminId = Number(req.params.adminId);
+
+        const {
+            full_name = '',
+            email = '',
+            current_password = '',
+            new_password = ''
+        } = req.body || {};
+
+        if (!adminId) {
+            return res.status(400).json({
+                error: 'Valid admin ID required'
+            });
+        }
+
+        if (!full_name.trim() || !email.trim()) {
+            return res.status(400).json({
+                error: 'Full name and email are required'
+            });
+        }
+
+        const existingAdminResult = await pool.query(
+            `
+            SELECT id, full_name, email, password, role, verified
+            FROM admins
+            WHERE id = $1
+            LIMIT 1
+            `,
+            [adminId]
+        );
+
+        if (!existingAdminResult.rows.length) {
+            return res.status(404).json({
+                error: 'Admin not found'
+            });
+        }
+
+        const existingAdmin = existingAdminResult.rows[0];
+
+        const duplicateEmailResult = await pool.query(
+            `
+            SELECT id
+            FROM admins
+            WHERE lower(email) = lower($1)
+              AND id <> $2
+            LIMIT 1
+            `,
+            [email.trim(), adminId]
+        );
+
+        if (duplicateEmailResult.rows.length) {
+            return res.status(409).json({
+                error: 'This email is already used by another admin'
+            });
+        }
+
+        let passwordToSave = existingAdmin.password;
+
+        if (new_password) {
+            if (!current_password) {
+                return res.status(400).json({
+                    error: 'Current password is required to change password'
+                });
+            }
+
+            const passwordMatches = await bcrypt.compare(
+                current_password,
+                existingAdmin.password
+            );
+
+            if (!passwordMatches) {
+                return res.status(401).json({
+                    error: 'Current password is incorrect'
+                });
+            }
+
+            passwordToSave = await bcrypt.hash(new_password, 10);
+        }
+
+        const updateResult = await pool.query(
+            `
+            UPDATE admins
+            SET full_name = $1,
+                email = $2,
+                password = $3
+            WHERE id = $4
+            RETURNING id, full_name, email, role, verified
+            `,
+            [
+                full_name.trim(),
+                email.trim().toLowerCase(),
+                passwordToSave,
+                adminId
+            ]
+        );
+
+        res.json({
+            ok: true,
+            message: 'Admin profile updated successfully',
+            admin: updateResult.rows[0]
+        });
+
+    } catch (err) {
+        console.error('Admin profile update error:', err);
+
+        res.status(500).json({
+            error: 'Failed to update admin profile'
+        });
+    }
+});
+
 /*------Update appointment from admin portal----*/
 
 app.put('/api/admin/appointments/:appointmentId', async (req, res) => {
@@ -3802,6 +4267,285 @@ app.delete('/api/admin/appointments/:appointmentId', async (req, res) => {
     } catch (err) {
         console.error('Admin appointment delete error:', err);
         res.status(500).json({ error: 'Failed to delete appointment' });
+    }
+});
+
+/*------Admin Get Transfer Requests------*/
+/*------Admin Get Transfer Requests------*/
+app.get('/api/admin/transfers', async (_req, res) => {
+    try {
+        const { rows } = await pool.query(
+            `
+            SELECT
+                tr.id,
+                tr.appointment_id,
+                tr.reason_type,
+                tr.reason_text AS reason,
+                tr.status,
+                tr.auto_approved,
+                tr.requested_at,
+                tr.reviewed_at,
+
+                a.full_name AS client_name,
+                a.email AS client_email,
+                a.service_name,
+                a.appointment_date,
+                a.appointment_time,
+
+                from_staff.full_name AS from_staff_name,
+                to_staff.full_name AS to_staff_name,
+                reviewer.full_name AS reviewed_by_name
+
+            FROM client_transfer_requests tr
+
+            JOIN appointments a
+                ON a.id = tr.appointment_id
+
+            LEFT JOIN staff_users from_staff
+                ON from_staff.id = tr.requested_by_staff_id
+
+            LEFT JOIN staff_users to_staff
+                ON to_staff.id = tr.requested_to_staff_id
+
+            LEFT JOIN staff_users reviewer
+                ON reviewer.id = tr.reviewed_by
+
+            ORDER BY 
+                CASE 
+                    WHEN tr.status = 'Pending' THEN 0
+                    ELSE 1
+                END,
+                tr.requested_at DESC
+            `
+        );
+
+        res.json({
+            ok: true,
+            transfers: rows
+        });
+
+    } catch (err) {
+        console.error('Admin transfers fetch error:', err);
+
+        res.status(500).json({
+            error: 'Failed to load transfer requests'
+        });
+    }
+});
+
+/*------Admin Update Transfer Request------*/
+app.put('/api/admin/transfers/:id', async (req, res) => {
+    const dbClient = await pool.connect();
+
+    try {
+        const transferId = Number(req.params.id);
+        const { status = '' } = req.body || {};
+
+        if (!transferId) {
+            return res.status(400).json({
+                error: 'Valid transfer ID required'
+            });
+        }
+
+        if (!['Approved', 'Rejected'].includes(status)) {
+            return res.status(400).json({
+                error: 'Status must be Approved or Rejected'
+            });
+        }
+
+        await dbClient.query('BEGIN');
+
+        const transferResult = await dbClient.query(
+            `
+            SELECT
+                tr.*,
+                a.id AS appointment_id,
+                a.client_id,
+                a.staff_id AS current_staff_id,
+                a.full_name,
+                a.email,
+                a.phone,
+                a.service_name,
+                a.meeting_type,
+                a.appointment_date,
+                a.appointment_time,
+                a.booking_status,
+                a.management_token
+            FROM client_transfer_requests tr
+            JOIN appointments a
+                ON a.id = tr.appointment_id
+            WHERE tr.id = $1
+            FOR UPDATE
+            `,
+            [transferId]
+        );
+
+        if (!transferResult.rows.length) {
+            await dbClient.query('ROLLBACK');
+            return res.status(404).json({
+                error: 'Transfer request not found'
+            });
+        }
+
+        const transfer = transferResult.rows[0];
+
+        if (transfer.status !== 'Pending') {
+            await dbClient.query('ROLLBACK');
+            return res.status(409).json({
+                error: 'This transfer request has already been processed'
+            });
+        }
+
+        if (status === 'Rejected') {
+            await dbClient.query(
+                `
+        UPDATE client_transfer_requests
+SET status = 'Rejected',
+    reviewed_at = NOW(),
+    reviewed_by = NULL
+WHERE id = $1
+        `,
+                [transferId]
+            );
+
+            await dbClient.query('COMMIT');
+
+            return res.json({
+                ok: true,
+                message: 'Transfer request rejected'
+            });
+        }
+
+        const availableStaffResult = await dbClient.query(
+            `
+            SELECT DISTINCT
+                s.id,
+                s.full_name,
+                s.email,
+                s.phone
+            FROM staff_users s
+
+            JOIN staff_services ss
+                ON ss.staff_id = s.id
+               AND ss.service_name = $1
+
+            JOIN staff_availability sa
+                ON sa.staff_id = s.id
+               AND sa.available_date = $2
+               AND $3::time >= sa.start_time
+               AND $3::time < sa.end_time
+               AND sa.status = 'approved'
+
+            LEFT JOIN appointments booked
+                ON booked.staff_id = s.id
+               AND booked.appointment_date = $2
+               AND booked.appointment_time = $3::time
+               AND booked.booking_status IN ('Scheduled', 'Confirmed', 'Pending Payment')
+
+            LEFT JOIN pending_bookings pb
+                ON pb.staff_id = s.id
+               AND pb.appointment_date = $2
+               AND pb.appointment_time = $3::time
+               AND pb.status = 'Pending'
+
+            LEFT JOIN availability_change_requests acr
+                ON acr.staff_id = s.id
+               AND $2::date BETWEEN acr.start_date AND acr.end_date
+               AND acr.status = 'Approved'
+
+            WHERE s.id <> $4
+              AND COALESCE(s.active, true) = true
+              AND booked.id IS NULL
+              AND pb.id IS NULL
+              AND acr.id IS NULL
+
+            ORDER BY s.full_name
+            LIMIT 1
+            `,
+            [
+                transfer.service_name,
+                transfer.appointment_date,
+                String(transfer.appointment_time).slice(0, 5),
+                transfer.current_staff_id
+            ]
+        );
+
+        if (!availableStaffResult.rows.length) {
+            await dbClient.query('ROLLBACK');
+
+            return res.status(409).json({
+                error: 'No available staff member found for the same service, date, and time.'
+            });
+        }
+
+        const newStaff = availableStaffResult.rows[0];
+
+        let managementToken = transfer.management_token;
+
+        if (!managementToken) {
+            managementToken = generateManagementToken();
+        }
+
+        const updatedAppointmentResult = await dbClient.query(
+            `
+            UPDATE appointments
+            SET staff_id = $1,
+                management_token = $2,
+                updated_at = NOW()
+            WHERE id = $3
+            RETURNING *
+            `,
+            [
+                newStaff.id,
+                managementToken,
+                transfer.appointment_id
+            ]
+        );
+
+        const updatedAppointment = updatedAppointmentResult.rows[0];
+
+        await dbClient.query(
+            `
+ UPDATE client_transfer_requests
+SET status = 'Approved',
+    requested_to_staff_id = $1,
+    auto_approved = true,
+    reviewed_at = NOW(),
+    reviewed_by = NULL
+WHERE id = $2
+    `,
+            [
+                newStaff.id,
+                transferId
+            ]
+        );
+
+        await dbClient.query('COMMIT');
+
+        try {
+            await sendStaffTransferEmail(updatedAppointment, newStaff);
+        } catch (mailErr) {
+            console.error('Transfer email failed:', mailErr);
+        }
+
+        res.json({
+            ok: true,
+            message: 'Transfer approved and appointment reassigned',
+            assigned_staff: newStaff,
+            appointment: updatedAppointment
+        });
+
+    } catch (err) {
+        await dbClient.query('ROLLBACK').catch(() => { });
+
+        console.error('Admin transfer update error:', err);
+
+        res.status(500).json({
+            error: 'Failed to update transfer request'
+        });
+
+    } finally {
+        dbClient.release();
     }
 });
 
