@@ -17,11 +17,15 @@ async function loadStaffConversations(
 
         if (!res.ok) throw new Error(data.error || 'Failed to load conversations');
 
+        const realMessages = (data.messages || []).filter(message => message.id);
+
         renderConversationList(
-            data.messages || [],
+            realMessages,
             keepAppointmentId,
             keepClientId
         );
+
+        await markStaffMessagesAsRead();
     } catch (err) {
         console.error(err);
     }
@@ -239,6 +243,24 @@ function setupStaffReplyForm() {
             console.error(err);
         }
     });
+}
+
+/*-----Mark Staff Messages As Read-----*/
+async function markStaffMessagesAsRead() {
+    try {
+        await fetch(`${API_BASE}/api/staff/messages/mark-read`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                staffId: staffId
+            })
+        });
+
+    } catch (err) {
+        console.error('Mark staff messages as read error:', err);
+    }
 }
 
 function setupStaffFileUpload() {

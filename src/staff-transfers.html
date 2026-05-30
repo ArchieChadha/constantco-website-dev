@@ -20,10 +20,9 @@
         </div>
 
         <nav class="client-sidebar-nav">
-            <a href="staff-dashboard.html" >Dashboard</a>
+            <a href="staff-dashboard.html">Dashboard</a>
             <a href="staff-appointments.html">Appointments</a>
             <a href="staff-clients.html">Clients</a>
-            <a href="staff-leave.html">Leave Requests</a>
             <a href="staff-conversations.html">Conversations</a>
             <a href="staff-transfers.html" class="active">Transfers</a>
             <a href="staff-payments.html">Payments</a>
@@ -40,59 +39,123 @@
 
     </aside>
 
-
     <div class="client-portal-content">
 
         <header class="client-topbar">
-
             <button id="sidebarToggleBtn" class="client-menu-btn" type="button">
-
                 ☰
-
             </button>
 
             <p>Transfers</p>
-
         </header>
 
         <main class="client-main">
 
             <section class="client-page-heading">
                 <h1>Transfer Requests</h1>
+                <p>Request an appointment transfer when you are unable to handle an assigned client appointment.</p>
             </section>
 
-            <section class="client-panel">
+            <section class="client-panel transfer-info-panel">
+                <div class="client-panel-head">
+                    <div>
+                        <h2>Request Appointment Transfer</h2>
+                        <p>
+                            Select one of your upcoming appointments and provide a reason.
+                            The admin will review the request and assign another available staff member.
+                        </p>
+                    </div>
+                </div>
 
                 <form id="transferRequestForm" class="portal-form">
 
                     <div class="auth-row">
-
                         <div>
-                            <label>Appointment</label>
-
-                            <select id="transferAppointmentSelect" class="input-lg"></select>
+                            <label for="transferAppointmentSelect">Appointment</label>
+                            <select id="transferAppointmentSelect" class="input-lg" required>
+                                <option value="">Loading appointments...</option>
+                            </select>
                         </div>
 
+                        <div>
+                            <label for="transferReasonType">Reason Type</label>
+                            <select id="transferReasonType" class="input-lg">
+                                <option value="Unavailable">Unavailable</option>
+                                <option value="Workload">Workload</option>
+                                <option value="Specialisation">Specialisation</option>
+                                <option value="Emergency">Emergency</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div class="auth-row">
-
                         <div>
-                            <label>Reason</label>
-
-                            <textarea id="transferReason" class="input-lg appointment-textarea"></textarea>
+                            <label for="transferReason">Reason</label>
+                            <textarea id="transferReason" class="input-lg appointment-textarea" rows="5"
+                                placeholder="Explain why this appointment needs to be transferred..."
+                                required></textarea>
                         </div>
-
                     </div>
 
                     <button type="submit" class="btn btn-primary">
-
-                        Submit Transfer
-
+                        Submit Transfer Request
                     </button>
 
-                </form>
+                    <p id="transferMessage" class="transfer-message"></p>
 
+                </form>
+            </section>
+
+            <section class="client-panel transfer-history-panel">
+                <div class="client-panel-head">
+                    <div>
+                        <h2>My Transfer Requests</h2>
+                        <p>Track whether your submitted transfer requests are pending, approved, or rejected.</p>
+                    </div>
+                </div>
+
+                <table class="client-table">
+                    <thead>
+                        <tr>
+                            <th>Client</th>
+                            <th>Service</th>
+                            <th>Appointment</th>
+                            <th>Reason Type</th>
+                            <th>Reason</th>
+                            <th>Assigned To</th>
+                            <th>Status</th>
+                            <th>Reviewed</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="staffTransferRequestsTable">
+                        <tr>
+                            <td colspan="8">Loading transfer requests...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="client-panel transfer-help-panel">
+                <h2>How Transfer Requests Work</h2>
+
+                <div class="transfer-help-grid">
+                    <div class="transfer-help-card">
+                        <strong>1. Submit Request</strong>
+                        <p>You select an upcoming appointment and explain why it needs to be transferred.</p>
+                    </div>
+
+                    <div class="transfer-help-card">
+                        <strong>2. Admin Review</strong>
+                        <p>The admin checks whether another staff member is available for the same service and time.</p>
+                    </div>
+
+                    <div class="transfer-help-card">
+                        <strong>3. Client Notified</strong>
+                        <p>If approved, the appointment is reassigned and the client receives an email update.</p>
+                    </div>
+                </div>
             </section>
 
         </main>

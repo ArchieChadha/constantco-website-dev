@@ -588,6 +588,23 @@ document.addEventListener('DOMContentLoaded', () => {
         return `<p>${escapeHTML(message || '')}</p>`;
     }
 
+    async function markClientMessagesAsRead() {
+        try {
+            await fetch(`${API_BASE}/api/client/messages/mark-read`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    clientId: clientId
+                })
+            });
+
+        } catch (err) {
+            console.error('Mark client messages as read error:', err);
+        }
+    }
+
     async function loadClientMessages() {
         try {
             const res = await fetch(`${API_BASE}/api/client/messages?clientId=${encodeURIComponent(clientId)}`);
@@ -605,14 +622,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (selectedConversation.appointmentId) {
                 messages = messages.filter(msg =>
-                    Number(msg.appointment_id) === Number(selectedConversation.appointmentId)
+                    Number(msg.appointment_id) === Number(selectedConversation.appointmentId) &&
+                    Number(msg.staff_id) === Number(selectedConversation.staffId)
                 );
             }
 
             const unreadMessagesCount = document.getElementById('unreadMessagesCount');
 
             if (unreadMessagesCount) {
-                unreadMessagesCount.textContent = messages.length;
+                const unreadMessages = messages.filter(msg => {
+                    if (!msg.id) {
+                        return false;
+                    }
+
+                    const senderType = String(msg.sender_type || '').toLowerCase();
+
+                    return (
+                        senderType !== 'client' &&
+                        msg.read_by_client !== true
+                    );
+                });
+
+                unreadMessagesCount.textContent = unreadMessages.length;
             }
 
             const clientMessagesList = document.getElementById('clientMessagesList');
@@ -630,7 +661,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return `
                     <div class="chat-bubble ${isClient ? 'chat-bubble-client' : 'chat-bubble-agent'}">
                         <small>
-                            ${isClient ? 'You' : escapeHTML(msg.staff_name || selectedConversation.staffName || 'Adviser')}
+                           ${isClient ? 'You' : escapeHTML(msg.sender_staff_name || msg.staff_name || selectedConversation.staffName || 'Adviser')}
                             · ${formatDateTime(msg.created_at)}
                         </small>
 
@@ -640,6 +671,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }).join('');
 
             clientMessagesList.scrollTop = clientMessagesList.scrollHeight;
+
+            await markClientMessagesAsRead();
+
+            if (unreadMessagesCount) {
+                unreadMessagesCount.textContent = '0';
+            }
 
         } catch (err) {
             console.error(err);
@@ -879,14 +916,37 @@ document.addEventListener('DOMContentLoaded', () => {
             const grouped = {};
 
             services.forEach(item => {
-                const key = `${item.service_name}-${item.staff_id}`;
+                const status = String(item.booking_status || '').toLowerCase();
 
-                if (!grouped[key]) {
+                // Do not create chat cards for cancelled appointments
+                if (status === 'cancelled') {
+                    return;
+                }
+
+                // One conversation card per staff + service
+                const key = `${item.staff_id || 'no-staff'}-${item.service_name || 'service'}`;
+
+                const existing = grouped[key];
+
+                const currentDateTime = new Date(
+                    `${String(item.appointment_date).slice(0, 10)}T${String(item.appointment_time || '00:00').slice(0, 5)}`
+                );
+
+                const existingDateTime = existing
+                    ? new Date(
+                        `${String(existing.appointmentDate).slice(0, 10)}T${String(existing.appointmentTime || '00:00').slice(0, 5)}`
+                    )
+                    : null;
+
+                // Keep only the latest appointment for the same staff + service
+                if (!existing || currentDateTime > existingDateTime) {
                     grouped[key] = {
                         serviceName: item.service_name || 'Service',
                         staffName: item.staff_name || 'Not assigned',
                         staffId: item.staff_id,
-                        appointmentId: item.appointment_id
+                        appointmentId: item.appointment_id,
+                        appointmentDate: item.appointment_date,
+                        appointmentTime: item.appointment_time
                     };
                 }
             });
@@ -958,6 +1018,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const chatStaffName = document.getElementById('chatStaffName');
         const chatServiceName = document.getElementById('chatServiceName');
+        const chatHeaderAvatar = document.getElementById('chatHeaderAvatar');
 
         if (chatStaffName) {
             chatStaffName.textContent = conversation.staffName || 'Adviser';
@@ -965,6 +1026,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (chatServiceName) {
             chatServiceName.textContent = conversation.serviceName || 'Service conversation';
+        }
+
+        if (chatHeaderAvatar) {
+            chatHeaderAvatar.textContent = getInitials(conversation.staffName || 'Adviser');
         }
 
         loadClientMessages();

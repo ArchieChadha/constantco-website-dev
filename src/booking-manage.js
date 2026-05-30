@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const manageClosed = document.getElementById('manageClosed');
     const manageStatus = document.getElementById('manageStatus');
     const rescheduleDate = document.getElementById('rescheduleDate');
+    const rescheduleProvider = document.getElementById('rescheduleProvider');
     const rescheduleSlots = document.getElementById('rescheduleSlots');
     const rescheduleBtn = document.getElementById('rescheduleBtn');
     const cancelBtn = document.getElementById('cancelBtn');
@@ -66,6 +67,51 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
+    async function loadProvidersForReschedule() {
+        if (!booking || !rescheduleProvider) return;
+
+        rescheduleProvider.innerHTML = '<option value="">Loading agents...</option>';
+
+        try {
+            const qs = new URLSearchParams({
+                service: booking.service_name
+            });
+
+            const res = await fetch(`${API_BASE}/api/booking-providers?${qs.toString()}`);
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || 'Failed to load agents');
+            }
+
+            const providers = (data.providers || []).filter(provider =>
+                String(provider.id).toLowerCase() !== 'any'
+            );
+
+            if (!providers.length) {
+                rescheduleProvider.innerHTML = '<option value="">No agents available</option>';
+                rescheduleDate.disabled = true;
+                return;
+            }
+
+            rescheduleProvider.innerHTML = `
+            <option value="">Choose preferred agent</option>
+            ${providers.map(provider => `
+                <option value="${provider.id}" ${String(provider.id) === String(booking.staff_id) ? 'selected' : ''}>
+                    ${escapeHtml(provider.full_name)}
+                </option>
+            `).join('')}
+        `;
+
+            rescheduleDate.disabled = !rescheduleProvider.value;
+
+        } catch (err) {
+            console.error(err);
+            rescheduleProvider.innerHTML = '<option value="">Could not load agents</option>';
+            rescheduleDate.disabled = true;
+        }
+    }
+
     function escapeHtml(str) {
         return String(str)
             .replace(/&/g, '&amp;')
@@ -94,6 +140,8 @@ document.addEventListener('DOMContentLoaded', () => {
             manageLoad.hidden = true;
             manageCard.hidden = false;
             renderDetails();
+
+            await loadProvidersForReschedule();
 
             if (canModify) {
                 manageActions.hidden = false;
@@ -128,8 +176,34 @@ document.addEventListener('DOMContentLoaded', () => {
         onChange: async () => {
             selectedSlot = '';
             rescheduleBtn.disabled = true;
+
+            if (!rescheduleProvider.value) {
+                rescheduleSlots.innerHTML =
+                    '<p class="small" style="margin:0;">Choose an agent first.</p>';
+                return;
+            }
+
             await loadSlotsForDate();
         }
+    });
+
+    /* Add it here */
+    rescheduleProvider?.addEventListener('change', async () => {
+        selectedSlot = '';
+        rescheduleBtn.disabled = true;
+
+        if (!rescheduleProvider.value) {
+            rescheduleDate.disabled = true;
+            rescheduleDate.value = '';
+            rescheduleSlots.innerHTML =
+                '<p class="small" style="margin:0;">Choose an agent first, then select a date.</p>';
+            return;
+        }
+
+        rescheduleDate.disabled = false;
+        rescheduleDate.value = '';
+        rescheduleSlots.innerHTML =
+            '<p class="small" style="margin:0;">Select a date to see this agent’s available times.</p>';
     });
 
     async function loadSlotsForDate() {
@@ -138,41 +212,68 @@ document.addEventListener('DOMContentLoaded', () => {
                 '<p class="small" style="margin:0;">Pick a date to see available times.</p>';
             return;
         }
+
+        const selectedProviderId = rescheduleProvider?.value || '';
+
+        if (!selectedProviderId) {
+            rescheduleSlots.innerHTML =
+                '<p class="small" style="margin:0;">Choose an agent first.</p>';
+            return;
+        }
+
         rescheduleSlots.innerHTML = '<p class="small" style="margin:0;">Loading times…</p>';
+
         try {
             const qs = new URLSearchParams({
                 service: booking.service_name,
-                providerId: String(booking.staff_id),
+                providerId: String(selectedProviderId),
                 date: rescheduleDate.value
             });
+
             if (booking.id != null && String(booking.id).trim() !== '') {
                 qs.set('excludeAppointmentId', String(booking.id));
             }
+
             const res = await fetch(`${API_BASE}/api/booking-slots?${qs.toString()}`);
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Failed to load slots');
+
+            if (!res.ok) {
+                throw new Error(data.error || 'Failed to load slots');
+            }
+
             const slots = data.slots || [];
+
             if (!slots.length) {
-                rescheduleSlots.innerHTML = '<p class="small" style="margin:0;">No times for this date.</p>';
+                rescheduleSlots.innerHTML =
+                    '<p class="small" style="margin:0;">No times available for this agent on this date.</p>';
                 return;
             }
+
             rescheduleSlots.innerHTML = slots
-                .map(
-                    (slot) =>
-                        `<button type="button" class="booking-slot-btn" data-slot="${slot.time}">${slot.time}</button>`
+                .map(slot =>
+                    `<button type="button" class="booking-slot-btn" data-slot="${slot.time}">${slot.time}</button>`
                 )
                 .join('');
-            rescheduleSlots.querySelectorAll('.booking-slot-btn').forEach((btn) => {
+
+            rescheduleSlots.querySelectorAll('.booking-slot-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    rescheduleSlots.querySelectorAll('.booking-slot-btn').forEach((b) =>
-                        b.classList.remove('active'));
+                    rescheduleSlots.querySelectorAll('.booking-slot-btn').forEach(b =>
+                        b.classList.remove('active')
+                    );
+
                     btn.classList.add('active');
+
                     selectedSlot = btn.dataset.slot || '';
-                    rescheduleBtn.disabled = !selectedSlot;
+
+                    rescheduleBtn.disabled =
+                        !selectedSlot ||
+                        !rescheduleProvider.value;
                 });
             });
+
         } catch (err) {
             console.error(err);
+
             rescheduleSlots.innerHTML = `<p class="small" style="margin:0;color:#c62828;">${escapeHtml(
                 err.message || 'Could not load times'
             )}</p>`;
@@ -180,30 +281,48 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     rescheduleBtn.addEventListener('click', async () => {
-        if (!token || !rescheduleDate.value || !selectedSlot) return;
+        if (!token || !rescheduleProvider.value || !rescheduleDate.value || !selectedSlot) {
+            setStatus('Please choose an agent, date, and time.');
+            return;
+        }
+
         setStatus('');
         rescheduleBtn.disabled = true;
+
         try {
             const res = await fetch(
                 `${API_BASE}/api/booking/manage/${encodeURIComponent(token)}/reschedule`,
                 {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
                     body: JSON.stringify({
                         appointmentDate: rescheduleDate.value,
-                        appointmentTime: selectedSlot
+                        appointmentTime: selectedSlot,
+                        staffId: rescheduleProvider.value
                     })
                 }
             );
+
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Reschedule failed.');
+
+            if (!res.ok) {
+                throw new Error(data.error || 'Reschedule failed.');
+            }
+
             setStatus('Your appointment has been updated. A confirmation email has been sent.', true);
+
             const check = await fetch(`${API_BASE}/api/booking/manage/${encodeURIComponent(token)}`);
             const fresh = await check.json();
+
             if (check.ok && fresh.booking) {
                 booking = fresh.booking;
                 canModify = Boolean(fresh.can_modify);
                 renderDetails();
+
+                await loadProvidersForReschedule();
+
                 if (!canModify) {
                     manageActions.hidden = true;
                     manageClosed.hidden = false;
@@ -215,20 +334,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     ...booking,
                     appointment_date: data.appointment.appointment_date,
                     appointment_time: data.appointment.appointment_time,
+                    staff_id: data.appointment.staff_id,
                     booking_status: data.appointment.booking_status
                 };
+
                 renderDetails();
             }
+
             selectedSlot = '';
             rescheduleDate.value = '';
             rescheduleSlots.innerHTML =
-                '<p class="small" style="margin:0;">Pick a date to see available times.</p>';
+                '<p class="small" style="margin:0;">Select a date to see this agent’s available times.</p>';
             rescheduleBtn.disabled = true;
+
         } catch (err) {
             console.error(err);
             setStatus(err.message || 'Reschedule failed.');
-        } finally {
-            rescheduleBtn.disabled = !selectedSlot;
+            rescheduleBtn.disabled = false;
         }
     });
 
