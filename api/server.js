@@ -1593,6 +1593,55 @@ app.get('/api/client/payment-history', async (req, res) => {
 });
 
 /*--------Client Messages-------*/
+app.get('/api/client/messages', async (req, res) => {
+    try {
+        const { clientId } = req.query;
+
+        if (!clientId) {
+            return res.status(400).json({
+                error: 'Client ID required'
+            });
+        }
+
+        const { rows } = await pool.query(
+            `
+            SELECT
+                m.id,
+                m.appointment_id,
+                COALESCE(a.staff_id, m.staff_id) AS staff_id,
+                m.sender_type,
+                m.subject,
+                m.message,
+                m.service_name,
+                m.created_at,
+                COALESCE(m.read_by_client, false) AS read_by_client,
+                COALESCE(m.read_by_staff, false) AS read_by_staff,
+                s.full_name AS staff_name
+            FROM portal_messages m
+            LEFT JOIN appointments a
+                ON a.id = m.appointment_id
+            LEFT JOIN staff_users s
+                ON s.id = COALESCE(a.staff_id, m.staff_id)
+            WHERE m.client_id = $1
+            ORDER BY m.created_at DESC
+            `,
+            [clientId]
+        );
+
+        res.json({
+            ok: true,
+            messages: rows
+        });
+
+    } catch (err) {
+        console.error('Client messages fetch error:', err);
+
+        res.status(500).json({
+            error: 'Failed to load messages'
+        });
+    }
+});
+/*-------Client Portal: Send Message------*/
 app.post('/api/client/messages', async (req, res) => {
     try {
         const {
@@ -1609,16 +1658,21 @@ app.post('/api/client/messages', async (req, res) => {
         }
 
         const appointmentResult = await pool.query(
-            `SELECT 
+            `
+            SELECT 
                 id,
+                client_id,
                 staff_id,
                 service_name
-             FROM appointments
-             WHERE id = $1
-               AND client_id = $2
-               AND staff_id IS NOT NULL
-             LIMIT 1`,
-            [appointmentId, clientId]
+            FROM appointments
+            WHERE id = $1
+              AND client_id = $2
+            LIMIT 1
+            `,
+            [
+                appointmentId,
+                clientId
+            ]
         );
 
         if (!appointmentResult.rows.length) {
@@ -1630,78 +1684,79 @@ app.post('/api/client/messages', async (req, res) => {
         const appointment = appointmentResult.rows[0];
 
         const { rows } = await pool.query(
-            `INSERT INTO portal_messages
-             (
-                client_id,
-                staff_id,
-                appointment_id,
-                sender_type,
-                subject,
-                message,
-                service_name,
-                created_at
-             )
-             VALUES ($1, $2, $3, 'client', $4, $5, $6, NOW())
-             RETURNING *`,
+            `
+            INSERT INTO portal_messages
+                (
+                    client_id,
+                    staff_id,
+                    appointment_id,
+                    sender_type,
+                    subject,
+                    message,
+                    service_name,
+                    read_by_client,
+                    read_by_staff,
+                    created_at
+                )
+            VALUES
+                ($1, $2, $3, 'client', $4, $5, $6, true, false, NOW())
+            RETURNING *
+            `,
             [
                 clientId,
                 appointment.staff_id,
                 appointment.id,
-                subject.trim() || appointment.service_name || null,
+                subject.trim() || appointment.service_name || 'Client message',
                 message.trim(),
                 appointment.service_name || null
             ]
         );
 
-        res.json({
+        res.status(201).json({
             ok: true,
             message: rows[0]
         });
 
     } catch (err) {
         console.error('Client message send error:', err);
+
         res.status(500).json({
-            error: 'Failed to send message'
+            error: err.message || 'Failed to send message'
         });
     }
 });
 
-app.get('/api/client/messages', async (req, res) => {
+app.put('/api/client/messages/mark-read', async (req, res) => {
     try {
-        const { clientId } = req.query;
+        const clientId = Number(req.body.clientId);
 
         if (!clientId) {
             return res.status(400).json({
-                error: 'Client ID required'
+                error: 'Valid client ID required'
             });
         }
 
-        const { rows } = await pool.query(
-            `SELECT
-        m.id,
-        m.appointment_id,
-        m.staff_id,
-        m.sender_type,
-        m.subject,
-        m.message,
-        m.service_name,
-        m.created_at,
-        s.full_name AS staff_name
-     FROM portal_messages m
-     LEFT JOIN staff_users s ON s.id = m.staff_id
-     WHERE m.client_id = $1
-     ORDER BY m.created_at DESC`,
+        await pool.query(
+            `
+            UPDATE portal_messages
+            SET read_by_client = true
+            WHERE client_id = $1
+              AND sender_type <> 'client'
+              AND COALESCE(read_by_client, false) = false
+            `,
             [clientId]
         );
+
         res.json({
             ok: true,
-            messages: rows
+            message: 'Messages marked as read'
         });
 
     } catch (err) {
-        console.error('Client messages fetch error:', err);
+        console.error('Mark client messages read error:', err);
+
         res.status(500).json({
-            error: 'Failed to load messages'
+            error: 'Failed to mark messages as read'
         });
     }
 });
@@ -2672,29 +2727,57 @@ app.post('/api/booking/manage/:token/cancel', async (req, res) => {
 
 app.post('/api/booking/manage/:token/reschedule', async (req, res) => {
     const token = String(req.params.token || '').trim();
+
     if (!/^[a-f0-9]{64}$/i.test(token)) {
-        return res.status(400).json({ error: 'Invalid booking link.' });
+        return res.status(400).json({
+            error: 'Invalid booking link.'
+        });
     }
 
-    const { appointmentDate = '', appointmentTime = '' } = req.body || {};
-    if (!appointmentDate || !appointmentTime) {
-        return res.status(400).json({ error: 'New date and time are required.' });
+    const {
+        appointmentDate = '',
+        appointmentTime = '',
+        staffId = ''
+    } = req.body || {};
+
+    if (!appointmentDate || !appointmentTime || !staffId) {
+        return res.status(400).json({
+            error: 'New date, time, and preferred agent are required.'
+        });
+    }
+
+    const selectedStaffId = Number(staffId);
+
+    if (!Number.isFinite(selectedStaffId) || selectedStaffId <= 0) {
+        return res.status(400).json({
+            error: 'Please choose a valid preferred agent.'
+        });
     }
 
     const client = await pool.connect();
+
     try {
         await client.query('BEGIN');
+
         const sel = await client.query(
-            `SELECT id, staff_id, service_name, appointment_date, appointment_time, booking_status
-             FROM appointments
-             WHERE management_token = $1
-               AND management_token IS NOT NULL
-               AND booking_status IN ('Scheduled', 'Confirmed', 'Pending Payment')
-               AND NOW() <= (
-                   ((appointment_date + appointment_time) AT TIME ZONE $2)::timestamptz
-                   - INTERVAL '24 hours'
-               )
-             FOR UPDATE`,
+            `
+            SELECT
+                id,
+                staff_id,
+                service_name,
+                appointment_date,
+                appointment_time,
+                booking_status
+            FROM appointments
+            WHERE management_token = $1
+              AND management_token IS NOT NULL
+              AND booking_status IN ('Scheduled', 'Confirmed', 'Pending Payment')
+              AND NOW() <= (
+                    ((appointment_date + appointment_time) AT TIME ZONE $2)::timestamptz
+                    - INTERVAL '24 hours'
+              )
+            FOR UPDATE
+            `,
             [token, APPOINTMENT_TIMEZONE]
         );
 
@@ -2706,41 +2789,75 @@ app.post('/api/booking/manage/:token/reschedule', async (req, res) => {
         }
 
         const appt = sel.rows[0];
+
         const newDate = String(appointmentDate).trim();
         const newTimeRaw = String(appointmentTime).trim();
-        const newTime = newTimeRaw.length >= 5 ? newTimeRaw.slice(0, 5) : newTimeRaw;
+        const newTime = newTimeRaw.length >= 5
+            ? newTimeRaw.slice(0, 5)
+            : newTimeRaw;
 
-        const serviceCheck = await client.query(
-            `SELECT 1
-             FROM staff_services
-             WHERE staff_id = $1 AND service_name = $2
-             LIMIT 1`,
-            [appt.staff_id, String(appt.service_name).trim()]
-        );
-        if (!serviceCheck.rows.length) {
+        const selectedDateTime = new Date(`${newDate}T${newTime}`);
+
+        if (Number.isNaN(selectedDateTime.getTime()) || selectedDateTime <= new Date()) {
             await client.query('ROLLBACK');
-            return res.status(400).json({ error: 'Provider no longer offers this service.' });
+            return res.status(400).json({
+                error: 'Please choose a future date and time.'
+            });
         }
 
-        const validSlots = await getProviderSlotsForDate(appt.staff_id, newDate, appt.id);
+        const serviceCheck = await client.query(
+            `
+            SELECT 1
+            FROM staff_services
+            WHERE staff_id = $1
+              AND service_name = $2
+            LIMIT 1
+            `,
+            [
+                selectedStaffId,
+                String(appt.service_name).trim()
+            ]
+        );
+
+        if (!serviceCheck.rows.length) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({
+                error: 'Selected agent does not offer this service.'
+            });
+        }
+
+        const validSlots = await getProviderSlotsForDate(
+            selectedStaffId,
+            newDate,
+            appt.id
+        );
+
         if (!validSlots.includes(newTime)) {
             await client.query('ROLLBACK');
             return res.status(409).json({
-                error: 'That time is not available. Please choose another slot.'
+                error: 'That time is not available for the selected agent. Please choose another slot.'
             });
         }
 
         const clash = await client.query(
-            `SELECT id
-             FROM appointments
-             WHERE staff_id = $1
-               AND appointment_date = $2
-               AND appointment_time = $3::time
-               AND booking_status IN ('Scheduled', 'Confirmed', 'Pending Payment')
-               AND id <> $4
-             LIMIT 1`,
-            [appt.staff_id, newDate, newTime, appt.id]
+            `
+            SELECT id
+            FROM appointments
+            WHERE staff_id = $1
+              AND appointment_date = $2
+              AND appointment_time = $3::time
+              AND booking_status IN ('Scheduled', 'Confirmed', 'Pending Payment')
+              AND id <> $4
+            LIMIT 1
+            `,
+            [
+                selectedStaffId,
+                newDate,
+                newTime,
+                appt.id
+            ]
         );
+
         if (clash.rows.length) {
             await client.query('ROLLBACK');
             return res.status(409).json({
@@ -2749,15 +2866,22 @@ app.post('/api/booking/manage/:token/reschedule', async (req, res) => {
         }
 
         const pendingClash = await client.query(
-            `SELECT id
-             FROM pending_bookings
-             WHERE staff_id = $1
-               AND appointment_date = $2
-               AND appointment_time = $3::time
-               AND status = 'Pending'
-             LIMIT 1`,
-            [appt.staff_id, newDate, newTime]
+            `
+            SELECT id
+            FROM pending_bookings
+            WHERE staff_id = $1
+              AND appointment_date = $2
+              AND appointment_time = $3::time
+              AND status = 'Pending'
+            LIMIT 1
+            `,
+            [
+                selectedStaffId,
+                newDate,
+                newTime
+            ]
         );
+
         if (pendingClash.rows.length) {
             await client.query('ROLLBACK');
             return res.status(409).json({
@@ -2766,32 +2890,47 @@ app.post('/api/booking/manage/:token/reschedule', async (req, res) => {
         }
 
         const { rows } = await client.query(
-            `UPDATE appointments
-             SET appointment_date = $1,
-                 appointment_time = $2::time,
-                 updated_at = NOW()
-             WHERE id = $3
-             RETURNING *`,
-            [newDate, newTime, appt.id]
+            `
+            UPDATE appointments
+            SET appointment_date = $1,
+                appointment_time = $2::time,
+                staff_id = $3,
+                updated_at = NOW()
+            WHERE id = $4
+            RETURNING *
+            `,
+            [
+                newDate,
+                newTime,
+                selectedStaffId,
+                appt.id
+            ]
         );
 
         await client.query('COMMIT');
 
         const updated = rows[0];
+
         try {
-            await sendAppointmentConfirmationEmail({
-                ...updated,
-                staff_full_name: undefined
-            });
+            await sendAppointmentConfirmationEmail(updated);
         } catch (mailErr) {
             console.error('Reschedule confirmation email failed:', mailErr);
         }
 
-        res.json({ ok: true, appointment: updated });
+        res.json({
+            ok: true,
+            appointment: updated
+        });
+
     } catch (err) {
         await client.query('ROLLBACK').catch(() => { });
+
         console.error('Booking reschedule error:', err);
-        res.status(500).json({ error: 'Could not reschedule booking.' });
+
+        res.status(500).json({
+            error: 'Could not reschedule booking.'
+        });
+
     } finally {
         client.release();
     }
@@ -2962,6 +3101,7 @@ app.get('/api/staff/me', async (req, res) => {
     }
 });
 
+
 /*-------Staff Portal Messages------*/
 app.get('/api/staff/messages', async (req, res) => {
     try {
@@ -2983,13 +3123,19 @@ app.get('/api/staff/messages', async (req, res) => {
                 pm.sender_type,
                 pm.subject,
                 pm.message,
-                pm.created_at
+                pm.created_at,
+                COALESCE(pm.read_by_staff, false) AS read_by_staff
              FROM appointments a
-             JOIN portal_clients pc ON pc.id = a.client_id
+             JOIN portal_clients pc 
+                ON pc.id = a.client_id
              LEFT JOIN portal_messages pm
-                ON pm.appointment_id = a.id
+    ON pm.appointment_id = a.id
+   AND pm.staff_id = a.staff_id
              WHERE a.staff_id = $1
-             ORDER BY a.appointment_date DESC, a.appointment_time DESC, pm.created_at ASC`,
+             ORDER BY 
+                a.appointment_date DESC, 
+                a.appointment_time DESC, 
+                pm.created_at ASC`,
             [staffId]
         );
 
@@ -3050,9 +3196,10 @@ app.post('/api/staff/messages', async (req, res) => {
                 subject,
                 message,
                 service_name,
+                read_by_staff,
                 created_at
              )
-             VALUES ($1, $2, $3, 'staff', $4, $5, $6, NOW())
+             VALUES ($1, $2, $3, 'staff', $4, $5, $6, true, NOW())
              RETURNING *`,
             [
                 clientId,
@@ -3076,6 +3223,40 @@ app.post('/api/staff/messages', async (req, res) => {
         });
     }
 });
+
+/*-------Mark Staff Messages As Read------*/
+app.put('/api/staff/messages/mark-read', async (req, res) => {
+    try {
+        const staffId = Number(req.body.staffId);
+
+        if (!staffId) {
+            return res.status(400).json({
+                error: 'Valid staff ID required'
+            });
+        }
+
+        await pool.query(
+            `UPDATE portal_messages
+             SET read_by_staff = true
+             WHERE staff_id = $1
+               AND sender_type <> 'staff'
+               AND COALESCE(read_by_staff, false) = false`,
+            [staffId]
+        );
+
+        res.json({
+            ok: true,
+            message: 'Messages marked as read'
+        });
+
+    } catch (err) {
+        console.error('Mark staff messages read error:', err);
+        res.status(500).json({
+            error: 'Failed to mark messages as read'
+        });
+    }
+});
+
 /*-------Staff Portal Appointments------*/
 app.get('/api/staff/appointments', async (req, res) => {
     try {
@@ -3087,32 +3268,25 @@ app.get('/api/staff/appointments', async (req, res) => {
             });
         }
 
-        if (!staffId) {
-            return res.status(400).json({
-                error: 'Staff ID required'
-            });
-        }
-
         const { rows } = await pool.query(
-            `SELECT
+            `
+            SELECT DISTINCT ON (a.id)
                 a.id,
                 a.client_id,
-                a.staff_id,
                 a.full_name AS client_name,
                 a.email,
                 a.phone,
-                a.company,
                 a.service_name,
-                a.meeting_type,
                 a.appointment_date,
                 a.appointment_time,
-                a.notes,
-                a.booking_fee,
                 a.booking_status,
-                a.created_at
-             FROM appointments a
-             WHERE a.staff_id = $1
-             ORDER BY a.appointment_date DESC, a.appointment_time DESC`,
+                s.full_name AS staff_name
+            FROM appointments a
+            LEFT JOIN staff_users s
+                ON s.id = a.staff_id
+            WHERE a.staff_id = $1
+            ORDER BY a.id, a.appointment_date ASC, a.appointment_time ASC
+            `,
             [staffId]
         );
 
@@ -3123,6 +3297,7 @@ app.get('/api/staff/appointments', async (req, res) => {
 
     } catch (err) {
         console.error('Staff appointments error:', err);
+
         res.status(500).json({
             error: 'Failed to load staff appointments'
         });
@@ -3194,6 +3369,68 @@ app.get('/api/staff/clients', async (req, res) => {
 
         res.status(500).json({
             error: 'Failed to load clients'
+        });
+    }
+});
+
+/*------Staff: Get Own Transfer Requests------*/
+app.get('/api/staff/transfer-requests', async (req, res) => {
+    try {
+        const staffId = Number(req.query.staffId);
+
+        if (!staffId) {
+            return res.status(400).json({
+                error: 'Valid staff ID required'
+            });
+        }
+
+        const { rows } = await pool.query(
+            `
+            SELECT
+                tr.id,
+                tr.appointment_id,
+                tr.requested_by_staff_id,
+                tr.requested_to_staff_id,
+                tr.reason_type,
+                tr.reason_text,
+                tr.status,
+                tr.auto_approved,
+                tr.requested_at,
+                tr.reviewed_at,
+
+                a.full_name AS client_name,
+                a.email AS client_email,
+                a.service_name,
+                a.appointment_date,
+                a.appointment_time,
+
+                to_staff.full_name AS to_staff_name
+
+            FROM client_transfer_requests tr
+
+            JOIN appointments a
+                ON a.id = tr.appointment_id
+
+            LEFT JOIN staff_users to_staff
+                ON to_staff.id = tr.requested_to_staff_id
+
+            WHERE tr.requested_by_staff_id = $1
+
+            ORDER BY tr.requested_at DESC
+            `,
+            [staffId]
+        );
+
+        res.json({
+            ok: true,
+            requests: rows
+        });
+
+    } catch (err) {
+        console.error('Staff transfer requests fetch error:', err);
+
+        res.status(500).json({
+            error: 'Failed to load transfer requests'
         });
     }
 });
@@ -3325,67 +3562,123 @@ app.post('/api/staff/request-document', async (req, res) => {
 });
 
 /*-----Client Transfer Request------*/
+/*------Staff: Submit Client Transfer Request------*/
 app.post('/api/staff/client-transfer-request', async (req, res) => {
     try {
         const {
             appointmentId,
             clientId,
-            fromStaffId,
-            toStaffId,
-            reason = ''
+            requestedByStaffId,
+            reasonType = 'General',
+            reasonText = ''
         } = req.body || {};
 
-        if (!appointmentId || !clientId || !fromStaffId || !reason.trim()) {
+        if (!appointmentId || !clientId || !requestedByStaffId || !reasonText.trim()) {
             return res.status(400).json({
-                error: 'Appointment, client, staff, and reason are required'
+                error: 'Appointment, client, staff and reason are required'
             });
         }
 
-        const check = await pool.query(
-            `SELECT id
-             FROM appointments
-             WHERE id = $1
-               AND client_id = $2
-               AND staff_id = $3
-             LIMIT 1`,
-            [appointmentId, clientId, fromStaffId]
-        );
-
-        if (!check.rows.length) {
-            return res.status(403).json({
-                error: 'This appointment does not belong to this staff member'
-            });
-        }
-
-        const { rows } = await pool.query(
-            `INSERT INTO client_transfer_requests
-             (
-                appointment_id,
+        const appointmentResult = await pool.query(
+            `
+            SELECT
+                id,
                 client_id,
-                from_staff_id,
-                to_staff_id,
-                reason,
-                status,
-                requested_at
-             )
-             VALUES ($1, $2, $3, $4, $5, 'Pending', NOW())
-             RETURNING *`,
+                staff_id,
+                service_name,
+                appointment_date,
+                appointment_time,
+                booking_status
+            FROM appointments
+            WHERE id = $1
+              AND client_id = $2
+              AND staff_id = $3
+            LIMIT 1
+            `,
             [
                 appointmentId,
                 clientId,
-                fromStaffId,
-                toStaffId || null,
-                reason.trim()
+                requestedByStaffId
             ]
         );
 
-        res.json({
+        if (!appointmentResult.rows.length) {
+            return res.status(404).json({
+                error: 'Matching appointment not found for this staff member'
+            });
+        }
+
+        const appointment = appointmentResult.rows[0];
+
+        const blockedStatuses = ['Cancelled', 'Completed', 'Pending Payment'];
+
+        if (blockedStatuses.includes(appointment.booking_status)) {
+            return res.status(400).json({
+                error: 'This appointment cannot be transferred'
+            });
+        }
+
+        const appointmentDateTime = new Date(
+            `${String(appointment.appointment_date).slice(0, 10)}T${String(appointment.appointment_time).slice(0, 5)}`
+        );
+
+        if (!Number.isNaN(appointmentDateTime.getTime()) && appointmentDateTime <= new Date()) {
+            return res.status(400).json({
+                error: 'Past appointments cannot be transferred'
+            });
+        }
+
+        const existingRequest = await pool.query(
+            `
+            SELECT id
+            FROM client_transfer_requests
+            WHERE appointment_id = $1
+              AND status = 'Pending'
+            LIMIT 1
+            `,
+            [appointmentId]
+        );
+
+        if (existingRequest.rows.length) {
+            return res.status(409).json({
+                error: 'A pending transfer request already exists for this appointment'
+            });
+        }
+
+        const result = await pool.query(
+            `
+            INSERT INTO client_transfer_requests
+                (
+                    appointment_id,
+                    requested_by_staff_id,
+                    requested_to_staff_id,
+                    reason_type,
+                    reason_text,
+                    status,
+                    auto_approved,
+                    requested_at
+                )
+            VALUES
+                ($1, $2, NULL, $3, $4, 'Pending', false, NOW())
+            RETURNING *
+            `,
+            [
+                appointmentId,
+                requestedByStaffId,
+                reasonType,
+                reasonText.trim()
+            ]
+        );
+
+        res.status(201).json({
             ok: true,
-            transferRequest: rows[0]
+            message: 'Transfer request submitted successfully',
+            transfer: result.rows[0]
         });
 
     } catch (err) {
-        console.error('Client transfer request error:', err);
+        console.error('Staff transfer request error:', err);
+
         res.status(500).json({
             error: 'Failed to submit transfer request'
         });
@@ -4270,8 +4563,9 @@ app.delete('/api/admin/appointments/:appointmentId', async (req, res) => {
     }
 });
 
+
 /*------Admin Get Transfer Requests------*/
-/*------Admin Get Transfer Requests------*/
+/*------Admin: Get Transfer Requests------*/
 app.get('/api/admin/transfers', async (_req, res) => {
     try {
         const { rows } = await pool.query(
@@ -4279,8 +4573,10 @@ app.get('/api/admin/transfers', async (_req, res) => {
             SELECT
                 tr.id,
                 tr.appointment_id,
+                tr.requested_by_staff_id,
+                tr.requested_to_staff_id,
                 tr.reason_type,
-                tr.reason_text AS reason,
+                tr.reason_text,
                 tr.status,
                 tr.auto_approved,
                 tr.requested_at,
@@ -4291,10 +4587,10 @@ app.get('/api/admin/transfers', async (_req, res) => {
                 a.service_name,
                 a.appointment_date,
                 a.appointment_time,
+                a.staff_id AS current_staff_id,
 
                 from_staff.full_name AS from_staff_name,
-                to_staff.full_name AS to_staff_name,
-                reviewer.full_name AS reviewed_by_name
+                to_staff.full_name AS to_staff_name
 
             FROM client_transfer_requests tr
 
@@ -4307,13 +4603,12 @@ app.get('/api/admin/transfers', async (_req, res) => {
             LEFT JOIN staff_users to_staff
                 ON to_staff.id = tr.requested_to_staff_id
 
-            LEFT JOIN staff_users reviewer
-                ON reviewer.id = tr.reviewed_by
-
-            ORDER BY 
-                CASE 
-                    WHEN tr.status = 'Pending' THEN 0
-                    ELSE 1
+            ORDER BY
+                CASE
+                    WHEN tr.status = 'Pending' THEN 1
+                    WHEN tr.status = 'Approved' THEN 2
+                    WHEN tr.status = 'Rejected' THEN 3
+                    ELSE 4
                 END,
                 tr.requested_at DESC
             `
@@ -4333,13 +4628,117 @@ app.get('/api/admin/transfers', async (_req, res) => {
     }
 });
 
+/*------Admin: Get Available Staff For Transfer------*/
+app.get('/api/admin/transfers/:id/available-staff', async (req, res) => {
+    try {
+        const transferId = Number(req.params.id);
+
+        if (!transferId) {
+            return res.status(400).json({
+                error: 'Valid transfer ID required'
+            });
+        }
+
+        const transferResult = await pool.query(
+            `
+            SELECT
+                tr.id,
+                tr.appointment_id,
+                a.staff_id AS current_staff_id,
+                a.service_name,
+                a.appointment_date,
+                a.appointment_time
+            FROM client_transfer_requests tr
+            JOIN appointments a
+                ON a.id = tr.appointment_id
+            WHERE tr.id = $1
+            LIMIT 1
+            `,
+            [transferId]
+        );
+
+        if (!transferResult.rows.length) {
+            return res.status(404).json({
+                error: 'Transfer request not found'
+            });
+        }
+
+        const transfer = transferResult.rows[0];
+
+        const availableStaffResult = await pool.query(
+            `
+            SELECT DISTINCT
+                s.id,
+                s.full_name,
+                s.email,
+                s.phone
+            FROM staff_users s
+
+            JOIN staff_services ss
+                ON ss.staff_id = s.id
+               AND ss.service_name = $1
+
+            JOIN staff_availability sa
+                ON sa.staff_id = s.id
+               AND sa.available_date = $2
+               AND $3::time >= sa.start_time
+               AND $3::time < sa.end_time
+               AND sa.status = 'approved'
+
+            LEFT JOIN appointments booked
+                ON booked.staff_id = s.id
+               AND booked.appointment_date = $2
+               AND booked.appointment_time = $3::time
+               AND booked.booking_status IN ('Scheduled', 'Confirmed', 'Pending Payment')
+
+            LEFT JOIN pending_bookings pb
+                ON pb.staff_id = s.id
+               AND pb.appointment_date = $2
+               AND pb.appointment_time = $3::time
+               AND pb.status = 'Pending'
+
+            LEFT JOIN availability_change_requests acr
+                ON acr.staff_id = s.id
+               AND $2::date BETWEEN acr.start_date AND acr.end_date
+               AND acr.status = 'Approved'
+
+            WHERE s.id <> $4
+              AND COALESCE(s.active, true) = true
+              AND booked.id IS NULL
+              AND pb.id IS NULL
+              AND acr.id IS NULL
+
+            ORDER BY s.full_name ASC
+            `,
+            [
+                transfer.service_name,
+                transfer.appointment_date,
+                String(transfer.appointment_time).slice(0, 5),
+                transfer.current_staff_id
+            ]
+        );
+
+        res.json({
+            ok: true,
+            staff: availableStaffResult.rows
+        });
+
+    } catch (err) {
+        console.error('Available staff for transfer error:', err);
+
+        res.status(500).json({
+            error: 'Failed to load available staff'
+        });
+    }
+});
+
 /*------Admin Update Transfer Request------*/
 app.put('/api/admin/transfers/:id', async (req, res) => {
     const dbClient = await pool.connect();
 
     try {
         const transferId = Number(req.params.id);
-        const { status = '' } = req.body || {};
+        const { status = '', requestedToStaffId = null } = req.body || {};
 
         if (!transferId) {
             return res.status(400).json({
@@ -4399,12 +4798,11 @@ app.put('/api/admin/transfers/:id', async (req, res) => {
         if (status === 'Rejected') {
             await dbClient.query(
                 `
-        UPDATE client_transfer_requests
-SET status = 'Rejected',
-    reviewed_at = NOW(),
-    reviewed_by = NULL
-WHERE id = $1
-        `,
+                UPDATE client_transfer_requests
+                SET status = 'Rejected',
+                    reviewed_at = NOW()
+                WHERE id = $1
+                `,
                 [transferId]
             );
 
@@ -4416,7 +4814,21 @@ WHERE id = $1
             });
         }
 
-        const availableStaffResult = await dbClient.query(
+        const selectedStaffId = Number(requestedToStaffId);
+
+        if (!selectedStaffId) {
+            await dbClient.query('ROLLBACK');
+            return res.status(400).json({
+                error: 'Please select a staff member before approving the transfer'
+            });
+        }
+
+        /*
+            Validate the selected staff member is actually available.
+            This prevents the admin from approving a transfer to someone
+            who does not provide the service or is already booked.
+        */
+        const selectedStaffResult = await dbClient.query(
             `
             SELECT DISTINCT
                 s.id,
@@ -4453,32 +4865,33 @@ WHERE id = $1
                AND $2::date BETWEEN acr.start_date AND acr.end_date
                AND acr.status = 'Approved'
 
-            WHERE s.id <> $4
+            WHERE s.id = $4
+              AND s.id <> $5
               AND COALESCE(s.active, true) = true
               AND booked.id IS NULL
               AND pb.id IS NULL
               AND acr.id IS NULL
 
-            ORDER BY s.full_name
             LIMIT 1
             `,
             [
                 transfer.service_name,
                 transfer.appointment_date,
                 String(transfer.appointment_time).slice(0, 5),
+                selectedStaffId,
                 transfer.current_staff_id
             ]
         );
 
-        if (!availableStaffResult.rows.length) {
+        if (!selectedStaffResult.rows.length) {
             await dbClient.query('ROLLBACK');
 
             return res.status(409).json({
-                error: 'No available staff member found for the same service, date, and time.'
+                error: 'Selected staff member is not available for this service, date, and time'
             });
         }
 
-        const newStaff = availableStaffResult.rows[0];
+        const newStaff = selectedStaffResult.rows[0];
 
         let managementToken = transfer.management_token;
 
@@ -4506,19 +4919,19 @@ WHERE id = $1
 
         await dbClient.query(
             `
- UPDATE client_transfer_requests
-SET status = 'Approved',
-    requested_to_staff_id = $1,
-    auto_approved = true,
-    reviewed_at = NOW(),
-    reviewed_by = NULL
-WHERE id = $2
+    UPDATE client_transfer_requests
+    SET status = 'Approved',
+        requested_to_staff_id = $1,
+        auto_approved = false,
+        reviewed_at = NOW()
+    WHERE id = $2
     `,
             [
                 newStaff.id,
                 transferId
             ]
         );
+
 
         await dbClient.query('COMMIT');
 
