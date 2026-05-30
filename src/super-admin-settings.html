@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Settings - Constant & Co</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body class="client-portal-page staff-portal-page">
     <aside class="client-sidebar">
         <div class="client-sidebar-logo">
@@ -14,6 +16,7 @@
             </a>
             <p>Admin Portal</p>
         </div>
+
         <nav class="client-sidebar-nav">
             <a href="super-admin-portal.html">Dashboard</a>
             <a href="super-admin-appointments.html">Appointments</a>
@@ -21,13 +24,8 @@
             <a href="super-admin-staff.html">Staff</a>
             <a href="super-admin-payments.html">Payments</a>
             <a href="super-admin-transfers.html">Transfers</a>
-            <a href="super-admin-leave.html">Leave Requests</a>
-            <a href="super-admin-conversations.html">Conversations</a>
-            <a href="super-admin-documents.html">Documents</a>
-            <a href="super-admin-newsletter.html">Newsletter</a>
-            <a href="super-admin-reports.html">Reports</a>
-            <a href="super-admin-settings.html" class="active">Settings</a>
         </nav>
+
         <div class="client-sidebar-user">
             <strong id="adminNameSidebar">Admin</strong>
             <small id="adminEmailSidebar">Logged in</small>
@@ -40,15 +38,78 @@
             <button id="sidebarToggleBtn" class="client-menu-btn" type="button">☰</button>
             <p>Settings</p>
         </header>
+
         <main class="client-main">
             <section class="client-page-heading">
                 <h1>Admin Settings</h1>
+                <p>View and update your admin account information.</p>
             </section>
-            <section class="client-panel"><h2>System Settings</h2><p>This page is reserved for future business hours, role permissions, and system configuration.</p></section>
+
+            <section class="client-panel admin-settings-panel">
+                <div class="client-panel-head">
+                    <div>
+                        <h2>My Admin Profile</h2>
+                        <p>Update your name, email address, or password.</p>
+                    </div>
+                </div>
+
+                <form id="adminSettingsForm" class="portal-form">
+                    <input type="hidden" id="adminId">
+
+                    <div class="auth-row">
+                        <div>
+                            <label for="adminFullName">Full Name</label>
+                            <input type="text" id="adminFullName" class="input-lg" required>
+                        </div>
+
+                        <div>
+                            <label for="adminEmail">Email</label>
+                            <input type="email" id="adminEmail" class="input-lg" required>
+                        </div>
+                    </div>
+
+                    <div class="auth-row">
+                        <div>
+                            <label for="adminRole">Role</label>
+                            <input type="text" id="adminRole" class="input-lg" readonly>
+                        </div>
+
+                        <div>
+                            <label for="adminVerified">Verified</label>
+                            <input type="text" id="adminVerified" class="input-lg" readonly>
+                        </div>
+                    </div>
+
+                    <hr class="settings-divider">
+
+                    <h3>Change Password</h3>
+                    <p class="settings-help-text">Leave password fields empty if you do not want to change your
+                        password.</p>
+
+                    <div class="auth-row">
+                        <div>
+                            <label for="currentPassword">Current Password</label>
+                            <input type="password" id="currentPassword" class="input-lg">
+                        </div>
+
+                        <div>
+                            <label for="newPassword">New Password</label>
+                            <input type="password" id="newPassword" class="input-lg">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        Save Changes
+                    </button>
+
+                    <p id="settingsMessage" class="settings-message"></p>
+                </form>
+            </section>
         </main>
     </div>
 
     <script src="super-admin-common.js" defer></script>
     <script src="super-admin-settings.js" defer></script>
 </body>
+
 </html>
