@@ -65,144 +65,16 @@ app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async
             const paymentIntent = event.data.object;
 
             const pendingResult = await client.query(
-                `SELECT *
-         FROM pending_bookings
-         WHERE stripe_payment_intent_id = $1
-         LIMIT 1`,
+                `SELECT id FROM pending_bookings WHERE stripe_payment_intent_id = $1 LIMIT 1`,
                 [paymentIntent.id]
             );
 
             if (pendingResult.rows.length > 0) {
-                const pending = pendingResult.rows[0];
-
-                const finalCheck = await client.query(
-                    `SELECT id
-             FROM appointments
-             WHERE staff_id = $1
-               AND appointment_date = $2
-               AND appointment_time = $3::time
-               AND booking_status IN ('Scheduled', 'Confirmed', 'Pending Payment')
-             LIMIT 1`,
-                    [
-                        pending.staff_id,
-                        pending.appointment_date,
-                        pending.appointment_time
-                    ]
-                );
-
-                if (finalCheck.rows.length > 0) {
-                    await client.query(
-                        `UPDATE pending_bookings
-                 SET status = 'Rejected - Slot Already Booked'
-                 WHERE id = $1`,
-                        [pending.id]
-                    );
-
+                const appointment = await finalizePendingBookingPayment(client, paymentIntent);
+                if (!appointment) {
                     await client.query('COMMIT');
                     return res.json({ received: true, rejected: true });
                 }
-
-                const managementToken = generateManagementToken();
-                const appointmentResult = await client.query(
-                    `INSERT INTO appointments
-             (
-                client_id,
-                staff_id,
-                full_name,
-                email,
-                phone,
-                company,
-                service_name,
-                meeting_type,
-                appointment_date,
-                appointment_time,
-                notes,
-                booking_fee,
-                management_token,
-                booking_status,
-                created_at,
-                updated_at
-             )
-             VALUES
-             ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::time, $11, $12, $13, 'Confirmed', NOW(), NOW())
-             RETURNING *`,
-                    [
-                        pending.client_id,
-                        pending.staff_id,
-                        pending.full_name,
-                        pending.email,
-                        pending.phone,
-                        pending.company || null,
-                        pending.service_name,
-                        pending.meeting_type,
-                        pending.appointment_date,
-                        pending.appointment_time,
-                        pending.notes || null,
-                        pending.booking_fee,
-                        managementToken
-                    ]
-                );
-
-                const appointment = appointmentResult.rows[0];
-
-                const billingResult = await client.query(
-                    `INSERT INTO appointment_billing
-             (
-                appointment_id,
-                client_id,
-                service_name,
-                booking_fee,
-                service_charge,
-                total_charge,
-                amount_paid,
-                amount_due,
-                payment_status,
-                stripe_payment_intent_id,
-                created_at,
-                updated_at
-             )
-             VALUES
-             ($1, $2, $3, $4, 0, $4, $4, 0, 'Paid', $5, NOW(), NOW())
-             RETURNING *`,
-                    [
-                        appointment.id,
-                        pending.client_id,
-                        pending.service_name,
-                        pending.booking_fee,
-                        paymentIntent.id
-                    ]
-                );
-
-                await client.query(
-                    `INSERT INTO client_payments
-             (
-                billing_id,
-                client_id,
-                stripe_payment_intent_id,
-                amount,
-                currency,
-                status,
-                created_at
-             )
-             VALUES ($1, $2, $3, $4, $5, 'succeeded', NOW())`,
-                    [
-                        billingResult.rows[0].id,
-                        pending.client_id,
-                        paymentIntent.id,
-                        paymentIntent.amount_received || paymentIntent.amount,
-                        paymentIntent.currency || 'aud'
-                    ]
-                );
-
-                await client.query(
-                    `UPDATE pending_bookings
-             SET status = 'Completed'
-             WHERE id = $1`,
-                    [pending.id]
-                );
-
-                await sendAppointmentConfirmationEmail(appointment);
-
                 await client.query('COMMIT');
                 return res.json({ received: true });
             }
@@ -505,6 +377,206 @@ function generateManagementToken() {
     return crypto.randomBytes(32).toString('hex');
 }
 
+/** Keep calendar dates stable in JSON (avoid timezone shifting Jun 2 → Jun 4). */
+function isoDateOnly(value) {
+    if (value == null || value === '') return null;
+    if (value instanceof Date) {
+        const y = value.getFullYear();
+        const m = String(value.getMonth() + 1).padStart(2, '0');
+        const d = String(value.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+    const match = /^(\d{4}-\d{2}-\d{2})/.exec(String(value).trim());
+    return match ? match[1] : String(value).trim().slice(0, 10);
+}
+
+function normalizeAppointmentForJson(row) {
+    if (!row) return null;
+    return {
+        ...row,
+        appointment_date: isoDateOnly(row.appointment_date),
+        appointment_time: row.appointment_time != null ? String(row.appointment_time).slice(0, 5) : row.appointment_time
+    };
+}
+
+async function findAppointmentForPending(client, pending) {
+    const existing = await client.query(
+        `SELECT *
+         FROM appointments
+         WHERE staff_id = $1
+           AND appointment_date = $2
+           AND appointment_time = $3::time
+           AND lower(email) = lower($4)
+           AND booking_status IN ('Scheduled', 'Confirmed', 'Pending Payment')
+         ORDER BY id DESC
+         LIMIT 1`,
+        [pending.staff_id, pending.appointment_date, pending.appointment_time, pending.email]
+    );
+    return existing.rows[0] || null;
+}
+
+async function finalizePendingBookingPayment(client, paymentIntent) {
+    const pendingResult = await client.query(
+        `SELECT *
+         FROM pending_bookings
+         WHERE stripe_payment_intent_id = $1
+         LIMIT 1`,
+        [paymentIntent.id]
+    );
+
+    if (!pendingResult.rows.length) {
+        return null;
+    }
+
+    const pending = pendingResult.rows[0];
+
+    if (pending.status === 'Completed') {
+        const existing = await findAppointmentForPending(client, pending);
+        if (existing) return existing;
+    }
+
+    const finalCheck = await client.query(
+        `SELECT id
+         FROM appointments
+         WHERE staff_id = $1
+           AND appointment_date = $2
+           AND appointment_time = $3::time
+           AND booking_status IN ('Scheduled', 'Confirmed', 'Pending Payment')
+         LIMIT 1`,
+        [pending.staff_id, pending.appointment_date, pending.appointment_time]
+    );
+
+    if (finalCheck.rows.length > 0) {
+        const existing = await findAppointmentForPending(client, pending);
+        if (existing) {
+            await client.query(
+                `UPDATE pending_bookings SET status = 'Completed' WHERE id = $1`,
+                [pending.id]
+            );
+            return existing;
+        }
+
+        await client.query(
+            `UPDATE pending_bookings
+             SET status = 'Rejected - Slot Already Booked'
+             WHERE id = $1`,
+            [pending.id]
+        );
+        return null;
+    }
+
+    const managementToken = generateManagementToken();
+    const appointmentResult = await client.query(
+        `INSERT INTO appointments
+         (
+            client_id,
+            staff_id,
+            full_name,
+            email,
+            phone,
+            company,
+            service_name,
+            meeting_type,
+            appointment_date,
+            appointment_time,
+            notes,
+            booking_fee,
+            management_token,
+            booking_status,
+            created_at,
+            updated_at
+         )
+         VALUES
+         ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::time, $11, $12, $13, 'Confirmed', NOW(), NOW())
+         RETURNING *`,
+        [
+            pending.client_id,
+            pending.staff_id,
+            pending.full_name,
+            pending.email,
+            pending.phone,
+            pending.company || null,
+            pending.service_name,
+            pending.meeting_type,
+            pending.appointment_date,
+            pending.appointment_time,
+            pending.notes || null,
+            pending.booking_fee,
+            managementToken
+        ]
+    );
+
+    const appointment = appointmentResult.rows[0];
+
+    try {
+        const billingResult = await client.query(
+            `INSERT INTO appointment_billing
+             (
+                appointment_id,
+                client_id,
+                service_name,
+                booking_fee,
+                service_charge,
+                total_charge,
+                amount_paid,
+                amount_due,
+                payment_status,
+                stripe_payment_intent_id,
+                created_at,
+                updated_at
+             )
+             VALUES
+             ($1, $2, $3, $4, 0, $4, $4, 0, 'Paid', $5, NOW(), NOW())
+             RETURNING *`,
+            [
+                appointment.id,
+                pending.client_id,
+                pending.service_name,
+                pending.booking_fee,
+                paymentIntent.id
+            ]
+        );
+
+        if (billingResult.rows.length) {
+            await client.query(
+                `INSERT INTO client_payments
+                 (
+                    billing_id,
+                    client_id,
+                    stripe_payment_intent_id,
+                    amount,
+                    currency,
+                    status,
+                    created_at
+                 )
+                 VALUES ($1, $2, $3, $4, $5, 'succeeded', NOW())`,
+                [
+                    billingResult.rows[0].id,
+                    pending.client_id,
+                    paymentIntent.id,
+                    paymentIntent.amount_received || paymentIntent.amount,
+                    paymentIntent.currency || 'aud'
+                ]
+            );
+        }
+    } catch (billingErr) {
+        console.warn('Billing record skipped (appointment still confirmed):', billingErr.message);
+    }
+
+    await client.query(
+        `UPDATE pending_bookings SET status = 'Completed' WHERE id = $1`,
+        [pending.id]
+    );
+
+    try {
+        await sendAppointmentConfirmationEmail(appointment);
+    } catch (mailErr) {
+        console.warn('Confirmation email failed after booking payment:', mailErr.message);
+    }
+
+    return appointment;
+}
+
 async function ensureAppointmentManagementTokenColumn() {
     await pool.query(
         `ALTER TABLE appointments ADD COLUMN IF NOT EXISTS management_token VARCHAR(64)`
@@ -551,6 +623,41 @@ async function ensureProcessedStripeEventsTable() {
     `);
 }
 
+async function ensureAppointmentBillingTable() {
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS appointment_billing (
+            id SERIAL PRIMARY KEY,
+            appointment_id INTEGER NOT NULL,
+            client_id INTEGER NOT NULL,
+            service_name VARCHAR(255) NOT NULL,
+            booking_fee INTEGER NOT NULL DEFAULT 0,
+            service_charge INTEGER NOT NULL DEFAULT 0,
+            total_charge INTEGER NOT NULL DEFAULT 0,
+            amount_paid INTEGER NOT NULL DEFAULT 0,
+            amount_due INTEGER NOT NULL DEFAULT 0,
+            payment_status VARCHAR(64) NOT NULL DEFAULT 'Pending',
+            stripe_payment_intent_id VARCHAR(255),
+            created_at TIMESTAMPTZ DEFAULT NOW(),
+            updated_at TIMESTAMPTZ DEFAULT NOW()
+        )
+    `);
+}
+
+async function ensureClientPaymentsTable() {
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS client_payments (
+            id SERIAL PRIMARY KEY,
+            billing_id INTEGER NOT NULL,
+            client_id INTEGER NOT NULL,
+            stripe_payment_intent_id VARCHAR(255),
+            amount INTEGER NOT NULL DEFAULT 0,
+            currency VARCHAR(16) NOT NULL DEFAULT 'aud',
+            status VARCHAR(64) NOT NULL DEFAULT 'succeeded',
+            created_at TIMESTAMPTZ DEFAULT NOW()
+        )
+    `);
+}
+
 function paymentInitErrorMessage(err) {
     const msg = err && err.message ? String(err.message) : '';
     if (/relation ["'].*["'] does not exist/i.test(msg)) {
@@ -568,16 +675,55 @@ function paymentInitErrorMessage(err) {
     return msg || 'Payment initialization failed';
 }
 
-const mailTransporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
+function buildMailTransport() {
+    const user = (process.env.EMAIL_USER || process.env.SMTP_USER || '').trim();
+    const pass = (process.env.EMAIL_PASS || process.env.SMTP_PASS || '').replace(/\s+/g, '');
+    if (!user || !pass) {
+        return null;
     }
-});
+
+    const host = (process.env.SMTP_HOST || '').trim();
+    if (host) {
+        const port = Number(process.env.SMTP_PORT || 587);
+        const secure = process.env.SMTP_SECURE === 'true' || port === 465;
+        return nodemailer.createTransport({
+            host,
+            port,
+            secure,
+            auth: { user, pass }
+        });
+    }
+
+    return nodemailer.createTransport({
+        service: 'gmail',
+        auth: { user, pass }
+    });
+}
+
+const mailTransporter = buildMailTransport();
+
+async function verifyMailTransport() {
+    if (!mailTransporter) {
+        console.warn('Email not configured: set EMAIL_USER and EMAIL_PASS in api/.env');
+        return false;
+    }
+    try {
+        await mailTransporter.verify();
+        console.log('Email SMTP ready:', (process.env.SMTP_HOST || 'gmail'), '→', process.env.EMAIL_USER);
+        return true;
+    } catch (err) {
+        console.error('Email SMTP login FAILED:', err.message);
+        console.error('Fix api/.env: use a Gmail App Password (2FA on), or set SMTP_HOST/SMTP_PORT for Mailtrap.');
+        return false;
+    }
+}
 
 async function sendAppointmentConfirmationEmail(appointment) {
     if (!appointment.email) return;
+    if (!mailTransporter) {
+        console.warn('Skipping confirmation email — SMTP not configured');
+        return;
+    }
 
     const base = publicSiteBaseUrl();
     const token = appointment.management_token || '';
@@ -623,7 +769,7 @@ async function sendAppointmentConfirmationEmail(appointment) {
             : '';
 
     await mailTransporter.sendMail({
-        from: `"Constant & Co" <${process.env.EMAIL_USER}>`,
+        from: `"Constant & Co" <${process.env.EMAIL_USER || process.env.SMTP_USER}>`,
         to: appointment.email,
         subject: 'Appointment Confirmation - Constant & Co',
         html: `
@@ -2205,8 +2351,9 @@ app.get('/api/booking-slots', async (req, res) => {
                         : null;
                 const providerSlots = await getProviderSlotsForDate(provider.id, date, staffForExcl);
                 for (const slot of providerSlots) {
-                    if (!slotMap.has(slot)) {
-                        slotMap.set(slot, {
+                    const key = `${slot}|${provider.id}`;
+                    if (!slotMap.has(key)) {
+                        slotMap.set(key, {
                             time: slot,
                             provider_id: provider.id,
                             provider_name: provider.full_name
@@ -2215,8 +2362,11 @@ app.get('/api/booking-slots', async (req, res) => {
                 }
             }
 
-            const slots = Array.from(slotMap.values())
-                .sort((a, b) => a.time.localeCompare(b.time));
+            const slots = Array.from(slotMap.values()).sort((a, b) => {
+                const byTime = a.time.localeCompare(b.time);
+                if (byTime !== 0) return byTime;
+                return String(a.provider_name || '').localeCompare(String(b.provider_name || ''));
+            });
 
             return res.json({ ok: true, slots });
         }
@@ -2690,7 +2840,7 @@ app.get('/api/booking/manage/:token', async (req, res) => {
                 company: row.company,
                 service_name: row.service_name,
                 meeting_type: row.meeting_type,
-                appointment_date: row.appointment_date,
+                appointment_date: isoDateOnly(row.appointment_date),
                 appointment_time: row.appointment_time,
                 notes: row.notes,
                 booking_status: row.booking_status,
@@ -5209,7 +5359,6 @@ app.post('/api/create-pending-booking-payment-intent', async (req, res) => {
         }
 
         if (
-            !clientId ||
             !fullName ||
             !email ||
             !phone ||
@@ -5223,6 +5372,14 @@ app.post('/api/create-pending-booking-payment-intent', async (req, res) => {
                 error: 'Missing booking details'
             });
         }
+
+        const resolvedClientId = await resolveClientIdForBooking({
+            clientId,
+            fullName,
+            email,
+            phone,
+            serviceName
+        });
 
         // Prevent double booking BEFORE payment
         const existingAppointment = await pool.query(
@@ -5274,7 +5431,7 @@ app.post('/api/create-pending-booking-payment-intent', async (req, res) => {
                 enabled: true
             },
             metadata: {
-                clientId: String(clientId),
+                clientId: String(resolvedClientId),
                 serviceName: serviceName || 'Appointment booking'
             }
         });
@@ -5305,7 +5462,7 @@ app.post('/api/create-pending-booking-payment-intent', async (req, res) => {
             )`,
             [
                 paymentIntent.id,
-                clientId,
+                resolvedClientId,
                 staffIdNum,
                 fullName.trim(),
                 email.trim(),
@@ -5332,6 +5489,46 @@ app.post('/api/create-pending-booking-payment-intent', async (req, res) => {
         res.status(500).json({
             error: paymentInitErrorMessage(err)
         });
+    }
+});
+
+app.post('/api/confirm-pending-booking-payment', async (req, res) => {
+    const paymentIntentId = String(req.body?.paymentIntentId || '').trim();
+    if (!paymentIntentId) {
+        return res.status(400).json({ error: 'Payment reference is required.' });
+    }
+
+    const client = await pool.connect();
+    try {
+        const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+        if (paymentIntent.status !== 'succeeded') {
+            return res.status(402).json({ error: 'Payment is not completed yet. Please wait and refresh.' });
+        }
+
+        await client.query('BEGIN');
+        const appointment = await finalizePendingBookingPayment(client, paymentIntent);
+        if (!appointment) {
+            await client.query('ROLLBACK');
+            return res.status(409).json({
+                error: 'Could not confirm this booking. The time slot may no longer be available.'
+            });
+        }
+        await client.query('COMMIT');
+
+        res.json({
+            ok: true,
+            appointment: normalizeAppointmentForJson(appointment)
+        });
+    } catch (err) {
+        try {
+            await client.query('ROLLBACK');
+        } catch (_rollbackErr) {
+            /* ignore */
+        }
+        console.error('Confirm pending booking payment error:', err);
+        res.status(500).json({ error: 'Could not confirm booking after payment.' });
+    } finally {
+        client.release();
     }
 });
 
@@ -5378,9 +5575,12 @@ app.use((err, req, res, next) => {
     try {
         await ensurePendingBookingsTable();
         await ensureProcessedStripeEventsTable();
+        await ensureAppointmentBillingTable();
+        await ensureClientPaymentsTable();
     } catch (err) {
-        console.warn('Could not ensure pending_bookings / processed_stripe_events tables:', err.message);
+        console.warn('Could not ensure booking/payment tables:', err.message);
     }
+    await verifyMailTransport();
     app.get('/api/chatbot/billing-summary', async (req, res) => {
         try {
             const email = String(req.query.email || '').trim().toLowerCase();

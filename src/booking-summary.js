@@ -8,6 +8,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         return typeof t === 'string' && /^[a-f0-9]{64}$/i.test(t.trim());
     }
 
+    function formatDisplayDate(dateStr) {
+        if (!dateStr) return 'N/A';
+        const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(dateStr).trim());
+        if (!match) return String(dateStr);
+        const d = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+        return d.toLocaleDateString('en-AU', {
+            weekday: 'short',
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric'
+        });
+    }
+
+    function normalizeDateOnly(value) {
+        if (value == null || value === '') return '';
+        const match = /^(\d{4}-\d{2}-\d{2})/.exec(String(value).trim());
+        return match ? match[1] : String(value).trim().slice(0, 10);
+    }
+
     let data = null;
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -33,8 +52,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     service_name: b.service_name,
                     meetingType: b.meeting_type,
                     meeting_type: b.meeting_type,
-                    appointmentDate: b.appointment_date,
-                    appointment_date: b.appointment_date,
+                    appointmentDate: normalizeDateOnly(b.appointment_date),
+                    appointment_date: normalizeDateOnly(b.appointment_date),
                     appointmentTime: b.appointment_time,
                     appointment_time: b.appointment_time,
                     notes: b.notes || '',
@@ -87,6 +106,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
+    data.appointmentDate = normalizeDateOnly(data.appointmentDate || data.appointment_date);
+    data.appointment_date = data.appointmentDate;
+
     function applyDataToDom(d) {
         document.getElementById('summaryName').textContent = d.fullName || 'N/A';
         document.getElementById('summaryEmail').textContent = d.email || 'N/A';
@@ -94,7 +116,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('summaryCompany').textContent = d.company || 'N/A';
         document.getElementById('summaryService').textContent = d.service || d.service_name || 'N/A';
         document.getElementById('summaryMeetingType').textContent = d.meetingType || d.meeting_type || 'N/A';
-        document.getElementById('summaryDate').textContent = d.appointmentDate || d.appointment_date || 'N/A';
+        document.getElementById('summaryDate').textContent = formatDisplayDate(
+            d.appointmentDate || d.appointment_date
+        );
         const t = d.appointmentTime || d.appointment_time;
         document.getElementById('summaryTime').textContent =
             t != null && String(t).length >= 5 ? String(t).slice(0, 5) : t || 'N/A';
@@ -139,8 +163,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             company: b.company || '',
             service: b.service_name,
             meetingType: b.meeting_type,
-            appointmentDate: b.appointment_date,
+            appointmentDate: normalizeDateOnly(b.appointment_date),
+            appointment_date: normalizeDateOnly(b.appointment_date),
             appointmentTime: b.appointment_time,
+            appointment_time: b.appointment_time,
             notes: b.notes || '',
             clientId: b.client_id != null ? b.client_id : base.clientId,
             staffId: b.staff_id != null ? b.staff_id : base.staffId,
@@ -237,10 +263,39 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    async function tryConfirmFromStoredPayment() {
+        const paymentIntentId = (sessionStorage.getItem('bookingPaymentIntentId') || '').trim();
+        if (!paymentIntentId) return null;
+
+        try {
+            const res = await fetch(`${API_BASE}/api/confirm-pending-booking-payment`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ paymentIntentId })
+            });
+            const out = await res.json();
+            if (!res.ok || !out.appointment) return null;
+
+            const apt = out.appointment;
+            const token = apt.management_token || '';
+            if (token) {
+                sessionStorage.setItem('bookingManagementToken', token);
+            }
+            await applyServerBooking(apt, token);
+            sessionStorage.removeItem('bookingPaymentIntentId');
+            return token && validToken(token) ? token : null;
+        } catch (_e) {
+            return null;
+        }
+    }
+
     async function bootstrapManage() {
         let token = (sessionStorage.getItem('bookingManagementToken') || '').trim();
         if (!validToken(token)) {
             token = (data.managementToken || data.management_token || '').trim();
+        }
+        if (!validToken(token)) {
+            token = (await tryConfirmFromStoredPayment()) || '';
         }
         if (!validToken(token)) {
             token = (await tryResolveTokenFromServer()) || '';
@@ -255,6 +310,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         if (validToken(token)) {
             await refreshManageEligibilityWithToken(token);
+            return;
+        }
+
+        if (manageClosedNote) {
+            manageClosedNote.style.display = '';
+            manageClosedNote.querySelector('p').textContent =
+                'Your booking details are saved, but we could not link reschedule/cancel yet. Return to the payment success page briefly, or contact Constant & Co with your email and appointment time.';
         }
     }
 

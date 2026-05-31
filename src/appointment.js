@@ -166,16 +166,26 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadSlots() {
         const selectedService = service.value;
         const selectedDate = appointmentDate.value;
-        if (!selectedService || !selectedDate || !state.selectedProviderChoice) {
-            slotPicker.innerHTML = '<p>Select service, provider and date to view available times.</p>';
+        const providerChoice = state.selectedProviderChoice;
+
+        if (!selectedService || !selectedDate) {
+            slotPicker.innerHTML = '<p>Select service and date to view available times.</p>';
             return;
         }
+
+        if (!providerChoice) {
+            slotPicker.innerHTML = '<p>Select a provider (or Any Provider) to view available times.</p>';
+            return;
+        }
+
+        const providerIdForApi = providerChoice === 'any' ? 'any' : String(providerChoice);
+        const showAgentOnSlot = providerChoice === 'any';
 
         try {
             setBusy('Loading times...');
             const qs = new URLSearchParams({
                 service: selectedService,
-                providerId: String(state.selectedProviderChoice),
+                providerId: providerIdForApi,
                 date: selectedDate
             });
             const res = await fetch(`${API_BASE}/api/booking-slots?${qs.toString()}`);
@@ -187,16 +197,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 slotPicker.innerHTML = '<p>No available times for this date.</p>';
                 appointmentTime.value = '';
                 state.selectedTime = '';
+                if (providerChoice !== 'any') {
+                    state.selectedProviderId = providerChoice;
+                } else {
+                    state.selectedProviderId = '';
+                }
                 clearStatus();
                 return;
             }
 
             slotPicker.innerHTML = slots.map((slot) => {
-                const label = slot.provider_name
-                    ? `${slot.time} (${slot.provider_name})`
+                const label = showAgentOnSlot && slot.provider_name
+                    ? `${slot.time} — ${slot.provider_name}`
                     : slot.time;
+                const providerId = showAgentOnSlot ? slot.provider_id : providerChoice;
                 return `
-                <button type="button" class="booking-slot-btn" data-slot="${slot.time}" data-provider-id="${slot.provider_id}">
+                <button type="button" class="booking-slot-btn" data-slot="${slot.time}" data-provider-id="${providerId}">
                     ${label}
                 </button>
             `;
@@ -208,10 +224,23 @@ document.addEventListener('DOMContentLoaded', () => {
                         item.classList.remove('active'));
                     btn.classList.add('active');
                     state.selectedTime = btn.dataset.slot || '';
-                    state.selectedProviderId = btn.dataset.providerId || state.selectedProviderChoice;
+                    state.selectedProviderId = btn.dataset.providerId || providerChoice;
                     appointmentTime.value = state.selectedTime;
+                    if (showAgentOnSlot) {
+                        const providerRadio = document.querySelector(
+                            `input[name="selectedStaff"][value="${state.selectedProviderId}"]`
+                        );
+                        if (providerRadio) {
+                            providerRadio.checked = true;
+                            state.selectedProviderChoice = providerRadio.value;
+                        }
+                    }
                 });
             });
+
+            if (providerChoice !== 'any') {
+                state.selectedProviderId = providerChoice;
+            }
             clearStatus();
         } catch (err) {
             console.error(err);
@@ -268,13 +297,13 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        if (!selectedStaff) {
-            setStatus('Please select a provider.');
+        if (!state.selectedProviderChoice) {
+            setStatus('Please select a provider or Any Provider.');
             return;
         }
 
         if (!state.selectedProviderId) {
-            setStatus('Please select an available time so we can assign a provider.');
+            setStatus('Please select an available time.');
             return;
         }
 
@@ -347,5 +376,5 @@ document.addEventListener('DOMContentLoaded', () => {
     rebuildConsultationTypes();
     updateCost();
     availableAgent.innerHTML = '<p>Select a service to view available providers.</p>';
-    slotPicker.innerHTML = '<p>Select service, provider and date to view available times.</p>';
+    slotPicker.innerHTML = '<p>Select a provider (or Any Provider), then choose a date to view times.</p>';
 });

@@ -3,8 +3,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
             ? 'http://localhost:3001'
             : '';
-    const clientId = sessionStorage.getItem('clientId');
-    const pendingBooking = JSON.parse(sessionStorage.getItem('pendingBooking'));
+    const pendingBooking = JSON.parse(sessionStorage.getItem('pendingBooking') || 'null');
     const messageEl = document.getElementById('payment-message');
     const form = document.getElementById('payment-form');
     const submitBtn = document.getElementById('submit-payment');
@@ -22,10 +21,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         return text
             ? text.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
             : '';
-    }
-    if (!clientId) {
-        setMessage('Session expired. Please log in again.');
-        return;
     }
     if (!pendingBooking) {
         setMessage('No pending booking found. Please book an appointment first.');
