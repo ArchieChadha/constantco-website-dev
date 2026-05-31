@@ -14,8 +14,8 @@
     <header class="auth-minimal-header" role="banner">
         <div class="container auth-minimal-inner">
             <a href="index.html" class="auth-minimal-logo-link" aria-label="Constant & Co — go to homepage">
-                <img src="https://constantandco.com.au/wp-content/uploads/2022/09/Logo-New.png" alt=""
-                    width="180" height="72" decoding="async" />
+                <img src="https://constantandco.com.au/wp-content/uploads/2022/09/Logo-New.png" alt="" width="180"
+                    height="72" decoding="async" />
             </a>
             <nav class="auth-minimal-nav" aria-label="Quick links">
                 <a href="index.html" class="auth-minimal-back">← Back to Website</a>
@@ -116,8 +116,32 @@
         </div>
         <div class="container copy">© 2025 Constant &amp; Co. All rights reserved.</div>
     </footer>
+    <div class="chatbot-widget">
+        <button id="chatbotToggle" class="chatbot-toggle" type="button">
+            <span class="chatbot-toggle-icon">💬</span>
+            <span>Chat</span>
+        </button>
 
-    <script src="appointment-access.js"></script>
+        <div id="chatbotPanel" class="chatbot-panel hidden">
+            <div class="chatbot-header">
+                <div>
+                    <strong>Constant & Co Assistant</strong>
+                    <small>Online support</small>
+                </div>
+                <button id="chatbotClose" type="button">×</button>
+            </div>
+
+            <div id="chatbotMessages" class="chatbot-messages"></div>
+
+            <form id="chatbotForm" class="chatbot-form hidden">
+                <input id="chatbotInput" type="text" placeholder="Type your answer..." autocomplete="off">
+                <button type="submit">Send</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="appointment-access.js" defer></script>
+    <script src="chatbot.js" defer></script>
 </body>
 
 </html>

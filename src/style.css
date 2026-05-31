@@ -1,3 +1,15 @@
+/* =========================================================
+   CONSTANT & CO - MAIN STYLESHEET
+   Organised sections:
+   01. Theme tokens and base reset
+   02. Header, navigation, buttons, mega menu
+   03. Public website sections, services, team, footer
+   04. Auth, newsletter, appointment, payment and booking pages
+   05. Client, staff and admin portal layouts
+   06. Messaging, documents, tables, reports and chatbot
+   07. Responsive consolidation fixes for 768px and below
+========================================================= */
+
 /* ===== Theme tokens ===== */
 :root {
     --teal: #236B7D;
@@ -870,7 +882,7 @@ footer a {
 
     bottom: 20px;
 
-    display: flex;
+    display: none;
 
     align-items: center;
 
@@ -886,6 +898,10 @@ footer a {
 
     z-index: 9997;
 
+}
+
+.newsletter-dock.is-visible {
+    display: flex;
 }
 
 .news-dock-text {
@@ -1963,7 +1979,6 @@ body {
 
 /* DOCUMENT UPLOAD POPUP */
 
-
 .chat-upload-panel {
     position: absolute !important;
     left: 32px !important;
@@ -2020,7 +2035,6 @@ body {
     width: fit-content !important;
 }
 
-
 /* =========================================================
 
    LISTS / RECORDS
@@ -2028,15 +2042,6 @@ body {
 ========================================================= */
 
 .client-list,
-
-/* =========================================================
-
-   LISTS / RECORDS
-
-========================================================= */
-
-.client-list,
-
 .records-list {
 
     display: grid;
@@ -3043,12 +3048,13 @@ tr:hover {
 .chatbot-panel {
     position: absolute;
     left: 0;
-    bottom: 78px;
-    width: 360px;
+    bottom: 72px;
+    width: 380px;
     max-width: calc(100vw - 32px);
 
-    min-height: 420px;
-    max-height: 600px;
+    height: fit-content;
+    min-height: unset;
+    max-height: none;
 
     background: #ffffff;
     border-radius: 22px;
@@ -3057,6 +3063,7 @@ tr:hover {
 
     display: flex;
     flex-direction: column;
+    align-items: stretch;
 }
 
 .hidden {
@@ -3064,12 +3071,14 @@ tr:hover {
 }
 
 .chatbot-header {
+    order: 1;
     background: var(--teal);
     color: #ffffff;
     padding: 16px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-shrink: 0;
 }
 
 .chatbot-header strong {
@@ -3092,12 +3101,18 @@ tr:hover {
 }
 
 .chatbot-messages {
+    order: 2;
     padding: 16px;
     overflow-y: auto;
 
     display: flex;
     flex-direction: column;
     gap: 10px;
+
+    height: auto;
+    min-height: unset;
+    max-height: 360px;
+    flex: 0 1 auto;
 }
 
 .chatbot-message {
@@ -3149,12 +3164,14 @@ tr:hover {
 }
 
 .chatbot-form {
+    order: 3;
     display: none;
     grid-template-columns: 1fr auto;
     gap: 8px;
     padding: 12px;
     border-top: 1px solid rgba(35, 107, 125, 0.12);
     background: #ffffff;
+    flex-shrink: 0;
 }
 
 .chatbot-form input {
@@ -3189,7 +3206,16 @@ tr:hover {
 
     .chatbot-panel {
         width: calc(100vw - 28px);
-        height: 520px;
+        height: fit-content;
+        min-height: unset;
+        max-height: none;
+    }
+
+    .chatbot-messages {
+        height: auto;
+        min-height: unset;
+        max-height: 320px;
+        flex: 0 1 auto;
     }
 }
 
@@ -3611,9 +3637,6 @@ tr:hover {
     gap: 12px;
     justify-content: center;
 }
-
-
-
 
 /* ===== Resource pages (FAQs, Articles) ===== */
 .resource-breadcrumb {
@@ -4983,8 +5006,6 @@ tr:hover {
     justify-content: center;
 }
 
-
-
 /* MEET OUR PEOPLE */
 
 .people-section {
@@ -5069,8 +5090,6 @@ tr:hover {
     color: #0b3a46;
 }
 
-
-
 .available-agent-box {
     margin-top: 20px;
     padding: 18px;
@@ -5097,9 +5116,6 @@ tr:hover {
     border-radius: 50%;
     object-fit: cover;
 }
-
-
-
 
 .appointment-step-title {
     margin: 14px 0 10px;
@@ -6018,20 +6034,22 @@ tr:hover {
 }
 
 /* ---------- Chatbot mobile ---------- */
-@media (max-width: 520px) {
-
+@media (max-width: 600px) {
     .chatbot-widget {
-        right: 14px;
+        left: 14px;
         bottom: 14px;
     }
 
     .chatbot-panel {
-        width: calc(100vw - 28px);
-        height: 520px;
+        width: 320px;
+        max-width: calc(100vw - 28px);
+        height: auto;
+        min-height: 0;
+        max-height: 420px;
     }
 
-    .chatbot-message {
-        max-width: 90%;
+    .chatbot-messages {
+        max-height: 280px;
     }
 }
 
@@ -6199,13 +6217,29 @@ tr:hover {
     padding: 18px 24px 24px !important;
 }
 
-/* Show chatbot only on homepage */
+/* Show chatbot on all public pages */
 .chatbot-widget {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: fixed !important;
+    left: 30px !important;
+    bottom: 30px !important;
+    z-index: 999999 !important;
+}
+
+.chatbot-panel.hidden {
     display: none !important;
 }
 
-body.home-page .chatbot-widget {
-    display: block !important;
+.chatbot-panel:not(.hidden) {
+    display: flex !important;
+}
+
+.chatbot-toggle {
+    display: inline-flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 /* ==============================
@@ -6396,5 +6430,1191 @@ body.home-page .chatbot-widget {
 
     .input-sm {
         width: 100%;
+    }
+}
+
+/* =========================================================
+   07. RESPONSIVE CONSOLIDATION FIXES
+   Purpose:
+   - Prevent horizontal overflow from 768px and below.
+   - Make grids, tables, portal pages, chat, forms and cards fit inside viewport.
+   - Keep existing desktop design intact.
+========================================================= */
+
+@media (max-width: 768px) {
+
+    html,
+    body {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+
+    *,
+    *::before,
+    *::after {
+        min-width: 0;
+    }
+
+    img,
+    video,
+    canvas,
+    svg {
+        max-width: 100%;
+        height: auto;
+    }
+
+    .container {
+        width: 100%;
+        max-width: 100%;
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+
+    section {
+        padding: 42px 0;
+    }
+
+    h1,
+    .auth-title,
+    .appointment-title,
+    .appointment-access-title,
+    .payment-title,
+    .payment-success-title,
+    .payment-cancel-title,
+    .svc-hero-copy h1 {
+        font-size: clamp(1.75rem, 6vw, 2.25rem);
+        line-height: 1.18;
+    }
+
+    .section-title,
+    .appointment-form-title,
+    .appointment-access-form-title {
+        font-size: clamp(1.45rem, 5vw, 1.8rem);
+        line-height: 1.25;
+    }
+
+    /* Header and navigation */
+    .nav {
+        height: auto;
+        min-height: 96px;
+        padding: 12px 16px;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .brand img {
+        height: 70px;
+        max-width: 180px;
+    }
+
+    .menu {
+        width: 100%;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        gap: 8px;
+    }
+
+    .menu .top-link {
+        padding: 8px 10px;
+        font-size: 0.9rem;
+    }
+
+    .mega-panel {
+        position: static;
+        left: auto;
+        top: auto;
+        transform: none;
+        width: 100%;
+        max-width: 100%;
+        grid-template-columns: 1fr;
+        gap: 12px;
+        margin-top: 10px;
+        padding: 14px;
+    }
+
+    /* Public website grids */
+    .hero-grid,
+    .split,
+    .payment-layout,
+    .appointment-access-layout,
+    .svc-hero-grid,
+    .svc-grid,
+    .svc-grid-2,
+    .svc-content-grid,
+    .home-hero-grid,
+    .home-why-pillars,
+    .home-service-grid,
+    .home-team-grid,
+    .home-testimonial-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .hero-grid {
+        min-height: auto;
+        padding: 28px 0;
+    }
+
+    .hero-buttons,
+    .svc-hero-actions,
+    .summary-actions,
+    .payment-success-actions,
+    .payment-cancel-actions,
+    .client-action-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .hero-buttons .btn,
+    .svc-hero-actions .btn,
+    .svc-btn,
+    .summary-actions .btn,
+    .payment-success-actions .btn,
+    .payment-cancel-actions .btn,
+    .client-action-row .btn {
+        width: 100%;
+        text-align: center;
+        justify-content: center;
+    }
+
+    .services,
+    .team,
+    .testimonials {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .foot {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    /* Auth, appointment and payment forms */
+    .auth-card,
+    .appointment-form-clean,
+    .appointment-access-card,
+    .summary-card,
+    .payment-summary-card,
+    .payment-card,
+    .payment-success-card,
+    .payment-cancel-card {
+        width: 100%;
+        max-width: 100%;
+        padding: 20px;
+        border-radius: 18px;
+    }
+
+    .auth-row,
+    .appointment-form .auth-row {
+        grid-template-columns: 1fr !important;
+        gap: 16px;
+    }
+
+    .auth-row--inline,
+    .appointment-consent-row,
+    .payment-summary-row,
+    .payment-success-row,
+    .payment-cancel-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .input-lg,
+    select,
+    textarea,
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="tel"],
+    input[type="date"],
+    input[type="time"] {
+        max-width: 100%;
+    }
+
+    .summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .available-agent-box,
+    #slotPicker,
+    #rescheduleSlots {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+
+    .agent-card,
+    .booking-provider-card {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .booking-slot-btn {
+        max-width: 100%;
+        white-space: normal;
+    }
+
+    /* Booking manage reschedule form */
+    #manageActions {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    #manageActions .input-lg,
+    #manageActions select,
+    #manageActions input {
+        width: 100%;
+        max-width: 100%;
+        min-height: 52px;
+    }
+
+    #manageActions .btn {
+        width: 100%;
+        text-align: center;
+    }
+
+    /* Portal layout */
+    .client-sidebar {
+        width: min(82vw, 280px);
+        min-width: 0;
+        max-width: 280px;
+        z-index: 1000;
+        box-shadow: 12px 0 30px rgba(15, 46, 54, 0.16);
+    }
+
+    .client-sidebar-logo img {
+        max-width: 150px;
+    }
+
+    .client-portal-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+
+    .client-topbar {
+        padding: 0 14px;
+        gap: 12px;
+    }
+
+    .client-main {
+        width: 100%;
+        max-width: 100%;
+        padding: 20px 14px 32px;
+    }
+
+    .client-page-heading h1 {
+        font-size: 1.75rem;
+    }
+
+    .client-dashboard-grid,
+    .client-stat-grid,
+    .portal-info-grid,
+    .client-mini-grid,
+    .admin-stat-grid,
+    .staff-stat-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .client-stat-card,
+    .client-mini-card {
+        min-height: auto;
+    }
+
+    .client-panel {
+        width: 100%;
+        max-width: 100%;
+        padding: 16px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .client-panel-head {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .client-panel-head .btn {
+        width: 100%;
+    }
+
+    /* Tables stay readable by scrolling inside the card instead of pushing the page out */
+    .client-table,
+    .table-card table,
+    table {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .client-panel .client-table,
+    .table-card table {
+        min-width: 620px;
+    }
+
+    .client-table th,
+    .client-table td,
+    th,
+    td {
+        padding: 11px 12px;
+        white-space: nowrap;
+    }
+
+    .table-card {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Legacy portal layout */
+    .portal-container,
+    .card-grid {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+    }
+
+    .main-content {
+        padding: 20px 14px;
+    }
+
+    /* Chat and messages */
+    .client-chat-shell {
+        grid-template-columns: 1fr !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+    }
+
+    .client-chat-people {
+        max-height: 280px !important;
+        border-right: none !important;
+        border-bottom: 1px solid rgba(35, 107, 125, 0.12) !important;
+    }
+
+    .client-chat-main {
+        min-height: 620px !important;
+    }
+
+    .chat-header {
+        padding: 16px !important;
+    }
+
+    .chat-title-row {
+        align-items: flex-start !important;
+    }
+
+    .chat-tabs {
+        margin: 10px 0 0 0 !important;
+        overflow-x: auto !important;
+        padding-bottom: 4px !important;
+    }
+
+    .chat-tab {
+        white-space: nowrap !important;
+    }
+
+    .chat-message-list {
+        padding: 16px !important;
+    }
+
+    .chat-bubble {
+        max-width: 88% !important;
+    }
+
+    .chat-composer {
+        grid-template-columns: 44px minmax(0, 1fr) !important;
+        gap: 8px !important;
+        padding: 12px !important;
+    }
+
+    .chat-send-btn {
+        grid-column: 1 / -1 !important;
+        width: 100% !important;
+    }
+
+    .chat-upload-panel {
+        position: fixed !important;
+        left: 14px !important;
+        right: 14px !important;
+        bottom: 84px !important;
+        width: auto !important;
+        max-width: none !important;
+    }
+
+    /* Newsletter and chatbot */
+    .newsletter-pop {
+        width: calc(100vw - 24px);
+        max-width: calc(100vw - 24px);
+        padding: 28px 20px !important;
+        border-radius: 22px;
+    }
+
+    .news-pop-head {
+        padding-right: 42px;
+    }
+
+    .newsletter-dock {
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        border-radius: 18px;
+    }
+
+    .news-dock-text {
+        white-space: normal;
+    }
+
+    .chatbot-widget {
+        left: 14px;
+        right: 14px;
+        bottom: 14px;
+    }
+
+    .chatbot-panel {
+        width: calc(100vw - 28px);
+        max-width: calc(100vw - 28px);
+        height: min(560px, calc(100vh - 120px));
+        max-height: calc(100vh - 120px);
+    }
+
+    .chatbot-toggle {
+        max-width: calc(100vw - 28px);
+    }
+
+    /* Reports */
+    .reports-heading,
+    .report-main-panel .client-panel-head,
+    .report-bar-row {
+        grid-template-columns: 1fr !important;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .report-bar-value,
+    .input-sm {
+        width: 100%;
+        text-align: left;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .services,
+    .team,
+    .testimonials,
+    .foot {
+        grid-template-columns: 1fr;
+    }
+
+    .nav {
+        min-height: 86px;
+        padding: 10px 12px;
+    }
+
+    .brand img {
+        height: 62px;
+    }
+
+    .menu {
+        gap: 6px;
+    }
+
+    .menu .top-link {
+        padding: 7px 8px;
+        font-size: 0.85rem;
+    }
+
+    .client-main {
+        padding: 18px 12px 28px;
+    }
+
+    .client-panel {
+        padding: 14px;
+        border-radius: 16px;
+    }
+
+    .client-panel .client-table,
+    .table-card table {
+        min-width: 560px;
+    }
+
+    .chat-bubble {
+        max-width: 94% !important;
+    }
+
+    .chat-composer {
+        grid-template-columns: 1fr !important;
+    }
+
+    .chat-plus-btn,
+    .chat-icon-btn,
+    .chat-send-btn {
+        width: 100% !important;
+        border-radius: 14px !important;
+    }
+
+    .auth-card,
+    .appointment-form-clean,
+    .appointment-access-card,
+    .summary-card,
+    .payment-summary-card,
+    .payment-card,
+    .payment-success-card,
+    .payment-cancel-card {
+        padding: 18px;
+    }
+
+    .newsletter-pop {
+        padding: 24px 16px !important;
+    }
+}
+
+/* =========================================================
+   FIX: CLIENT MESSAGES PAGE FOR 768PX TABLET VIEW
+   Keeps the chat layout professional instead of stacking badly
+========================================================= */
+
+@media (min-width: 700px) and (max-width: 900px) {
+
+    .client-portal-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+
+    .client-main {
+        padding: 20px 18px 28px !important;
+    }
+
+    .client-topbar {
+        height: 64px !important;
+        padding: 0 18px !important;
+    }
+
+    .client-chat-shell {
+        display: grid !important;
+        grid-template-columns: 260px minmax(0, 1fr) !important;
+        height: calc(100vh - 120px) !important;
+        min-height: 620px !important;
+        max-height: none !important;
+        width: 100% !important;
+        border-radius: 18px !important;
+        overflow: hidden !important;
+    }
+
+    .client-chat-people {
+        height: 100% !important;
+        overflow-y: auto !important;
+        border-right: 1px solid rgba(35, 107, 125, 0.12) !important;
+    }
+
+    .chat-people-header {
+        padding: 18px 18px 14px !important;
+    }
+
+    .chat-people-header h2 {
+        font-size: 1.15rem !important;
+    }
+
+    .chat-people-header p {
+        font-size: 0.9rem !important;
+        line-height: 1.45 !important;
+    }
+
+    .chat-person {
+        padding: 14px 14px !important;
+        gap: 10px !important;
+    }
+
+    .chat-avatar {
+        width: 42px !important;
+        height: 42px !important;
+        font-size: 0.85rem !important;
+    }
+
+    .chat-person strong {
+        font-size: 0.9rem !important;
+        line-height: 1.25 !important;
+    }
+
+    .chat-person small {
+        font-size: 0.8rem !important;
+    }
+
+    .client-chat-main {
+        height: 100% !important;
+        min-height: 0 !important;
+        display: grid !important;
+        grid-template-rows: auto minmax(0, 1fr) auto auto !important;
+        overflow: hidden !important;
+    }
+
+    .chat-header {
+        padding: 16px 18px 12px !important;
+    }
+
+    .chat-title-row {
+        gap: 10px !important;
+    }
+
+    .chat-title-row h1,
+    #chatStaffName {
+        font-size: 1.25rem !important;
+    }
+
+    #chatServiceName {
+        font-size: 0.9rem !important;
+        margin-top: 2px !important;
+    }
+
+    .chat-tabs {
+        margin: 8px 0 0 52px !important;
+    }
+
+    .chat-tab-panel {
+        height: 100% !important;
+        min-height: 0 !important;
+        overflow-y: auto !important;
+    }
+
+    .chat-message-list {
+        height: 100% !important;
+        min-height: 0 !important;
+        padding: 16px 18px !important;
+        overflow-y: auto !important;
+        gap: 14px !important;
+    }
+
+    .chat-bubble {
+        max-width: 78% !important;
+        padding: 12px 14px !important;
+        font-size: 0.92rem !important;
+    }
+
+    .chat-bubble small {
+        font-size: 0.78rem !important;
+    }
+
+    .chat-composer {
+        grid-template-columns: 42px minmax(0, 1fr) auto !important;
+        gap: 8px !important;
+        padding: 12px 14px !important;
+    }
+
+    .chat-plus-btn,
+    .chat-icon-btn {
+        width: 40px !important;
+        height: 40px !important;
+        font-size: 1.2rem !important;
+    }
+
+    .chat-composer textarea {
+        height: 42px !important;
+        min-height: 42px !important;
+        padding: 10px 12px !important;
+    }
+
+    .chat-send-btn {
+        height: 42px !important;
+        padding: 8px 16px !important;
+    }
+
+    .chat-upload-panel {
+        left: 16px !important;
+        bottom: 76px !important;
+        width: min(360px, calc(100vw - 40px)) !important;
+    }
+}
+
+/* =========================================================
+   08. FINAL TABLET / 768PX POLISH FIXES
+   Added after review of 768px screenshots.
+   Fixes:
+   - Public header button/nav alignment at tablet width
+   - Client message layout at 768px
+   - Chat composer send button alignment
+   - Portal sidebar overlay/toggle behaviour at tablet width
+   - Admin/staff table containment at tablet width
+========================================================= */
+
+@media (min-width: 700px) and (max-width: 900px) {
+
+    html,
+    body {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+    }
+
+    /* ---------- Public header / navigation ---------- */
+    .nav {
+        min-height: 104px !important;
+        height: auto !important;
+        display: grid !important;
+        grid-template-columns: auto minmax(0, 1fr) !important;
+        align-items: center !important;
+        column-gap: 18px !important;
+        row-gap: 10px !important;
+        padding: 12px 22px !important;
+    }
+
+    .brand {
+        align-self: center !important;
+    }
+
+    .brand img {
+        height: 74px !important;
+        max-width: 130px !important;
+        object-fit: contain !important;
+    }
+
+    .menu {
+        width: 100% !important;
+        display: flex !important;
+        flex-wrap: wrap !important;
+        justify-content: flex-end !important;
+        align-items: center !important;
+        gap: 8px 12px !important;
+    }
+
+    .menu .top-link {
+        padding: 7px 8px !important;
+        font-size: 0.9rem !important;
+        line-height: 1.2 !important;
+    }
+
+    .menu .btn,
+    .menu .btn-primary,
+    .menu .btn-ghost,
+    .nav .btn,
+    .nav .btn-primary,
+    .nav .btn-ghost {
+        width: auto !important;
+        min-width: 0 !important;
+        padding: 9px 16px !important;
+        white-space: nowrap !important;
+        text-align: center !important;
+    }
+
+    /* ---------- Portal sidebar overlay ---------- */
+    .client-sidebar {
+        width: min(78vw, 280px) !important;
+        min-width: 0 !important;
+        max-width: 280px !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        height: 100vh !important;
+        z-index: 2000 !important;
+        box-shadow: 14px 0 35px rgba(15, 46, 54, 0.22) !important;
+        transition: transform 0.25s ease !important;
+    }
+
+    .client-sidebar.sidebar-hidden {
+        transform: translateX(-105%) !important;
+    }
+
+    .client-sidebar:not(.sidebar-hidden) {
+        transform: translateX(0) !important;
+    }
+
+    .client-portal-content,
+    .client-portal-content.content-expanded {
+        margin-left: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .client-topbar {
+        height: 64px !important;
+        padding: 0 18px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+    }
+
+    .client-menu-btn {
+        width: 44px !important;
+        height: 44px !important;
+        flex: 0 0 auto !important;
+    }
+
+    .client-main {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 22px 18px 34px !important;
+        overflow-x: hidden !important;
+    }
+
+    /* ---------- Chat page: keep professional tablet split layout ---------- */
+    .client-chat-shell {
+        width: 100% !important;
+        max-width: 100% !important;
+        display: grid !important;
+        grid-template-columns: 245px minmax(0, 1fr) !important;
+        height: calc(100vh - 118px) !important;
+        min-height: 620px !important;
+        max-height: none !important;
+        overflow: hidden !important;
+        border-radius: 18px !important;
+    }
+
+    .client-chat-people {
+        height: 100% !important;
+        max-height: none !important;
+        min-height: 0 !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        border-right: 1px solid rgba(35, 107, 125, 0.12) !important;
+        border-bottom: none !important;
+    }
+
+    .chat-people-header {
+        padding: 18px 16px 14px !important;
+    }
+
+    .chat-people-header h2 {
+        font-size: 1.1rem !important;
+    }
+
+    .chat-people-header p {
+        font-size: 0.88rem !important;
+        line-height: 1.4 !important;
+    }
+
+    #chatPeopleList {
+        display: grid !important;
+        max-height: none !important;
+        overflow: visible !important;
+    }
+
+    .chat-person {
+        min-height: 66px !important;
+        padding: 13px 14px !important;
+        gap: 10px !important;
+    }
+
+    .chat-avatar {
+        width: 40px !important;
+        height: 40px !important;
+        font-size: 0.82rem !important;
+    }
+
+    .chat-person strong {
+        font-size: 0.88rem !important;
+        line-height: 1.25 !important;
+        word-break: normal !important;
+        overflow-wrap: anywhere !important;
+    }
+
+    .chat-person small {
+        font-size: 0.78rem !important;
+    }
+
+    .client-chat-main {
+        height: 100% !important;
+        min-height: 0 !important;
+        max-height: 100% !important;
+        display: grid !important;
+        grid-template-rows: auto minmax(0, 1fr) auto auto !important;
+        overflow: hidden !important;
+    }
+
+    .chat-header {
+        padding: 16px 18px 10px !important;
+    }
+
+    .chat-title-row {
+        align-items: center !important;
+        gap: 10px !important;
+    }
+
+    .chat-title-row h1,
+    #chatStaffName {
+        font-size: 1.2rem !important;
+        line-height: 1.25 !important;
+    }
+
+    #chatServiceName {
+        font-size: 0.88rem !important;
+        margin-top: 2px !important;
+    }
+
+    .chat-tabs {
+        margin: 8px 0 0 50px !important;
+        display: flex !important;
+        gap: 18px !important;
+        overflow-x: auto !important;
+        padding-bottom: 3px !important;
+    }
+
+    .chat-message-list {
+        height: 100% !important;
+        min-height: 0 !important;
+        max-height: 100% !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        padding: 16px 18px !important;
+        gap: 14px !important;
+    }
+
+    .chat-bubble {
+        max-width: 82% !important;
+        padding: 12px 14px !important;
+        font-size: 0.9rem !important;
+    }
+
+    .chat-bubble small {
+        font-size: 0.76rem !important;
+        line-height: 1.35 !important;
+    }
+
+    .chat-composer {
+        display: grid !important;
+        grid-template-columns: 42px minmax(0, 1fr) auto !important;
+        gap: 8px !important;
+        align-items: center !important;
+        padding: 12px 14px !important;
+    }
+
+    .chat-plus-btn,
+    .chat-icon-btn {
+        width: 40px !important;
+        height: 40px !important;
+        border-radius: 50% !important;
+        font-size: 1.15rem !important;
+    }
+
+    .chat-composer textarea {
+        height: 42px !important;
+        min-height: 42px !important;
+        max-height: 90px !important;
+        padding: 10px 12px !important;
+    }
+
+    .chat-send-btn {
+        grid-column: auto !important;
+        width: auto !important;
+        min-width: 86px !important;
+        height: 42px !important;
+        padding: 8px 16px !important;
+        border-radius: 999px !important;
+        white-space: nowrap !important;
+    }
+
+    .chat-upload-panel {
+        left: 16px !important;
+        bottom: 76px !important;
+        width: min(360px, calc(100vw - 40px)) !important;
+        max-width: calc(100vw - 40px) !important;
+    }
+
+    /* ---------- Tables in admin/staff portal ---------- */
+    .client-panel {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+
+    .client-table {
+        width: 100% !important;
+        max-width: 100% !important;
+        font-size: 0.88rem !important;
+    }
+
+    .client-table th,
+    .client-table td {
+        padding: 10px 11px !important;
+        white-space: nowrap !important;
+        vertical-align: middle !important;
+    }
+
+    .client-table .btn,
+    .client-table button {
+        padding: 8px 13px !important;
+        font-size: 0.86rem !important;
+        white-space: nowrap !important;
+    }
+
+    .client-panel .client-table,
+    .table-card table {
+        min-width: 0 !important;
+    }
+
+    .client-panel.wide-table,
+    .table-scroll {
+        overflow-x: auto !important;
+    }
+}
+
+@media (max-width: 699px) {
+
+    /* Phones should stack chat, but tablets should not. */
+    .client-chat-shell {
+        grid-template-columns: 1fr !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+    }
+
+    .client-chat-people {
+        max-height: 280px !important;
+        border-right: none !important;
+        border-bottom: 1px solid rgba(35, 107, 125, 0.12) !important;
+    }
+
+    .chat-composer {
+        grid-template-columns: 1fr !important;
+    }
+
+    .chat-send-btn,
+    .chat-plus-btn,
+    .chat-icon-btn {
+        width: 100% !important;
+        border-radius: 14px !important;
+    }
+}
+
+/* =========================================================
+   HOMEPAGE MOBILE/TABLET FIX: CHATBOT + NEWSLETTER DOCK
+========================================================= */
+
+@media (max-width: 900px) {
+    .newsletter-dock {
+        left: 16px !important;
+        right: 16px !important;
+        bottom: 16px !important;
+
+        width: auto !important;
+        max-width: none !important;
+
+        display: grid !important;
+        grid-template-columns: 1fr auto auto !important;
+        align-items: center !important;
+        gap: 10px !important;
+
+        padding: 12px 14px !important;
+        border-radius: 18px !important;
+    }
+
+    .newsletter-dock.is-visible {
+        display: grid !important;
+    }
+
+    .news-dock-text {
+        min-width: 0 !important;
+        white-space: normal !important;
+        font-size: 0.9rem !important;
+        line-height: 1.35 !important;
+    }
+
+    .news-dock-actions {
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+    }
+
+    .newsletter-dock .btn-primary {
+        height: 44px !important;
+        padding: 8px 18px !important;
+        white-space: nowrap !important;
+    }
+
+    .news-dock-dismiss {
+        width: 32px !important;
+        height: 32px !important;
+        flex-shrink: 0 !important;
+    }
+
+    .chatbot-widget {
+        left: 16px !important;
+        bottom: 88px !important;
+        z-index: 9996 !important;
+    }
+
+    .chatbot-toggle {
+        height: 50px !important;
+        padding: 0 18px !important;
+        font-size: 0.95rem !important;
+    }
+
+    .chatbot-toggle-icon {
+        width: 30px !important;
+        height: 30px !important;
+    }
+}
+
+@media (max-width: 520px) {
+    .newsletter-dock {
+        grid-template-columns: 1fr auto !important;
+    }
+
+    .newsletter-dock.is-visible {
+        display: grid !important;
+    }
+
+    .news-dock-text {
+        grid-column: 1 / -1 !important;
+    }
+
+    .news-dock-actions {
+        grid-column: 1 / -1 !important;
+        justify-content: space-between !important;
+    }
+
+    .newsletter-dock .btn-primary {
+        flex: 1 !important;
+        text-align: center !important;
+    }
+
+    .chatbot-widget {
+        bottom: 126px !important;
+    }
+}
+
+/* =========================================================
+   FINAL CHATBOT VISIBILITY FIX
+   Keeps chatbot visible on every public page, not only home.
+========================================================= */
+.chatbot-widget {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: fixed !important;
+    left: 30px !important;
+    bottom: 30px !important;
+    z-index: 999999 !important;
+}
+
+.chatbot-panel.hidden {
+    display: none !important;
+}
+
+.chatbot-panel:not(.hidden) {
+    display: flex !important;
+}
+
+.chatbot-toggle {
+    display: inline-flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+@media (max-width: 900px) {
+    .chatbot-widget {
+        left: 16px !important;
+        bottom: 88px !important;
+        z-index: 999999 !important;
+    }
+}
+
+@media (max-width: 520px) {
+    .chatbot-widget {
+        left: 14px !important;
+        right: auto !important;
+        bottom: 126px !important;
     }
 }

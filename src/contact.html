@@ -182,31 +182,29 @@
         <div class="container copy">© 2025 Constant &amp; Co. All rights reserved.</div>
     </footer>
     <div class="chatbot-widget">
-        <button id="chatbotToggle" class="chatbot-toggle" type="button" aria-label="Open chatbot">
-            💬
+        <button id="chatbotToggle" class="chatbot-toggle" type="button">
+            <span class="chatbot-toggle-icon">💬</span>
+            <span>Chat</span>
         </button>
-        <section id="chatbotPanel" class="chatbot-panel hidden" aria-label="Chatbot assistant">
+
+        <div id="chatbotPanel" class="chatbot-panel hidden">
             <div class="chatbot-header">
                 <div>
                     <strong>Constant & Co Assistant</strong>
-                    <p>Ask about bookings, payments, uploads, or services.</p>
+                    <small>Online support</small>
                 </div>
-                <button id="chatbotClose" class="chatbot-close" type="button" aria-label="Close chatbot">
-                    ×
-                </button>
+                <button id="chatbotClose" type="button">×</button>
             </div>
-            <div id="chatbotMessages" class="chatbot-messages">
-                <div class="chatbot-message bot">
-                    Hello! How can I help you today?
-                </div>
-            </div>
-            <form id="chatbotForm" class="chatbot-form">
-                <input id="chatbotInput" type="text" placeholder="Type your question..." required>
+
+            <div id="chatbotMessages" class="chatbot-messages"></div>
+
+            <form id="chatbotForm" class="chatbot-form hidden">
+                <input id="chatbotInput" type="text" placeholder="Type your answer..." autocomplete="off">
                 <button type="submit">Send</button>
             </form>
-        </section>
+        </div>
     </div>
-    <script src="chatbot-widget.js"></script>
+    <script src="chatbot.js"></script>
     <script src="contact.js" defer></script>
 </body>
 

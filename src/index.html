@@ -70,8 +70,8 @@
                     </div>
                 </div>
 
-    <a href="contact.html" class="top-link">Contact</a>
-    <a href="our-people.html" class="top-link">Our People</a>
+                <a href="contact.html" class="top-link">Contact</a>
+                <a href="our-people.html" class="top-link">Our People</a>
 
                 <a class="btn btn-ghost" href="login.html">Sign Up / Login</a>
                 <a class="btn btn-ghost cta" href="./appointment-access.html">Book an Appointment</a>
@@ -226,70 +226,65 @@
             </div>
         </section>
 
-<!-- ===== Team ===== -->
-<section id="resources">
-    <div class="container">
+        <!-- ===== Team ===== -->
+        <section id="resources">
+            <div class="container">
 
-        <h2 class="section-title">Meet Our People</h2>
+                <h2 class="section-title">Meet Our People</h2>
 
-        <p class="section-sub">
-            Experienced, professional and approachable advisers supporting
-            businesses and individuals across Melbourne.
-        </p>
+                <p class="section-sub">
+                    Experienced, professional and approachable advisers supporting
+                    businesses and individuals across Melbourne.
+                </p>
 
-        <div class="team">
+                <div class="team">
 
-            <figure class="member">
-                <img src="assets/louie-constant.jpg"
-                     alt="Louie Leo Constant" />
+                    <figure class="member">
+                        <img src="assets/louie-constant.jpg" alt="Louie Leo Constant" />
 
-                <figcaption class="cap">
-                    Louie Leo Constant — Partner
-                </figcaption>
-            </figure>
+                        <figcaption class="cap">
+                            Louie Leo Constant — Partner
+                        </figcaption>
+                    </figure>
 
-            <figure class="member">
-                <img src="assets/le-anh-nguyen.jpg"
-                     alt="Le Anh Nguyen" />
+                    <figure class="member">
+                        <img src="assets/le-anh-nguyen.jpg" alt="Le Anh Nguyen" />
 
-                <figcaption class="cap">
-                    Le Anh Nguyen — Partner
-                </figcaption>
-            </figure>
+                        <figcaption class="cap">
+                            Le Anh Nguyen — Partner
+                        </figcaption>
+                    </figure>
 
-            <figure class="member">
-                <img src="assets/mary-constant.jpg"
-                     alt="Mary Constant" />
+                    <figure class="member">
+                        <img src="assets/mary-constant.jpg" alt="Mary Constant" />
 
-                <figcaption class="cap">
-                    Mary Constant — Practice Manager
-                </figcaption>
-            </figure>
+                        <figcaption class="cap">
+                            Mary Constant — Practice Manager
+                        </figcaption>
+                    </figure>
 
-            <figure class="member">
-                <img src="assets/matthew-blake.jpg"
-                     alt="Matthew Blake" />
+                    <figure class="member">
+                        <img src="assets/matthew-blake.jpg" alt="Matthew Blake" />
 
-                <figcaption class="cap">
-                    Matthew Blake — Client Relationship Manager
-                </figcaption>
-            </figure>
+                        <figcaption class="cap">
+                            Matthew Blake — Client Relationship Manager
+                        </figcaption>
+                    </figure>
 
-        </div>
+                </div>
 
-        <div style="text-align:center; margin-top:40px;">
+                <div style="text-align:center; margin-top:40px;">
 
-            <a class="btn btn-primary"
-               href="our-people.html">
+                    <a class="btn btn-primary" href="our-people.html">
 
-               View All Team Members
+                        View All Team Members
 
-            </a>
+                    </a>
 
-        </div>
+                </div>
 
-    </div>
-</section>
+            </div>
+        </section>
 
         <section id="insights" class="home-insights" aria-labelledby="insights-heading">
             <div class="container">
@@ -340,9 +335,8 @@
                             <a class="btn btn-home-outline-dark" href="login.html">Client portal login</a>
                         </div>
                         <p class="home-bottom-note">
-                            <span aria-hidden="true">🔒</span> Secure document exchange · <a
-                                href="tel:+61394663688">03 9466 3688</a> · <a
-                                href="mailto:info@constantco.au">info@constantco.au</a>
+                            <span aria-hidden="true">🔒</span> Secure document exchange · <a href="tel:+61394663688">03
+                                9466 3688</a> · <a href="mailto:info@constantco.au">info@constantco.au</a>
                         </p>
                     </div>
                 </div>
@@ -364,7 +358,8 @@
             <p id="newsDesc" class="section-sub">Tax tips &amp; regulatory updates delivered to your inbox.</p>
 
             <form class="news-pop-form" data-news-form action="#" method="post">
-                <input class="input input-lg" type="email" name="email" placeholder="Enter your email address" required />
+                <input class="input input-lg" type="email" name="email" placeholder="Enter your email address"
+                    required />
                 <button class="btn btn-primary" type="submit">Subscribe</button>
             </form>
 
@@ -426,31 +421,31 @@
         </div>
         <div class="container copy">© 2025 Constant &amp; Co. All rights reserved.</div>
     </footer>
-<div class="chatbot-widget">
-    <button id="chatbotToggle" class="chatbot-toggle" type="button">
-        <span class="chatbot-toggle-icon">💬</span>
-        <span>Chat</span>
-    </button>
+    <div class="chatbot-widget">
+        <button id="chatbotToggle" class="chatbot-toggle" type="button">
+            <span class="chatbot-toggle-icon">💬</span>
+            <span>Chat</span>
+        </button>
 
-    <section id="chatbotPanel" class="chatbot-panel hidden">
-        <div class="chatbot-header">
-            <div>
-                <strong>Constant & Co Assistant</strong>
-                <small>Online support</small>
+        <div id="chatbotPanel" class="chatbot-panel hidden">
+            <div class="chatbot-header">
+                <div>
+                    <strong>Constant & Co Assistant</strong>
+                    <small>Online support</small>
+                </div>
+                <button id="chatbotClose" type="button">×</button>
             </div>
-            <button id="chatbotClose" type="button">×</button>
+
+            <div id="chatbotMessages" class="chatbot-messages"></div>
+
+            <form id="chatbotForm" class="chatbot-form hidden">
+                <input id="chatbotInput" type="text" placeholder="Type your answer..." autocomplete="off">
+                <button type="submit">Send</button>
+            </form>
         </div>
+    </div>
 
-        <div id="chatbotMessages" class="chatbot-messages"></div>
-
-        <form id="chatbotForm" class="chatbot-form hidden">
-            <input id="chatbotInput" type="text" placeholder="Type your answer..." autocomplete="off">
-            <button type="submit">Send</button>
-        </form>
-    </section>
-</div>
-
-<script src="chatbot.js" defer></script>
+    <script src="chatbot.js" defer></script>
     <script src="newsletter.js" defer></script>
     <script src="testimonial-carousel.js" defer></script>
 </body>

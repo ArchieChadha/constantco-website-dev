@@ -247,9 +247,73 @@
   </main>
 
   <footer role="contentinfo">
-    <div class="container copy">© 2025 Constant & Co. All rights reserved.</div>
+    <div class="container foot">
+      <div>
+        <div class="brand"><span>Constant & Co</span></div>
+        <p>
+          Level 1, Melbourne VIC<br />03 9466 3688<br />
+          <a href="mailto:info@constantco.au">info@constantco.au</a>
+        </p>
+      </div>
+      <div>
+        <h4>Services</h4>
+        <ul>
+          <li><a href="index.html#services">Tax &amp; compliance</a></li>
+          <li><a href="index.html#services">Business advisory</a></li>
+          <li><a href="index.html#services">Payroll</a></li>
+          <li><a href="index.html#services">Auditing</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Company</h4>
+        <ul>
+          <li><a href="index.html#about">About</a></li>
+          <li><a href="index.html#resources">Our people</a></li>
+          <li><a href="contact.html">Contact</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="faqs.html" aria-current="page">FAQs</a></li>
+          <li><a href="articles.html">Articles &amp; guides</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Terms of Service</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="container copy">© 2025 Constant &amp; Co. All rights reserved.</div>
   </footer>
 
+  <div class="chatbot-widget">
+    <button id="chatbotToggle" class="chatbot-toggle" type="button">
+      <span class="chatbot-toggle-icon">💬</span>
+      <span>Chat</span>
+    </button>
+
+    <div id="chatbotPanel" class="chatbot-panel hidden">
+      <div class="chatbot-header">
+        <div>
+          <strong>Constant & Co Assistant</strong>
+          <small>Online support</small>
+        </div>
+        <button id="chatbotClose" type="button">×</button>
+      </div>
+
+      <div id="chatbotMessages" class="chatbot-messages"></div>
+
+      <form id="chatbotForm" class="chatbot-form hidden">
+        <input id="chatbotInput" type="text" placeholder="Type your answer..." autocomplete="off">
+        <button type="submit">Send</button>
+      </form>
+    </div>
+  </div>
+  <script src="chatbot.js?v=2" defer></script>
 </body>
 
 </html>
