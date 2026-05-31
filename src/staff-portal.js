@@ -1,4 +1,7 @@
-const API_BASE = 'http://localhost:3001';
+const API_BASE =
+    location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+        ? 'http://localhost:3001'
+        : '';
 
 const staffId = sessionStorage.getItem('internalUserId');
 const role = sessionStorage.getItem('internalUserRole');
@@ -35,12 +38,55 @@ function setupSidebarToggle() {
     const sidebar = document.querySelector('.client-sidebar');
     const content = document.querySelector('.client-portal-content');
 
-    if (!btn || !sidebar) return;
+    if (!btn || !sidebar || !content) return;
+
+    let backdrop = document.querySelector('.portal-sidebar-backdrop');
+
+    if (!backdrop) {
+        backdrop = document.createElement('div');
+        backdrop.className = 'portal-sidebar-backdrop';
+        document.body.appendChild(backdrop);
+    }
+
+    function isTabletOrMobile() {
+        return window.innerWidth <= 900;
+    }
+
+    function closeSidebar() {
+        sidebar.classList.add('sidebar-hidden');
+        content.classList.add('content-expanded');
+        document.body.classList.remove('sidebar-open');
+    }
+
+    function openSidebar() {
+        sidebar.classList.remove('sidebar-hidden');
+        content.classList.add('content-expanded');
+        document.body.classList.add('sidebar-open');
+    }
+
+    function resetSidebarForScreenSize() {
+        if (isTabletOrMobile()) {
+            closeSidebar();
+        } else {
+            sidebar.classList.remove('sidebar-hidden');
+            content.classList.remove('content-expanded');
+            document.body.classList.remove('sidebar-open');
+        }
+    }
 
     btn.addEventListener('click', () => {
-        sidebar.classList.toggle('sidebar-hidden');
-        content?.classList.toggle('content-expanded');
+        if (sidebar.classList.contains('sidebar-hidden')) {
+            openSidebar();
+        } else {
+            closeSidebar();
+        }
     });
+
+    backdrop.addEventListener('click', closeSidebar);
+
+    window.addEventListener('resize', resetSidebarForScreenSize);
+
+    resetSidebarForScreenSize();
 }
 
 async function loadStaffProfile() {

@@ -45,17 +45,26 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.classList.add('is-visible');
         trapFocus(modal);
     }
-    function hideModal() {
+    function hideModal(showDockAfterClose = true) {
         body.classList.remove('show-newsletter');
         overlay.classList.remove('is-visible');
         modal.classList.remove('is-visible');
         releaseFocus();
+
+        if (showDockAfterClose) {
+            showDock();
+        }
     }
-    function showDock() { dock.classList.remove('is-hidden'); }
-    function hideDock() { dock.classList.add('is-hidden'); }
+    function showDock() {
+        dock.classList.add('is-visible');
+    }
+
+    function hideDock() {
+        dock.classList.remove('is-visible');
+    }
 
     // Show dock and timed modal on load
-    showDock();
+    hideDock();
     setTimeout(showModal, 600);
 
     // Close interactions
@@ -67,7 +76,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Dock actions
     if (dockOpen) dockOpen.addEventListener('click', showModal);
-    if (dockDismiss) dockDismiss.addEventListener('click', () => { hideModal(); hideDock(); });
+    if (dockDismiss) {
+        dockDismiss.addEventListener('click', () => {
+            hideModal(false);
+            hideDock();
+        });
+    }
 
     // Attach to BOTH: modal form [data-news-form] AND inline section form.newsletter
     const forms = Array.from(document.querySelectorAll('[data-news-form], form.newsletter'));
@@ -118,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 // If submitted from the modal, close UI
                 if (f.hasAttribute('data-news-form')) {
-                    hideModal();
+                    hideModal(false);
                     hideDock();
                 }
             }

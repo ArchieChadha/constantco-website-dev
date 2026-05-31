@@ -293,7 +293,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const payload = {
                 clientId:
-                    sessionStorage.getItem('clientId') || null,
+                    String(sessionStorage.getItem('clientEmail') || '').trim().toLowerCase() === email.toLowerCase()
+                        ? sessionStorage.getItem('clientId')
+                        : null,
 
                 staffId:
                     state.selectedProviderId,

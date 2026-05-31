@@ -201,7 +201,30 @@
             </form>
         </section>
     </div>
-    <script src="chatbot-widget.js"></script>
+    <div class="chatbot-widget">
+        <button id="chatbotToggle" class="chatbot-toggle" type="button">
+            <span class="chatbot-toggle-icon">💬</span>
+            <span>Chat</span>
+        </button>
+
+        <div id="chatbotPanel" class="chatbot-panel hidden">
+            <div class="chatbot-header">
+                <div>
+                    <strong>Constant & Co Assistant</strong>
+                    <small>Online support</small>
+                </div>
+                <button id="chatbotClose" type="button">×</button>
+            </div>
+
+            <div id="chatbotMessages" class="chatbot-messages"></div>
+
+            <form id="chatbotForm" class="chatbot-form hidden">
+                <input id="chatbotInput" type="text" placeholder="Type your answer..." autocomplete="off">
+                <button type="submit">Send</button>
+            </form>
+        </div>
+    </div>
+    <script src="chatbot.js" defer></script>
 </body>
 
 </html>

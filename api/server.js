@@ -833,27 +833,50 @@ async function resolveClientIdForBooking({
     phone,
     serviceName
 }) {
-    if (clientId) {
-        const byId = await pool.query(
-            `SELECT id
-             FROM portal_clients
-             WHERE id = $1
-             LIMIT 1`,
-            [clientId]
-        );
-        if (byId.rows.length) return byId.rows[0].id;
-    }
-
     const cleanEmail = String(email || '').trim().toLowerCase();
+
     if (!isEmail(cleanEmail)) {
         throw new Error('A valid email address is required.');
     }
 
+    /*
+        Only trust the logged-in clientId if it belongs to the same email
+        entered in the booking form.
+
+        This prevents a booking for one email address from appearing
+        inside another logged-in account.
+    */
+    if (clientId) {
+        const byId = await pool.query(
+            `
+            SELECT id, email
+            FROM portal_clients
+            WHERE id = $1
+            LIMIT 1
+            `,
+            [clientId]
+        );
+
+        if (byId.rows.length) {
+            const accountEmail = String(byId.rows[0].email || '').trim().toLowerCase();
+
+            if (accountEmail === cleanEmail) {
+                return byId.rows[0].id;
+            }
+        }
+    }
+
+    /*
+        If the entered booking email belongs to an existing portal account,
+        attach the appointment to that account instead.
+    */
     const existing = await pool.query(
-        `SELECT id
-         FROM portal_clients
-         WHERE lower(email) = $1
-         LIMIT 1`,
+        `
+        SELECT id
+        FROM portal_clients
+        WHERE lower(email) = $1
+        LIMIT 1
+        `,
         [cleanEmail]
     );
 
@@ -861,14 +884,20 @@ async function resolveClientIdForBooking({
         return existing.rows[0].id;
     }
 
+    /*
+        If no account exists for the entered email, create a guest client.
+    */
     const randomPassword = `${crypto.randomBytes(12).toString('hex')}!1`;
     const hash = await bcrypt.hash(randomPassword, 10);
+
     const inserted = await pool.query(
-        `INSERT INTO portal_clients
+        `
+        INSERT INTO portal_clients
             (name, email, password, phone, client_type, service, note, created_at, updated_at)
-         VALUES
+        VALUES
             ($1, $2, $3, $4, 'Guest', $5, 'Guest booking created from website.', NOW(), NOW())
-         RETURNING id`,
+        RETURNING id
+        `,
         [
             String(fullName || 'Guest User').trim() || 'Guest User',
             cleanEmail,

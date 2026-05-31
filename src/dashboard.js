@@ -83,44 +83,83 @@ document.addEventListener('DOMContentLoaded', () => {
     const clientMain = document.querySelector('.client-main');
     const portalContent = document.querySelector('.client-portal-content');
 
-    function handleSidebarState() {
-        if (window.innerWidth <= 768) {
-            sidebar?.classList.remove('sidebar-hidden');
-            portalContent?.classList.remove('content-expanded');
-            clientMain?.classList.remove('content-expanded');
-            return;
+    function setupClientSidebar() {
+        if (!sidebarToggleBtn || !sidebar || !portalContent) return;
+
+        let backdrop = document.querySelector('.portal-sidebar-backdrop');
+
+        if (!backdrop) {
+            backdrop = document.createElement('div');
+            backdrop.className = 'portal-sidebar-backdrop';
+            document.body.appendChild(backdrop);
         }
 
-        sidebar?.classList.remove('mobile-open');
-    }
+        function isTabletOrMobile() {
+            return window.innerWidth <= 900;
+        }
 
-    if (sidebarToggleBtn && sidebar) {
-        sidebarToggleBtn.addEventListener('click', () => {
-            if (window.innerWidth <= 768) {
-                sidebar.classList.toggle('mobile-open');
-                return;
-            }
-
-            sidebar.classList.toggle('sidebar-hidden');
-            portalContent?.classList.toggle('content-expanded');
-            clientMain?.classList.toggle('content-expanded');
-        });
-    }
-
-    document.addEventListener('click', (event) => {
-        if (window.innerWidth > 768) return;
-        if (!sidebar?.classList.contains('mobile-open')) return;
-
-        const clickedInsideSidebar = sidebar.contains(event.target);
-        const clickedToggle = sidebarToggleBtn?.contains(event.target);
-
-        if (!clickedInsideSidebar && !clickedToggle) {
+        function closeSidebar() {
+            sidebar.classList.add('sidebar-hidden');
             sidebar.classList.remove('mobile-open');
-        }
-    });
 
-    window.addEventListener('resize', handleSidebarState);
-    handleSidebarState();
+            portalContent.classList.add('content-expanded');
+            clientMain?.classList.add('content-expanded');
+
+            document.body.classList.remove('sidebar-open');
+        }
+
+        function openSidebar() {
+            sidebar.classList.remove('sidebar-hidden');
+            sidebar.classList.add('mobile-open');
+
+            portalContent.classList.add('content-expanded');
+            clientMain?.classList.add('content-expanded');
+
+            document.body.classList.add('sidebar-open');
+        }
+
+        function resetSidebarForScreenSize() {
+            if (isTabletOrMobile()) {
+                closeSidebar();
+            } else {
+                sidebar.classList.remove('sidebar-hidden');
+                sidebar.classList.remove('mobile-open');
+
+                portalContent.classList.remove('content-expanded');
+                clientMain?.classList.remove('content-expanded');
+
+                document.body.classList.remove('sidebar-open');
+            }
+        }
+
+        sidebarToggleBtn.addEventListener('click', () => {
+            if (sidebar.classList.contains('sidebar-hidden')) {
+                openSidebar();
+            } else {
+                closeSidebar();
+            }
+        });
+
+        backdrop.addEventListener('click', closeSidebar);
+
+        document.addEventListener('click', (event) => {
+            if (!isTabletOrMobile()) return;
+            if (!document.body.classList.contains('sidebar-open')) return;
+
+            const clickedInsideSidebar = sidebar.contains(event.target);
+            const clickedToggle = sidebarToggleBtn.contains(event.target);
+
+            if (!clickedInsideSidebar && !clickedToggle) {
+                closeSidebar();
+            }
+        });
+
+        window.addEventListener('resize', resetSidebarForScreenSize);
+
+        resetSidebarForScreenSize();
+    }
+
+    setupClientSidebar();
 
     if (!clientId) {
         window.location.href = './login.html';
