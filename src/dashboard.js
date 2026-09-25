@@ -787,59 +787,50 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!services.length) {
                 table.innerHTML = `
-                    <tr>
-                        <td colspan="6">No services found.</td>
-                    </tr>
-                `;
+                <tr>
+                    <td colspan="6">No services found.</td>
+                </tr>
+            `;
                 return;
             }
 
             table.innerHTML = services.map(item => {
-                const appointmentDateTime = new Date(
-                    `${String(item.appointment_date).slice(0, 10)}T${String(item.appointment_time).slice(0, 5)}`
-                );
-
-                const now = new Date();
-
-                let displayStatus = 'Confirmed';
-
-                if (item.booking_status === 'Cancelled') {
-                    displayStatus = 'Cancelled';
-                } else if (appointmentDateTime < now) {
-                    displayStatus = 'Completed';
-                } else {
-                    displayStatus = 'Confirmed';
-                }
+                /*
+                    Use the real status from the database/API.
+                    Do not calculate Completed in the frontend,
+                    because the backend already controls appointment status.
+                */
+                const displayStatus = item.booking_status || 'Confirmed';
 
                 const summaryLink = item.management_token
                     ? `<a href="booking-summary.html?token=${encodeURIComponent(item.management_token)}">
-                        View booking summary
-                       </a>`
+                    View booking summary
+                   </a>`
                     : '—';
 
                 return `
-                    <tr>
-                        <td>${escapeHTML(item.service_name || '')}</td>
+                <tr>
+                    <td>${escapeHTML(item.service_name || '')}</td>
 
-                        <td>${escapeHTML(item.staff_name || 'Not assigned')}</td>
+                    <td>${escapeHTML(item.staff_name || 'Not assigned')}</td>
 
-                        <td>${escapeHTML(displayStatus)}</td>
+                    <td>${escapeHTML(displayStatus)}</td>
 
-                        <td>
-                            ${formatDate(item.appointment_date)}
-                            at
-                            ${formatTime(item.appointment_time)}
-                        </td>
+                    <td>
+                        ${formatDate(item.appointment_date)}
+                        at
+                        ${formatTime(item.appointment_time)}
+                    </td>
 
-                        <td>
-                            <a href="client-messages.html?appointmentId=${encodeURIComponent(item.appointment_id)}">
-                                View Conversation History
-                            </a>
-                        </td>
+                    <td>
+                        <a href="client-messages.html?appointmentId=${encodeURIComponent(item.appointment_id)}">
+                            View Conversation History
+                        </a>
+                    </td>
 
-                        <td>${summaryLink}</td>
-                    </tr>
-                `;
+                    <td>${summaryLink}</td>
+                </tr>
+            `;
             }).join('');
 
         } catch (err) {
@@ -872,37 +863,55 @@ document.addEventListener('DOMContentLoaded', () => {
                 );
             }
 
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+            const now = new Date();
+
+            function getAppointmentDateTime(app) {
+                const date = String(app.appointment_date || '').slice(0, 10);
+                const time = String(app.appointment_time || '00:00').slice(0, 5);
+
+                return new Date(`${date}T${time}:00`);
+            }
 
             const upcoming = appointments.filter(app => {
-                const appDate = new Date(app.appointment_date);
-                return appDate >= today && app.booking_status !== 'Cancelled';
+                const status = String(app.booking_status || '').toLowerCase();
+                const appointmentDateTime = getAppointmentDateTime(app);
+
+                return (
+                    status !== 'cancelled' &&
+                    status !== 'completed' &&
+                    appointmentDateTime >= now
+                );
             });
 
             const previous = appointments.filter(app => {
-                const appDate = new Date(app.appointment_date);
-                return appDate < today || app.booking_status === 'Cancelled';
+                const status = String(app.booking_status || '').toLowerCase();
+                const appointmentDateTime = getAppointmentDateTime(app);
+
+                return (
+                    status === 'cancelled' ||
+                    status === 'completed' ||
+                    appointmentDateTime < now
+                );
             });
 
             function renderRows(list, emptyMessage) {
                 if (!list.length) {
                     return `
-                        <tr>
-                            <td colspan="5">${emptyMessage}</td>
-                        </tr>
-                    `;
+                    <tr>
+                        <td colspan="5">${emptyMessage}</td>
+                    </tr>
+                `;
                 }
 
                 return list.map(app => `
-                    <tr>
-                        <td>${escapeHTML(app.service_name || '')}</td>
-                        <td>${escapeHTML(app.staff_name || 'Not assigned')}</td>
-                        <td>${formatDate(app.appointment_date)}</td>
-                        <td>${formatTime(app.appointment_time)}</td>
-                        <td>${escapeHTML(app.booking_status || '')}</td>
-                    </tr>
-                `).join('');
+                <tr>
+                    <td>${escapeHTML(app.service_name || '')}</td>
+                    <td>${escapeHTML(app.staff_name || 'Not assigned')}</td>
+                    <td>${formatDate(app.appointment_date)}</td>
+                    <td>${formatTime(app.appointment_time)}</td>
+                    <td>${escapeHTML(app.booking_status || '')}</td>
+                </tr>
+            `).join('');
             }
 
             upcomingTable.innerHTML = renderRows(upcoming, 'No upcoming appointments found.');
@@ -912,16 +921,16 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Appointment details error:', err);
 
             upcomingTable.innerHTML = `
-                <tr>
-                    <td colspan="5">Failed to load upcoming appointments.</td>
-                </tr>
-            `;
+            <tr>
+                <td colspan="5">Failed to load upcoming appointments.</td>
+            </tr>
+        `;
 
             previousTable.innerHTML = `
-                <tr>
-                    <td colspan="5">Failed to load previous appointments.</td>
-                </tr>
-            `;
+            <tr>
+                <td colspan="5">Failed to load previous appointments.</td>
+            </tr>
+        `;
         }
     }
 

@@ -145,6 +145,19 @@ app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async
 
                 const appointment = appointmentResult.rows[0];
 
+                const staffResult = await client.query(
+                    `
+    SELECT full_name
+    FROM staff_users
+    WHERE id = $1
+    LIMIT 1
+    `,
+                    [appointment.staff_id]
+                );
+
+                appointment.staff_full_name =
+                    staffResult.rows[0]?.full_name || 'Assigned staff';
+
                 const billingResult = await client.query(
                     `INSERT INTO appointment_billing
              (
@@ -291,23 +304,45 @@ app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async
 
         if (event.type === 'payment_intent.payment_failed') {
             const paymentIntent = event.data.object;
-            const billingId = Number(paymentIntent.metadata.billingId || 0);
 
-            if (!billingId) {
-                throw new Error(`Missing billingId in failed payment metadata for ${paymentIntent.id}`);
-            }
-
-            const result = await client.query(
-                `UPDATE appointment_billing
-     SET amount_paid = $1,
-         amount_due = $2,
-         payment_status = $3,
-         updated_at = NOW()
-     WHERE id = $4
-     RETURNING *`,
-                [newAmountPaid, newAmountDue, newStatus, billing.id]
+            const pendingResult = await client.query(
+                `
+        SELECT id
+        FROM pending_bookings
+        WHERE stripe_payment_intent_id = $1
+        LIMIT 1
+        `,
+                [paymentIntent.id]
             );
 
+            if (pendingResult.rows.length) {
+                await client.query(
+                    `
+            UPDATE pending_bookings
+            SET status = 'Payment Failed'
+            WHERE id = $1
+            `,
+                    [pendingResult.rows[0].id]
+                );
+
+                console.log('❌ Pending booking payment failed:', paymentIntent.id);
+            }
+
+            const billingId = Number(paymentIntent.metadata?.billingId || 0);
+
+            if (billingId) {
+                await client.query(
+                    `
+            UPDATE appointment_billing
+            SET payment_status = 'Failed',
+                updated_at = NOW()
+            WHERE id = $1
+            `,
+                    [billingId]
+                );
+
+                console.log('❌ Billing payment failed:', billingId);
+            }
             console.log('❌ Payment failed:', paymentIntent.id);
             console.log('🧠 Failed rows updated:', result.rowCount);
             console.log('🧠 Failed updated row:', result.rows[0]);
@@ -634,6 +669,7 @@ async function sendAppointmentConfirmationEmail(appointment) {
             <p>Your appointment with Constant & Co has been confirmed.</p>
 
             <p><strong>Service:</strong> ${appointment.service_name}</p>
+            <p><strong>Agent:</strong> ${appointment.staff_full_name || appointment.staff_name || 'Assigned staff'}</p>
             <p><strong>Date:</strong> ${appointment.appointment_date}</p>
             <p><strong>Time:</strong> ${appointment.appointment_time}</p>
 
@@ -654,7 +690,8 @@ async function sendStaffTransferEmail(appointment, newStaff) {
 
     const base = publicSiteBaseUrl();
 
-    const manageUrl = `${base}/booking-manage.html?token=${encodeURIComponent(appointment.management_token)}`;
+    const manageUrl =
+        `${base}/booking-manage.html?token=${encodeURIComponent(appointment.management_token)}`;
 
     const buttonStyle =
         'display:inline-block;padding:12px 20px;background:#fff;color:#1a365d;text-decoration:none;border-radius:6px;font-weight:600;border:2px solid #1a365d;';
@@ -672,14 +709,13 @@ async function sendStaffTransferEmail(appointment, newStaff) {
                 Your appointment with Constant & Co has been transferred to another available agent.
             </p>
 
-            <p><strong>New agent:</strong> ${newStaff.full_name}</p>
             <p><strong>Service:</strong> ${appointment.service_name}</p>
+            <p><strong>New agent:</strong> ${newStaff.full_name || 'Assigned staff'}</p>
             <p><strong>Date:</strong> ${appointment.appointment_date}</p>
             <p><strong>Time:</strong> ${String(appointment.appointment_time).slice(0, 5)}</p>
 
             <p>
-                If you would like to reschedule this appointment with your assigned agent,
-                please click the button below.
+                If you would like to reschedule or cancel this appointment, please use the button below.
             </p>
 
             <p style="margin:24px 0 12px;">
@@ -689,8 +725,8 @@ async function sendStaffTransferEmail(appointment, newStaff) {
             </p>
 
             <p style="font-size:14px;color:#444;line-height:1.5;">
-                You can reschedule online while you are at least 24 hours before your appointment.
-                Please choose a later date only.
+                You can reschedule or cancel online while you are at least 24 hours before your appointment.
+                Inside the 24-hour window, please contact Constant & Co directly.
             </p>
 
             <p style="font-size:13px;color:#666;">
@@ -703,6 +739,75 @@ async function sendStaffTransferEmail(appointment, newStaff) {
     });
 
     console.log('Transfer email sent to:', appointment.email);
+}
+
+/*-----Email Client After Appointment Reschedule-----*/
+async function sendAppointmentRescheduleEmail(appointment) {
+    if (!appointment.email) {
+        return;
+    }
+
+    const base = publicSiteBaseUrl();
+    const token = appointment.management_token || '';
+
+    const summaryUrl =
+        token.length > 0
+            ? `${base}/booking-summary.html?token=${encodeURIComponent(token)}`
+            : '';
+
+    const manageUrl =
+        token.length > 0
+            ? `${base}/booking-manage.html?token=${encodeURIComponent(token)}`
+            : '';
+
+    const btnStyle =
+        'display:inline-block;padding:12px 20px;background:#1a365d;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;';
+
+    const btnStyleSecondary =
+        'display:inline-block;padding:12px 20px;background:#fff;color:#1a365d;text-decoration:none;border-radius:6px;font-weight:600;border:2px solid #1a365d;';
+
+    const manageBlock =
+        summaryUrl.length > 0 && manageUrl.length > 0
+            ? `
+            <p style="margin:24px 0 12px;">
+                <a href="${summaryUrl}" style="${btnStyle}">
+                    View booking summary
+                </a>
+            </p>
+            <p style="margin:0 0 12px;">
+                <a href="${manageUrl}" style="${btnStyleSecondary}">
+                    Reschedule or cancel
+                </a>
+            </p>
+            <p style="font-size:14px;color:#444;line-height:1.5;margin:0 0 16px;">
+                You can reschedule or cancel while you are at least 24 hours before your appointment.
+                Inside the 24-hour window, please contact Constant & Co directly.
+            </p>`
+            : '';
+
+    await mailTransporter.sendMail({
+        from: `"Constant & Co" <${process.env.EMAIL_USER}>`,
+        to: appointment.email,
+        subject: 'Appointment Rescheduled - Constant & Co',
+        html: `
+            <h2>Appointment Rescheduled</h2>
+
+            <p>Hello ${appointment.full_name || 'there'},</p>
+
+            <p>Your appointment with Constant & Co has been rescheduled.</p>
+
+            <p><strong>Service:</strong> ${appointment.service_name}</p>
+            <p><strong>Agent:</strong> ${appointment.staff_full_name || appointment.staff_name || 'Assigned staff'}</p>
+            <p><strong>New date:</strong> ${appointment.appointment_date}</p>
+            <p><strong>New time:</strong> ${String(appointment.appointment_time).slice(0, 5)}</p>
+
+            ${manageBlock}
+
+            <p style="margin-top:24px;">Thank you,<br>Constant & Co Team</p>
+        `
+    });
+
+    console.log('Reschedule email sent to:', appointment.email);
 }
 
 app.get('/', (req, res) => {
@@ -792,6 +897,8 @@ async function markPastAppointmentsCompleted() {
     const currentTime = slotLabelFromMinutes(
         Math.floor(now.secondsSinceMidnight / 60)
     );
+
+    console.log('Auto-complete check:', now.isoDate, currentTime);
 
     await pool.query(
         `
@@ -1514,23 +1621,23 @@ app.get('/api/client/service-history', async (req, res) => {
 
         const { rows } = await pool.query(
             `SELECT
-                a.id AS appointment_id,
-                a.client_id,
-                a.management_token,
-                a.service_name,
-                a.meeting_type,
-                a.appointment_date,
-                a.appointment_time,
-                a.booking_status,
-                a.booking_fee,
-                a.notes,
-                s.id AS staff_id,
-                s.full_name AS staff_name,
-                s.email AS staff_email
-             FROM appointments a
-             LEFT JOIN staff_users s ON s.id = a.staff_id
-             WHERE a.client_id = $1
-             ORDER BY a.appointment_date DESC, a.appointment_time DESC`,
+    a.id AS appointment_id,
+    a.client_id,
+    a.management_token,
+    a.service_name,
+    a.meeting_type,
+    a.appointment_date::text AS appointment_date,
+    a.appointment_time::text AS appointment_time,
+    a.booking_status,
+    a.booking_fee,
+    a.notes,
+    s.id AS staff_id,
+    s.full_name AS staff_name,
+    s.email AS staff_email
+FROM appointments a
+LEFT JOIN staff_users s ON s.id = a.staff_id
+WHERE a.client_id = $1
+ORDER BY a.appointment_date DESC, a.appointment_time DESC`,
             [clientId]
         );
 
@@ -2338,12 +2445,31 @@ app.post('/api/bookings', async (req, res) => {
             ]
         );
 
+        const appointment = rows[0];
+
+        const staffResult = await pool.query(
+            `
+    SELECT full_name
+    FROM staff_users
+    WHERE id = $1
+    LIMIT 1
+    `,
+            [appointment.staff_id]
+        );
+
+        appointment.staff_full_name =
+            staffResult.rows[0]?.full_name || 'Assigned staff';
+
         try {
-            await sendAppointmentConfirmationEmail(rows[0]);
+            await sendAppointmentConfirmationEmail(appointment);
         } catch (mailErr) {
             console.error('Booking email send failed:', mailErr);
         }
-        return res.status(201).json({ ok: true, appointment: rows[0] });
+
+        return res.status(201).json({
+            ok: true,
+            appointment
+        });
     } catch (err) {
         console.error('Create booking error:', err);
         return res.status(500).json({ error: 'Failed to create booking' });
@@ -2793,9 +2919,17 @@ app.post('/api/booking/manage/:token/reschedule', async (req, res) => {
             SELECT
                 id,
                 staff_id,
+                full_name,
+                email,
+                phone,
+                company,
                 service_name,
+                meeting_type,
                 appointment_date,
                 appointment_time,
+                notes,
+                booking_fee,
+                management_token,
                 booking_status
             FROM appointments
             WHERE management_token = $1
@@ -2854,6 +2988,18 @@ app.post('/api/booking/manage/:token/reschedule', async (req, res) => {
                 error: 'Selected agent does not offer this service.'
             });
         }
+
+        const staffResult = await client.query(
+            `
+            SELECT full_name
+            FROM staff_users
+            WHERE id = $1
+            LIMIT 1
+            `,
+            [selectedStaffId]
+        );
+
+        const staffName = staffResult.rows[0]?.full_name || 'Assigned staff';
 
         const validSlots = await getProviderSlotsForDate(
             selectedStaffId,
@@ -2940,8 +3086,14 @@ app.post('/api/booking/manage/:token/reschedule', async (req, res) => {
 
         const updated = rows[0];
 
+        /*
+            Add the selected agent name to the appointment object
+            before sending the reschedule confirmation email.
+        */
+        updated.staff_full_name = staffName;
+
         try {
-            await sendAppointmentConfirmationEmail(updated);
+            await sendAppointmentRescheduleEmail(updated);
         } catch (mailErr) {
             console.error('Reschedule confirmation email failed:', mailErr);
         }
@@ -5209,7 +5361,6 @@ app.post('/api/create-pending-booking-payment-intent', async (req, res) => {
         }
 
         if (
-            !clientId ||
             !fullName ||
             !email ||
             !phone ||
@@ -5223,6 +5374,14 @@ app.post('/api/create-pending-booking-payment-intent', async (req, res) => {
                 error: 'Missing booking details'
             });
         }
+
+        const resolvedClientId = await resolveClientIdForBooking({
+            clientId,
+            fullName,
+            email,
+            phone,
+            serviceName
+        });
 
         // Prevent double booking BEFORE payment
         const existingAppointment = await pool.query(
@@ -5274,7 +5433,7 @@ app.post('/api/create-pending-booking-payment-intent', async (req, res) => {
                 enabled: true
             },
             metadata: {
-                clientId: String(clientId),
+                clientId: String(resolvedClientId),
                 serviceName: serviceName || 'Appointment booking'
             }
         });
@@ -5305,7 +5464,7 @@ app.post('/api/create-pending-booking-payment-intent', async (req, res) => {
             )`,
             [
                 paymentIntent.id,
-                clientId,
+                resolvedClientId,
                 staffIdNum,
                 fullName.trim(),
                 email.trim(),
@@ -5437,6 +5596,97 @@ app.use((err, req, res, next) => {
         } catch (err) {
             console.error('Chatbot billing summary error:', err);
             res.status(500).json({ error: 'Failed to load billing summary' });
+        }
+    });
+
+    app.post('/api/booking/resolve-manage-token', async (req, res) => {
+        try {
+            const {
+                email = '',
+                appointmentDate = '',
+                appointmentTime = '',
+                clientId = null
+            } = req.body || {};
+
+            const cleanEmail = String(email || '').trim().toLowerCase();
+            const cleanDate = String(appointmentDate || '').trim().slice(0, 10);
+            const cleanTime = String(appointmentTime || '').trim().slice(0, 5);
+
+            if (!cleanEmail || !cleanDate || !cleanTime) {
+                return res.status(400).json({
+                    error: 'Email, appointment date and appointment time are required.'
+                });
+            }
+
+            let query = `
+            SELECT id, management_token
+            FROM appointments
+            WHERE lower(email) = $1
+              AND appointment_date = $2::date
+              AND appointment_time = $3::time
+              AND booking_status IN ('Scheduled', 'Confirmed', 'Pending Payment')
+        `;
+
+            const values = [
+                cleanEmail,
+                cleanDate,
+                cleanTime
+            ];
+
+            if (clientId) {
+                query += ` AND client_id = $4`;
+                values.push(clientId);
+            }
+
+            query += `
+            ORDER BY created_at DESC
+            LIMIT 1
+        `;
+
+            const result = await pool.query(query, values);
+
+            if (!result.rows.length) {
+                return res.status(404).json({
+                    error: 'Booking token not found yet.'
+                });
+            }
+
+            const appointment = result.rows[0];
+
+            if (appointment.management_token) {
+                return res.json({
+                    ok: true,
+                    token: appointment.management_token
+                });
+            }
+
+            const newToken = generateManagementToken();
+
+            const updateResult = await pool.query(
+                `
+            UPDATE appointments
+            SET management_token = $1,
+                updated_at = NOW()
+            WHERE id = $2
+            RETURNING management_token
+            `,
+                [
+                    newToken,
+                    appointment.id
+                ]
+            );
+
+            return res.json({
+                ok: true,
+                token: updateResult.rows[0].management_token
+            });
+
+        } catch (err) {
+            console.error('Resolve manage token error:', err);
+
+            return res.status(500).json({
+                error: 'Failed to resolve booking token.'
+            });
         }
     });
     app.listen(PORT, () => {
